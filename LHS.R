@@ -1,8 +1,8 @@
-simple.LHS <- function(n,d) {
+simple.LHS <- function(n,d,scaled=TRUE) {
   m <- matrix(rep(1:n,d),n,d)
   m <- apply(m,2,function(xx){sample(xx)})
-  m <- (m - runif(n*d) ) / n
-  return(m)
+  if(scaled) m <- (m - runif(n*d) ) / n
+  m
 }
 
 #m <- simple.LHS(10,2)
@@ -213,10 +213,12 @@ if (F) {
   plot(tp3,pch=19)
   phi_p(tp3)
 }
-s11 <- data.frame(x1=1)
-s31 <- data.frame(x1=c(3,1,2),x2=c(2,1,3),x3=c(3,1,2))
-#tp1 <- trans.prop.LHS(12,s31)
-plot(tp1)
+if (F) {
+  #s11 <- data.frame(x1=1)
+  s31 <- data.frame(x1=c(3,1,2),x2=c(2,1,3),x3=c(3,1,2))
+  tp1 <- trans.prop.LHS(12,s31)
+  plot(tp1)
+}
 if(F) {
   # 4d test
   for(seed.size in 1:5){
