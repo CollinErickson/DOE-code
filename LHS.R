@@ -1,7 +1,8 @@
-simple.LHS <- function(n,d,scaled=TRUE) {
+simple.LHS <- function(n,d,scaled=TRUE,centered=FALSE) {
   m <- matrix(rep(1:n,d),n,d)
   m <- apply(m,2,function(xx){sample(xx)})
   if(scaled) m <- (m - runif(n*d) ) / n
+  if(centered) m <- m - ifelse(scaled,.5,n/2+.5)
   m
 }
 
