@@ -6,7 +6,7 @@ simple.LHS <- function(n,d,scaled=TRUE,centered=FALSE) {
   m
 }
 
-simple.grid <- function(n,d,scaled=TRUE,random=TRUE,centered=FALSE) {
+simple.grid <- function(n,d,scaled=TRUE,random=TRUE,centered=FALSE,scaledto=NULL) {
   m <- matrix(1:n,ncol=1)
   if (d>1) {
     for(di in 2:d) {
@@ -19,6 +19,9 @@ simple.grid <- function(n,d,scaled=TRUE,random=TRUE,centered=FALSE) {
   }
   if(random) m <- m - runif(n^d*d)
   if(scaled) m <- (m - ifelse(random,0,.5)) / n
+  if(!is.null(scaledto)) {#browser()
+    m <- m * matrix(scaledto[,2]-scaledto[,1],nrow=nrow(m),ncol=ncol(m),byrow=T) + matrix(scaledto[,1],nrow=nrow(m),ncol=ncol(m),byrow=T)
+  } 
   if(centered) m <- m - ifelse(scaled,.5,n/2+.5)
   m
 }
