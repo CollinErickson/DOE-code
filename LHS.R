@@ -6,6 +6,23 @@ simple.LHS <- function(n,d,scaled=TRUE,centered=FALSE) {
   m
 }
 
+simple.grid <- function(n,d,scaled=TRUE,random=TRUE,centered=FALSE) {
+  m <- matrix(1:n,ncol=1)
+  if (d>1) {
+    for(di in 2:d) {
+      m1 <- cbind(m,1)
+      for(j in 2:n) {
+        m1 <- rbind(m1,cbind(m,setNames(j,NULL)))
+      }
+      m <- m1
+    }
+  }
+  if(random) m <- m - runif(n^d*d)
+  if(scaled) m <- (m - ifelse(random,0,.5)) / n
+  if(centered) m <- m - ifelse(scaled,.5,n/2+.5)
+  m
+}
+
 #m <- simple.LHS(10,2)
 #plot(m,xlim=0:1,ylim=0:1,pch=19)
 
