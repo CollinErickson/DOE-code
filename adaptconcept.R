@@ -42,7 +42,8 @@ adapt.concept <- function() {
 }
 
 adapt.concept2 <- function(func,g=3,level=0,xlim=c(0,1),ylim=c(0,1),X=NULL,Z=NULL,maxmse.levelup=-Inf) {browser()
-  
+  require(mlegp)
+  require(contourfilled)
   #if (not been here already) {
   #get sample
   Xnew <- simple.grid(g,2,scaledto=rbind(xlim,ylim))
@@ -58,22 +59,31 @@ adapt.concept2 <- function(func,g=3,level=0,xlim=c(0,1),ylim=c(0,1),X=NULL,Z=NUL
   while (TRUE) {
     # fit+plot
     mod <- mlegp(X,Z)
+    # Plot fitted values
     contourfilled.func(function(XX){predict.gp(mod,XX)})
-    points(X,pch=19);abline(v=xlim[1] + 1:(g-1)/g * (xlim[2]-xlim[1]),h=ylim[1] + 1:(g-1)/g * (ylim[2]-ylim[1]))
+    points(X,pch=19)
+    rect(xlim[1],ylim[1],xlim[2],ylim[2],lwd=5)
+    abline(v=xlim[1] + 1:(g-1)/g * (xlim[2]-xlim[1]),h=ylim[1] + 1:(g-1)/g * (ylim[2]-ylim[1]))
+    # Plot s2 predictions
     contourfilled.func(function(XX){predict.gp(mod,XX,se.fit = T)$se})
-    points(X,pch=19);abline(v=xlim[1] + 1:(g-1)/g * (xlim[2]-xlim[1]),h=ylim[1] + 1:(g-1)/g * (ylim[2]-ylim[1]))
+    points(X,pch=19)
+    rect(xlim[1],ylim[1],xlim[2],ylim[2],lwd=5)
+    abline(v=xlim[1] + 1:(g-1)/g * (xlim[2]-xlim[1]),h=ylim[1] + 1:(g-1)/g * (ylim[2]-ylim[1]))
     
     #find lmse
     mod.se.pred.func <- function(XX){predict.gp(mod,XX,se.fit = T)$se}
     mses <- outer(1:g,1:g,Vectorize(function(a,b){msfunc(mod.se.pred.func, xlim[1]+(xlim[2]-xlim[1])*c(a-1,a)/g , xlim[1]+(xlim[2]-xlim[1])*c(b-1,b)/g ,a,b)}))
-    secondmaxmse <- maxN(mses,2)
     maxmse <- max(mses)
     maxmse.ind <- which(mses==maxmse,arr.ind=T)
     
     if (level==0 || maxmse > maxmse.levelup) {
+      secondmaxmse <- maxN(mses,2)
+      xlim.next <- xlim[1]+(xlim[2]-xlim[1])*c(maxmse.ind[1]-1,maxmse.ind[1])/g
+      ylim.next <- ylim[1]+(ylim[2]-ylim[1])*c(maxmse.ind[2]-1,maxmse.ind[2])/g
+      rect(xlim.next[1],ylim.next[1],xlim.next[2],ylim.next[2],lwd=5,border='gray')
       ac.out <- adapt.concept2(func=func,g=3,level=level+1, 
-                     xlim=xlim[1]+(xlim[2]-xlim[1])*c(maxmse.ind[1]-1,maxmse.ind[1])/g, 
-                     ylim=ylim[1]+(ylim[2]-ylim[1])*c(maxmse.ind[2]-1,maxmse.ind[2])/g, 
+                     xlim=xlim.next, 
+                     ylim=ylim.next, 
                      X=X,Z=Z,maxmse.levelup=secondmaxmse)
       X <- ac.out$X
       Z <- ac.out$Z
