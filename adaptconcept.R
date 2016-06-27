@@ -1,4 +1,4 @@
-msfunc <- function(func1,xlim,ylim,a,b) {#browser()
+msfunc <- function(func1,xlim,ylim) {#browser()
   #X1 <- simple.grid(10,2)
   #X1 <- X1*matrix(c(xlim[2]-xlim[1],ylim[2]-ylim[1]),nrow=nrow(X1),ncol=ncol(X1),byrow=T) + matrix(c(xlim[1],ylim[1]),nrow=nrow(X1),ncol=ncol(X1),byrow=T)
   #print(summary(X1))
@@ -41,9 +41,11 @@ adapt.concept <- function() {
   rect((maxind.mses[1]-1)/g,(maxind.mses[2]-1)/g,(maxind.mses[1])/g,(maxind.mses[2])/g,lwd=10)
 }
 
-adapt.concept2 <- function(func,g=3,level=0,xlim=c(0,1),ylim=c(0,1),X=NULL,Z=NULL,maxmse.levelup=-Inf) {browser()
-  require(mlegp)
-  require(contourfilled)
+require(mlegp)
+require(contourfilled)
+source('LHS.R')
+adapt.concept2 <- function(func,g=3,level=0,xlim=c(0,1),ylim=c(0,1),X=NULL,Z=NULL,maxmse.levelup=-Inf,xlim.second=NULL,ylim.second=NULL) {browser()
+  print(paste('At level',level))
   #if (not been here already) {
   #get sample
   Xnew <- simple.grid(g,2,scaledto=rbind(xlim,ylim))
@@ -58,7 +60,8 @@ adapt.concept2 <- function(func,g=3,level=0,xlim=c(0,1),ylim=c(0,1),X=NULL,Z=NUL
   #}
   while (TRUE) {
     # fit+plot
-    mod <- mlegp(X,Z)
+    mod <- mlegp(X,Z,verbose=0)
+    par(mfrow=c(2,1))
     # Plot fitted values
     contourfilled.func(function(XX){predict.gp(mod,XX)})
     points(X,pch=19)
@@ -72,24 +75,42 @@ adapt.concept2 <- function(func,g=3,level=0,xlim=c(0,1),ylim=c(0,1),X=NULL,Z=NUL
     
     #find lmse
     mod.se.pred.func <- function(XX){predict.gp(mod,XX,se.fit = T)$se}
-    mses <- outer(1:g,1:g,Vectorize(function(a,b){msfunc(mod.se.pred.func, xlim[1]+(xlim[2]-xlim[1])*c(a-1,a)/g , xlim[1]+(xlim[2]-xlim[1])*c(b-1,b)/g ,a,b)}))
+    mses <- outer(1:g,1:g,Vectorize(function(a,b){msfunc(mod.se.pred.func, xlim[1]+(xlim[2]-xlim[1])*c(a-1,a)/g , xlim[1]+(xlim[2]-xlim[1])*c(b-1,b)/g)}))
     maxmse <- max(mses)
     maxmse.ind <- which(mses==maxmse,arr.ind=T)
     
+    # Refit maxmse.levelup???
+    if(level>0) {
+      print(c(maxmse.levelup,msfunc(mod.se.pred.func,xlim.second,ylim.second)))
+      maxmse.levelup <- msfunc(mod.se.pred.func,xlim.second,ylim.second)
+    }
+    
     if (level==0 || maxmse > maxmse.levelup) {
       secondmaxmse <- maxN(mses,2)
+      secondmaxmse.ind <- which(mses==secondmaxmse,arr.ind=T)
       xlim.next <- xlim[1]+(xlim[2]-xlim[1])*c(maxmse.ind[1]-1,maxmse.ind[1])/g
       ylim.next <- ylim[1]+(ylim[2]-ylim[1])*c(maxmse.ind[2]-1,maxmse.ind[2])/g
+      xlim.nextsecond <- xlim[1]+(xlim[2]-xlim[1])*c(secondmaxmse.ind[1]-1,secondmaxmse.ind[1])/g
+      ylim.nextsecond <- ylim[1]+(ylim[2]-ylim[1])*c(secondmaxmse.ind[2]-1,secondmaxmse.ind[2])/g
       rect(xlim.next[1],ylim.next[1],xlim.next[2],ylim.next[2],lwd=5,border='gray')
-      ac.out <- adapt.concept2(func=func,g=3,level=level+1, 
+      print(paste('Diving to xlim, ylim:',xlim.next[1],xlim.next[2],ylim.next[1],ylim.next[2],collapse = ''))
+      ac.out <- adapt.concept2(func=func,g=g,level=level+1, 
                      xlim=xlim.next, 
                      ylim=ylim.next, 
-                     X=X,Z=Z,maxmse.levelup=secondmaxmse)
+                     X=X,Z=Z,maxmse.levelup=secondmaxmse,
+                     xlim.second=xlim.nextsecond,ylim.second=ylim.nextsecond)
+      print(paste('Back at level',level))
       X <- ac.out$X
       Z <- ac.out$Z
     } else {
+      print(paste('Jumping back up'))
       return(list(X=X,Z=Z))
     }
   }
 }
-adapt.concept2(function(xx) exp(-sum((xx-.5)^2)/2/.1))
+if (F) {
+  adapt.concept2(function(xx) exp(-sum((xx-.5)^2)/2/.1))
+  banana <- function(xx){exp(-.5*(xx[1]*80-40)^2/100-.5*((xx[2]*30-20)+.03*(xx[1]*80-40)^2-3)^2)}
+  contourfilled.func(banana)
+  adapt.concept2(banana)
+}
