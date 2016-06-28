@@ -17,7 +17,12 @@ get.pnt.next.level <- function(level,pnt,L) {#browser()
   })
   list( (pnt-1)*L + sap)
 }
-get.pnt.next.level.oa2oa <- function(level,pnt,L) {
+get.pnt.next.level.oa2oa <- function(g,level,L,pnt,slice.ind,inslice.ind) {#browser()
+  sap <- sapply(1:length(pnt),function(dd){
+    set.seed.grid(level,dd,pnt[dd])
+    sample(1:(g))[inslice.ind]  # use 1- to have spot in row determine # since all have same col
+  })
+  list( (pnt-1)*g + sap)
   
 }
 #tx <- get.pnt.next.level(0,c(0,0),2)
