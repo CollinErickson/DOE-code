@@ -60,7 +60,8 @@ adapt.concept2 <- function(func,g=3,level=0,xlim=c(0,1),ylim=c(0,1),X=NULL,Z=NUL
   #}
   while (TRUE) {
     # fit+plot
-    mod <- mlegp(X,Z,verbose=0)
+    mod <- mlegp(X,Z,verbose=0,nugget.known = 0,nugget=1)
+    
     par(mfrow=c(2,1))
     # Plot fitted values
     contourfilled.func(function(XX){predict.gp(mod,XX)})
@@ -93,6 +94,8 @@ adapt.concept2 <- function(func,g=3,level=0,xlim=c(0,1),ylim=c(0,1),X=NULL,Z=NUL
       xlim.nextsecond <- xlim[1]+(xlim[2]-xlim[1])*c(secondmaxmse.ind[1]-1,secondmaxmse.ind[1])/g
       ylim.nextsecond <- ylim[1]+(ylim[2]-ylim[1])*c(secondmaxmse.ind[2]-1,secondmaxmse.ind[2])/g
       rect(xlim.next[1],ylim.next[1],xlim.next[2],ylim.next[2],lwd=5,border='gray')
+      #rect(xlim.next[1],ylim.next[1],xlim.next[2],ylim.next[2],col=rgb(1,1,0,.3))
+      rect(xlim.next[1],ylim.next[1],xlim.next[2],ylim.next[2],col=1,angle=45,density=6+2*level^2)
       print(paste('Diving to xlim, ylim:',xlim.next[1],xlim.next[2],ylim.next[1],ylim.next[2],collapse = ''))
       ac.out <- adapt.concept2(func=func,g=g,level=level+1, 
                      xlim=xlim.next, 
@@ -109,7 +112,7 @@ adapt.concept2 <- function(func,g=3,level=0,xlim=c(0,1),ylim=c(0,1),X=NULL,Z=NUL
   }
 }
 if (F) {
-  adapt.concept2(function(xx) exp(-sum((xx-.5)^2)/2/.1))
+  adapt.concept2(function(xx) exp(-sum((xx-.5)^2)/2/.1),g=2)
   banana <- function(xx){exp(-.5*(xx[1]*80-40)^2/100-.5*((xx[2]*30-20)+.03*(xx[1]*80-40)^2-3)^2)}
   contourfilled.func(banana)
   adapt.concept2(banana)
