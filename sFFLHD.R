@@ -37,7 +37,7 @@ sFFLHD <- function(D,L,a) {#browser()
     for(p in 1:L) {
       Arp <- A[[r]][((p-1)*L+1):(p*L),]
       if(nb+L > lb) { # Xb reached an LHD
-        browser()
+        #browser()
         lb <- lb * a
         Vb <- ceiling(Xb*lb)
       }
@@ -59,9 +59,9 @@ sFFLHD <- function(D,L,a) {#browser()
           N <- length(Q)
           e1 <- ceiling(eps[i,j]*N)
           e2 <- e1-eps[i,j]*N
-          e <- Q[e1];print(c(i,j,e));if(length(e)==0) browser();if(e>lb)browser()
+          e <- Q[e1];print(c(i,j,e));if(length(e)==0) browser();if(e>lb | e<1)browser()
           Vb[n1+i-1,j] <- e
-          Mb[n1+i-1,j] <- G[i,j]
+          Mb[n1+i-1,j] <- G[i,j]   -1  # Subtract 1 here to get start at zero??????
           Wb[n1+i-1,j] <- floor(L*G[i,j]/Lb)
           Xb[n1+i-1,j] <- (e-e2)/lb
         }
@@ -81,10 +81,30 @@ sFFLHD <- function(D,L,a) {#browser()
   
   # 3:
   Lb <- a*Lb
-  Mb <- floor(Xb * Lb) + 1
+  Mb <- floor(Xb * Lb) # + 1 # no longer adding 1
   
   # 4: 
+  FF1.1 <- a*floor(Mb/a)
   v <- sample(0:(a-1),D,replace=T)
+  FF <- lapply(0:(a^D-1),function(ii){
+    v <- (ii%/%(a^((D-1):0))) %% a # no faster to move into next line
+    FF1.1 + sweep(Mb,2,v,'+')%%a
+  })
+  # any(duplicated(matrix(unlist(lapply(1:length(FF),function(ii)t(FF[[ii]]))),ncol=3,byrow=T))) to check if all rows present
+  
+  Hk <- NA ## ?????????????
+  FF.projected <- lapply(1:length(FF),function(ii){floor(FF[[ii]]*L/Lb)})
+  Hk <- lapply(1:length(FF),function(ii){lapply(1:((Lb/a/L)^D),function(jj){FF[[ii]][():(),]})})
+  
+  for(p in NA:NA) {
+    if(nb+L > lb) {
+      lb <- a*lb
+      Vb <- ceiling(Xb*lb)
+    }
+    
+    G <- Frp
+  }
+  
   
   # 5: 
   
