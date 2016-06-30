@@ -2,9 +2,9 @@ msfunc <- function(func1,xlim,ylim) {
   X1 <- simple.grid(10,2,scaledto=rbind(xlim,ylim))
   mean(apply(X1,1,func1)^2)
 }
-msfunc2 <- function(func1,nd) { # for NODES
+msfunc2 <- function(func1,nd,...) { # for NODES
   X1 <- simple.grid(10,2,scaledto=rbind(nd$xlim,nd$ylim))
-  mean(apply(X1,1,func1)^2)
+  mean(apply(X1,1,func1,...)^2)
 }
 
 maxN <- function(x, N=2,all.indices=F){
@@ -36,9 +36,10 @@ adapt.set.children <- function(nd,g) {
   outer(1:g,1:g,Vectorize(function(a,b){nd$AddChildNode(adapt.new.node(a,b,g,nd))}))
 }
 
-should.dive <- function(nd) {
-  if(nd$level == 1) {return(FALSE)}
-  if(nd$level == 2) {}
+mod.se.pred.func <- function(XX,mod){predict.gp(mod,XX,se.fit = T)$se}
+should.dive <- function(nd,mod) {#browser()
+  if(nd$isRoot) {return(TRUE)}
+  nd$maxmse> max(ancestor.apply(nd,function(ND){msfunc2(mod.se.pred.func,ND,mod)}))
 }
 child.apply <- function(nd,FUN,store,sname,simplify=T,min.return=F,max.return=F,max2.return=T) {
   sap <- sapply(1:nd$count,
@@ -69,31 +70,21 @@ source('LHS.R')
 # secondmax all the way up
 # prevent too much samples in one compared to neighbor
 # better test func
-adapt.concept2 <- function(func,g=3,level=1,xlim=c(0,1),ylim=c(0,1),X=NULL,Z=NULL,maxmse.levelup=-Inf,xlim.second=NULL,ylim.second=NULL,adapt.tree=NULL) {browser()
-  print(paste('At level',level))
+adapt.concept2 <- function(func,g=3,X=NULL,Z=NULL,adapt.tree=NULL) {browser()
+  print(paste('At level'))# no level initially,level))
   
   # trying tree stuff
   if(is.null(adapt.tree)) { # creates root
-    #adapt.tree <- Node$new('root')
-    #adapt.tree$lev <- level # should always be zero here
-    #outer(1:g,1:g,Vectorize(function(a,b){adapt.tree$AddChild(paste(a,b))}))
-    #adapt.tree$samples <- 1
     adapt.tree <- adapt.new.node(a=0,b=0,g=g,parent=NULL)
-  #} else if(is.null(adapt.tree$samples)) { # if not visited yet, initialize
   }
   if(adapt.tree$samples==0) { # if not visited yet, initialize
-    #adapt.tree$lev <- level
-    #outer(1:g,1:g,Vectorize(function(a,b){adapt.tree$AddChild(paste(a,b))}))
-    #adapt.tree$samples <- 1
     adapt.set.children(nd=adapt.tree,g=g)
-  } else { # else already visited, increment samples
-    #adapt.tree$samples <- adapt.tree$samples + 1
   }
   adapt.tree$samples <- adapt.tree$samples + 1
   
   #if (not been here already) {
   #get sample
-  Xnew <- simple.grid(g,2,scaledto=rbind(xlim,ylim))
+  Xnew <- simple.grid(g,2,scaledto=rbind(adapt.tree$xlim,adapt.tree$ylim))
   Znew <- apply(Xnew,1,func) 
   if (is.null(X)) {
     X <- Xnew
@@ -111,57 +102,67 @@ adapt.concept2 <- function(func,g=3,level=1,xlim=c(0,1),ylim=c(0,1),X=NULL,Z=NUL
     # Plot fitted values
     contourfilled.func(function(XX){predict.gp(mod,XX)})
     points(X,pch=19)
-    rect(xlim[1],ylim[1],xlim[2],ylim[2],lwd=5)
-    abline(v=xlim[1] + 1:(g-1)/g * (xlim[2]-xlim[1]),h=ylim[1] + 1:(g-1)/g * (ylim[2]-ylim[1]))
+    rect(adapt.tree$xlim[1],adapt.tree$ylim[1],adapt.tree$xlim[2],adapt.tree$ylim[2],lwd=5)
+    abline(v=adapt.tree$xlim[1] + 1:(g-1)/g * (adapt.tree$xlim[2]-adapt.tree$xlim[1]),h=adapt.tree$ylim[1] + 1:(g-1)/g * (adapt.tree$ylim[2]-adapt.tree$ylim[1]))
     # Plot s2 predictions
     contourfilled.func(function(XX){predict.gp(mod,XX,se.fit = T)$se})
     points(X,pch=19)
-    rect(xlim[1],ylim[1],xlim[2],ylim[2],lwd=5)
-    abline(v=xlim[1] + 1:(g-1)/g * (xlim[2]-xlim[1]),h=ylim[1] + 1:(g-1)/g * (ylim[2]-ylim[1]))
+    rect(adapt.tree$xlim[1],adapt.tree$ylim[1],adapt.tree$xlim[2],adapt.tree$ylim[2],lwd=5)
+    abline(v=adapt.tree$xlim[1] + 1:(g-1)/g * (adapt.tree$xlim[2]-adapt.tree$xlim[1]),h=adapt.tree$ylim[1] + 1:(g-1)/g * (adapt.tree$ylim[2]-adapt.tree$ylim[1]))
     browser()
     
     #find lmse
-    mod.se.pred.func <- function(XX){predict.gp(mod,XX,se.fit = T)$se}
-    #mses <- outer(1:g,1:g,Vectorize(function(a,b){msfunc(mod.se.pred.func, xlim[1]+(xlim[2]-xlim[1])*c(a-1,a)/g , ylim[1]+(ylim[2]-ylim[1])*c(b-1,b)/g)}))
-    maxmse.2nodes <- child.apply(adapt.tree,function(ND){msfunc2(mod.se.pred.func,ND)},T,'mse')
+    #mses <- outer(1:g,1:g,Vectorize(function(a,b){msfunc(mod.se.pred.func, adapt.tree$xlim[1]+(adapt.tree$xlim[2]-adapt.tree$xlim[1])*c(a-1,a)/g , adapt.tree$ylim[1]+(adapt.tree$ylim[2]-adapt.tree$ylim[1])*c(b-1,b)/g)}))
+    maxmse.2nodes <- child.apply(adapt.tree,function(ND){msfunc2(mod.se.pred.func,ND,mod)},T,'mse')
     maxmse.child <- maxmse.2nodes[[1]]
     second.maxmse.child <- maxmse.2nodes[[2]]
     maxmse <- maxmse.child$mse #max(mses)
+    adapt.tree$maxmse <- maxmse.child$mse
     adapt.tree$maxmse.name <- maxmse.child$name
     adapt.tree$second.maxmse.name <- second.maxmse.child$name
     #maxmse.ind <- which(mses==maxmse,arr.ind=T)
     
     # Refit maxmse.levelup???
-    if(level>1) {
-      print(c(maxmse.levelup,msfunc(mod.se.pred.func,xlim.second,ylim.second)))
-      maxmse.levelup <- msfunc(mod.se.pred.func,xlim.second,ylim.second)
-    }
+    #if(level>1) {
+    #  print(c(maxmse.levelup,msfunc(mod.se.pred.func,xlim.second,ylim.second)))
+    #  maxmse.levelup <- msfunc(mod.se.pred.func,xlim.second,ylim.second)
+    #}
     #ancestor.apply(adapt.tree,function(nd){msfunc(mod.se.pred.func)})
     
-    if (  level==1 || 
-         (level==2 & maxmse > maxmse.levelup) || 
-         (level>=3 & maxmse > maxmse.levelup & sum(unlist(lapply(adapt.tree$parent$parent$children,function(nd){nd$samples>=1})))>=g^2 ) ) {
-      secondmaxmse <- maxN(mses,2)
-      secondmaxmse.ind <- which(mses==secondmaxmse,arr.ind=T)
-      xlim.next <- xlim[1]+(xlim[2]-xlim[1])*c(maxmse.ind[1]-1,maxmse.ind[1])/g
-      ylim.next <- ylim[1]+(ylim[2]-ylim[1])*c(maxmse.ind[2]-1,maxmse.ind[2])/g
-      xlim.nextsecond <- xlim[1]+(xlim[2]-xlim[1])*c(secondmaxmse.ind[1]-1,secondmaxmse.ind[1])/g
-      ylim.nextsecond <- ylim[1]+(ylim[2]-ylim[1])*c(secondmaxmse.ind[2]-1,secondmaxmse.ind[2])/g
-      rect(xlim.next[1],ylim.next[1],xlim.next[2],ylim.next[2],lwd=5,border='red')
-      rect(xlim.nextsecond[1],ylim.nextsecond[1],xlim.nextsecond[2],ylim.nextsecond[2],lwd=2,border='black')
-      rect(xlim.next[1],ylim.next[1],xlim.next[2],ylim.next[2],col=1,angle=45,density=6+2*level^2)
-      print(paste('Diving to xlim, ylim:',xlim.next[1],xlim.next[2],ylim.next[1],ylim.next[2],collapse = ''))
+    #if (  level==1 || 
+    #     (level==2 & maxmse > maxmse.levelup) || 
+    #     (level>=3 & maxmse > maxmse.levelup & sum(unlist(lapply(adapt.tree$parent$parent$children,function(nd){nd$samples>=1})))>=g^2 ) ) {
+    if(should.dive(adapt.tree,mod)) {
+      #adapt.tree.next <- adapt.tree[[]]
+      #secondmaxmse <- maxN(mses,2)
+      #secondmaxmse.ind <- which(mses==secondmaxmse,arr.ind=T)
+      #xlim.next <- xlim[1]+(xlim[2]-xlim[1])*c(maxmse.ind[1]-1,maxmse.ind[1])/g
+      #ylim.next <- ylim[1]+(ylim[2]-ylim[1])*c(maxmse.ind[2]-1,maxmse.ind[2])/g
+      #xlim.nextsecond <- xlim[1]+(xlim[2]-xlim[1])*c(secondmaxmse.ind[1]-1,secondmaxmse.ind[1])/g
+      #ylim.nextsecond <- ylim[1]+(ylim[2]-ylim[1])*c(secondmaxmse.ind[2]-1,secondmaxmse.ind[2])/g
+      #rect(xlim.next[1],ylim.next[1],xlim.next[2],ylim.next[2],lwd=5,border='red')
+      #rect(xlim.nextsecond[1],ylim.nextsecond[1],xlim.nextsecond[2],ylim.nextsecond[2],lwd=2,border='black')
+      #rect(xlim.next[1],ylim.next[1],xlim.next[2],ylim.next[2],col=1,angle=45,density=6+2*level^2)
+      #print(paste('Diving to xlim, ylim:',xlim.next[1],xlim.next[2],ylim.next[1],ylim.next[2],collapse = ''))
+      rect(second.maxmse.child$xlim[1],second.maxmse.child$ylim[1],second.maxmse.child$xlim[2],second.maxmse.child$ylim[2],lwd=3,border='black')
+      rect(maxmse.child$xlim[1],maxmse.child$ylim[1],maxmse.child$xlim[2],maxmse.child$ylim[2],col='black',angle=45,density=6+2*adapt.tree$level)
+      rect(maxmse.child$xlim[1],maxmse.child$ylim[1],maxmse.child$xlim[2],maxmse.child$ylim[2],lwd=5,border='red')
+      print(paste(c('Diving to xlim, ylim:',maxmse.child$xlim,maxmse.child$ylim,collapse = ' ')))
       
       # RECURSIVE STEP HERE
-      ac.out <- adapt.concept2(func=func,g=g,level=level+1, 
-                     xlim=xlim.next, 
-                     ylim=ylim.next, 
-                     X=X,Z=Z,maxmse.levelup=secondmaxmse,
-                     xlim.second=xlim.nextsecond,ylim.second=ylim.nextsecond,
-                     adapt.tree = adapt.tree$children[[paste(maxmse.ind,collapse = ' ')]]
-                     )
+      #ac.out <- adapt.concept2(func=func,g=g,level=level+1, 
+      #               xlim=xlim.next, 
+      #               ylim=ylim.next, 
+      #               X=X,Z=Z,maxmse.levelup=secondmaxmse,
+      #               xlim.second=xlim.nextsecond,ylim.second=ylim.nextsecond,
+      #               adapt.tree = adapt.tree$children[[paste(maxmse.ind,collapse = ' ')]]
+      #               )
+      ac.out <- adapt.concept2(func=func,g=g, 
+                               X=X,Z=Z,
+                               adapt.tree = maxmse.child
+      )
       
-      print(paste('Back at level',level))
+      print(paste('Back at level',adapt.tree$level))
       X <- ac.out$X
       Z <- ac.out$Z
     } else {
@@ -177,4 +178,7 @@ if (F) {
   banana <- function(xx){exp(-.5*(xx[1]*80-40)^2/100-.5*((xx[2]*30-20)+.03*(xx[1]*80-40)^2-3)^2)}
   contourfilled.func(banana)
   adapt.concept2(banana)
+  contourfilled.func(function(xx){exp(2*xx[1])*sum(sin(2*pi*xx*2))+xx[1]*40})
+  rastimoid <- function(xx){sum(sin(2*pi*xx*3)) + 50/(1+exp(-xx[[1]]))}; contourfilled.func(rastimoid)
+  adapt.concept2(rastimoid)
 }
