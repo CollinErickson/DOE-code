@@ -12,38 +12,15 @@ maxN <- function(x, N=2){
   sort(x,partial=len-N+1)[len-N+1]
 }
 
-adapt.concept <- function() {
-  g <- 3
-  orig.design <- simple.grid(g,2,random=F)
-  plot(orig.design,xlim=c(0,1),ylim=c(0,1))
-  
-  func <- function(xx) exp(-sum((xx-.5)^2)/2/.1)
-  Z <- apply(orig.design,1,func)
-  
-  require(mlegp)
-  require(contourfilled)
-  
-  X <- orig.design
-  mod <- mlegp(X,Z)
-  contourfilled.func(function(XX){predict.gp(mod,XX)})
-  points(X,pch=19)
-  contourfilled.func(function(XX){predict.gp(mod,XX,se.fit = T)$se})
-  points(X,pch=19)
-  mod.se.pred.func <- function(XX){predict.gp(mod,XX,se.fit = T)$se}
-  #msfunc(mod.se.pred.func,0:1,0:1)
-  #tfms <- function(a,b){msfunc(mod.se.pred.func,c(a-1,a)/g,c(b-1,b)/g)}
-  mses <- outer(1:g,1:g,Vectorize(function(a,b){msfunc(mod.se.pred.func,c(a-1,a)/g,c(b-1,b)/g,a,b)}))
-  maxind.mses <- which(mses==max(mses),arr.ind=T)
-  rect((maxind.mses[1]-1)/g,(maxind.mses[2]-1)/g,(maxind.mses[1])/g,(maxind.mses[2])/g,lwd=10)
-}
-
 require(mlegp)
 require(contourfilled)
 source('LHS.R')
 # To do
 # Get tree working
 # secondmax all the way up
-adapt.concept2 <- function(func,g=3,level=0,xlim=c(0,1),ylim=c(0,1),X=NULL,Z=NULL,maxmse.levelup=-Inf,xlim.second=NULL,ylim.second=NULL,adapt.tree=NULL) {browser()
+# prevent too much samples in one compared to neighbor
+# create default node
+adapt.concept2 <- function(func,g=3,level=1,xlim=c(0,1),ylim=c(0,1),X=NULL,Z=NULL,maxmse.levelup=-Inf,xlim.second=NULL,ylim.second=NULL,adapt.tree=NULL) {browser()
   print(paste('At level',level))
   
   # trying tree stuff
@@ -95,12 +72,14 @@ adapt.concept2 <- function(func,g=3,level=0,xlim=c(0,1),ylim=c(0,1),X=NULL,Z=NUL
     maxmse.ind <- which(mses==maxmse,arr.ind=T)
     
     # Refit maxmse.levelup???
-    if(level>0) {
+    if(level>1) {
       print(c(maxmse.levelup,msfunc(mod.se.pred.func,xlim.second,ylim.second)))
       maxmse.levelup <- msfunc(mod.se.pred.func,xlim.second,ylim.second)
     }
     
-    if (level==0 || maxmse > maxmse.levelup) {
+    if (  level==1 || 
+         (level==2 & maxmse > maxmse.levelup) || 
+         (level>=3 & maxmse > maxmse.levelup & sum(unlist(lapply(adapt.tree$parent$parent$children,function(nd){nd$samples>=1})))>=g^2 ) ) {
       secondmaxmse <- maxN(mses,2)
       secondmaxmse.ind <- which(mses==secondmaxmse,arr.ind=T)
       xlim.next <- xlim[1]+(xlim[2]-xlim[1])*c(maxmse.ind[1]-1,maxmse.ind[1])/g
