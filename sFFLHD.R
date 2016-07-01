@@ -92,21 +92,67 @@ sFFLHD <- function(D,L,a) {#browser()
   })
   # any(duplicated(matrix(unlist(lapply(1:length(FF),function(ii)t(FF[[ii]]))),ncol=3,byrow=T))) to check if all rows present
   
+  print((Lb/a/L)^D)
+  print(L^(D-2))
   Hk <- NA ## ?????????????
   FF.projected <- lapply(1:length(FF),function(ii){floor(FF[[ii]]*L/Lb)})
-  Hk <- lapply(1:length(FF),function(ii){lapply(1:((Lb/a/L)^D),function(jj){FF[[ii]][():(),]})})
+  #Hk <- lapply(1:length(FF),function(ii){lapply(1:((Lb/a/L)^D),function(jj){FF[[ii]][():(),]})})
+  nperH <- nrow(FF[[1]])/(L^(D-2))
+  Hk <- lapply(1:length(FF),function(ii){lapply(1:(L^(D-2)),function(jj){FF.projected[[ii]][((jj-1)*nperH+1):(jj*nperH),]})})
+  Fslices <- lapply(1:length(FF),function(ii){lapply(1:(L^(D-2)),function(jj){FF[[ii]][((jj-1)*nperH+1):(jj*nperH),]})})
+  Fslices <- Fslices[[1]]
+  Fslices <- lapply(Fslices,function(mmat){split.matrix(mmat,L)})
   
-  for(p in NA:NA) {
-    if(nb+L > lb) {
-      lb <- a*lb
-      Vb <- ceiling(Xb*lb)
+  for(r in 1:length(Fslices)) {
+    for(p in 1:length(Fslices[[r]])) {
+      if(nb+L > lb) {
+        lb <- a*lb
+        Vb <- ceiling(Xb*lb)
+      }
+      
+      # --- COPIED FROM ABOVE
+      
+      G <- Fslices[[r]][[p]] + 1 # Arp # ADDING 1 TO TRY TO GET IT TO WORK
+      eps <- matrix(runif(L*D),L,D)
+      
+      # Add batch NB(G,eps,b)
+      n1 <- nb+1
+      n2 <- nb+L
+      # need to create blank rows to be filled in for all matrices
+      Vb <- rbind(Vb,matrix(NA,n2-n1+1,D))
+      Mb <- rbind(Mb,matrix(NA,n2-n1+1,D))
+      Wb <- rbind(Wb,matrix(NA,n2-n1+1,D))
+      Xb <- rbind(Xb,matrix(NA,n2-n1+1,D))  # Add +1 to these 4 b/c of next line
+      for(i in 1:(n2-n1+1)) { # CHANGING TO +1, seems necessary but not in paper
+        for(j in 1:D) {
+          Q <- setdiff((lb*(G[i,j]-1)/Lb+1):(lb*(G[i,j]+1-1)/Lb-1+1),Vb[,j])  # ADDED -1 TO TRY TO FIX????? CANCELED OUT 1's???????
+          N <- length(Q)
+          e1 <- ceiling(eps[i,j]*N)
+          e2 <- e1-eps[i,j]*N
+          e <- Q[e1];print(c(i,j,e));if(length(e)==0) browser();if(e>lb | e<1)browser()
+          Vb[n1+i-1,j] <- e
+          Mb[n1+i-1,j] <- G[i,j]   -1  # Subtract 1 here to get start at zero??????
+          Wb[n1+i-1,j] <- floor(L*G[i,j]/Lb)
+          Xb[n1+i-1,j] <- (e-e2)/lb
+        }
+      }
+      
+      # --- end copied code
+      
+      # observe batch
+      # if stop, EXIT
+      b <- b+1
+      nb <- nb + L
     }
-    
-    G <- Frp
-  }
-  
+  }  
   
   # 5: 
+  if(nrow(Mb) >= Lb ^ D) {
+    Lb <- a * Lb
+    Mb <- floor(Xb * Lb)
+  }
+  # go to step 4, ie make this a while loop
+  
   
   # Return
   list(Vb,Mb,Wb,Xb)
