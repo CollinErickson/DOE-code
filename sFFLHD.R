@@ -1,4 +1,9 @@
 require(DoE.base)
+split.matrix <- function(mat,rowspergroup=NULL,nsplits=NULL) {
+  if(is.null(rowspergroup)) rowspergroup <- nrow(mat) / nsplits
+  else nsplits <- nrow(mat) / rowspergroup
+  lapply(1:nsplits,function(ii){mat[((ii-1)*rowspergroup+1):(ii*rowspergroup),]})
+}
 sFFLHD <- function(D,L,a) {#browser()
   # Implements "Sliced Full Factorial-Based Latin Hypercube Designs as a
   #   Framework for a Batch Sequential Design Algorithm" 2016
@@ -9,10 +14,10 @@ sFFLHD <- function(D,L,a) {#browser()
   #  a - ???
   
   # 0: Initialize
-  b <- 0 # Batch number
-  nb <- 0 # Number of sampling points after b batches, nb = b*L
-  lb <- L # Levels of the small grid after b batches
-  Lb <- L # Levels of the intermediate grid after b batches
+  b <- 0L # Batch number
+  nb <- 0L # Number of sampling points after b batches, nb = b*L
+  lb <- as.integer(L) # Levels of the small grid after b batches
+  Lb <- as.integer(L) # Levels of the intermediate grid after b batches
   Xb <- NULL # Sequential design after b batches, xrpij's are elements of Xb
   Vb <- NULL # Small grid design matrix after b batches, vrpij's are elements of Vb
   Mb <- NULL # Intermediate grid design matrix after b batches, mrpij's are elements of Vb
@@ -172,12 +177,182 @@ sFFLHD <- function(D,L,a) {#browser()
   # Return
   list(Vb,Mb,Wb,Xb)
 }
+if (F) {
+  sFFLHD(3,4,2)
+}
 
-sFFLHD(3,4,2)
 
-
-#base <- 7
-#for(ii in 1:50) {
-  #print(sapply(2:0,function(jj){max(0,ii-base^jj)%%(base)}))
-#  print((ii%/%(base^(2:0))) %% base)
-#}
+sFFLHD.seq <- setRefClass('sFFLHD.seq',
+  fields = list(D='numeric',L='numeric',a='numeric',
+                b='integer',nb ='integer',lb ='numeric',Lb ='numeric',
+                Xb = 'matrix',Vb = 'matrix',Mb = 'matrix',Wb = 'matrix',
+                A1 = 'matrix',r = 'integer',p = 'integer',Ar = 'matrix',
+                stage = 'integer',vii = 'integer',Fslices = 'list',
+                FF1.1 = 'matrix',Mb.store='matrix'
+                ),
+  methods = list(
+    makeA = function() {print('in method');a<<-123},
+    init = function() {},
+    get.batch = function() {#print(b)
+      if(length(b)==0) { # initialize everything
+        b <<- 0L
+        nb <<- 0L
+        lb <<- as.integer(L)
+        Lb <<- as.integer(L)
+        Vb <<- matrix(NA,nrow=0,ncol=D)
+        Mb <<- matrix(NA,nrow=0,ncol=D)
+        Wb <<- matrix(NA,nrow=0,ncol=D)
+        Xb <<- matrix(NA,nrow=0,ncol=D)
+        stage <<- 1L # stage 1 is step 2, stage 2 is step 4
+        # make sure D,L,a are all set
+        if(length(D)==0 | length(L)==0 | length(a)==0) {stop('D, L, and a must be set when creating new object')}
+        # get first OA
+        OA <- oa.design(nruns=L^2,nfactors=D+1,nlevels=L)
+        OA0.5 <- apply(as.matrix(OA),1:2,as.integer) #- 1 # I think Weitau starts at 0
+        OA1 <- OA0.5[sample(1:L^2),]
+        OA2 <- OA1[,sample(1:(D+1))]
+        OA3 <- OA2[order(OA2[,1]),]#;browser()
+        A1 <<- OA3[,2:(D+1)]
+        r <<- 1L
+        p <<- 1L
+        # end initialization
+      }
+      #if (r <= L^(D-2)) { # still first stage, already initialized, get batch
+      if (stage == 1L) { # still first stage, already initialized, get batch
+        #browser()
+        if (p==1L) { # Get the Ar
+          #browser()
+          v <- c(0,0, ((r-1)%/%(L^((D-2-1):0))) %% L)
+          Ar <<- sweep(A1,2,v,'+')%%L + 1 #now OAs start at 0, not sure if right, maybe add 1??????
+        }
+        Arp <- Ar[((p-1)*L+1):(p*L),]
+        if(nb+L > lb) { # Xb reached an LHD
+          #browser()
+          lb <<- lb * a
+          Vb <<- ceiling(Xb*lb)
+        }
+        
+        G <- Arp
+        eps <- matrix(runif(L*D),L,D)
+        
+        # Add batch NB(G,eps,b)
+        n1 <- nb+1
+        n2 <- nb+L
+        # need to create blank rows to be filled in for all matrices
+        Vb <<- rbind(Vb,matrix(NA,n2-n1+1,D))
+        Mb <<- rbind(Mb,matrix(NA,n2-n1+1,D))
+        Wb <<- rbind(Wb,matrix(NA,n2-n1+1,D))
+        Xb <<- rbind(Xb,matrix(NA,n2-n1+1,D))  # Add +1 to these 4 b/c of next line
+        for(i in 1:(n2-n1+1)) { # CHANGING TO +1, seems necessary but not in paper
+          for(j in 1:D) {
+            Q <- setdiff((lb*(G[i,j]-1)/Lb+1):(lb*(G[i,j]+1-1)/Lb-1+1),Vb[,j])  # ADDED -1 TO TRY TO FIX????? CANCELED OUT 1's???????
+            N <- length(Q)
+            e1 <- ceiling(eps[i,j]*N)
+            e2 <- e1-eps[i,j]*N
+            e <- Q[e1];if(length(e)==0) browser();if(e>lb | e<1)browser() #print(c(i,j,e));
+            Vb[n1+i-1,j] <<- e
+            Mb[n1+i-1,j] <<- G[i,j]   -1  # Subtract 1 here to get start at zero??????
+            Wb[n1+i-1,j] <<- floor(L*G[i,j]/Lb)
+            Xb[n1+i-1,j] <<- (e-e2)/lb
+          }
+        }
+        
+        # Observe batch b+1
+        # If stopping crit met, EXIT
+        # else continue
+        b <<- b+1L
+        nb <<- nb+as.integer(L)
+        if(p == L) {
+          r <<- r + 1L
+          p <<- 1L
+          if(r > L^(D-2)) {# if finished step 2, do step 3
+            Lb <<- a*Lb
+            Mb <<- floor(Xb * Lb) # + 1 # no longer adding 1
+            stage <<- 2L
+            vii <<- 1L
+            r <<- 1L
+            p <<- 1L
+          }
+        } else{
+          p <<- p + 1L
+        }
+        return(Xb[n1:n2,])
+      } else  if(stage==2L){ # steps 4 and 5 in algorithm
+        if (vii==1L & r==1L & p==1L) {
+          FF1.1 <<- a*floor(Mb/a)
+          Mb.store <<- Mb
+        }
+        # loop over all v options
+        #for(vii in 1:(a^D-1)) {
+        if(r==1L & p==1L) { # if new vii, set Fslices for it
+          v <- (vii%/%(a^((D-1):0))) %% a
+          FFv <- FF1.1 + sweep(Mb.store,2,v,'+')%%a
+          Fslices1 <- split.matrix(FFv,nsplits=L^(D-2)*(Lb/a/L)^D)
+          Fslices <<- lapply(Fslices1,split.matrix,L)
+        }
+          #for(r in 1:length(Fslices)) {
+          #  for(p in 1:length(Fslices[[r]])) {
+        if(nb+L > lb) {
+          lb <<- a*lb
+          Vb <<- ceiling(Xb*lb)
+        }
+        G <- Fslices[[r]][[p]] + 1 # Arp # ADDING 1 TO TRY TO GET IT TO WORK
+        eps <- matrix(runif(L*D),L,D)
+              
+              # Add batch NB(G,eps,b)
+              n1 <- nb+1
+              n2 <- nb+L
+              # need to create blank rows to be filled in for all matrices
+              Vb <<- rbind(Vb,matrix(NA,n2-n1+1,D))
+              Mb <<- rbind(Mb,matrix(NA,n2-n1+1,D))
+              Wb <<- rbind(Wb,matrix(NA,n2-n1+1,D))
+              Xb <<- rbind(Xb,matrix(NA,n2-n1+1,D))  # Add +1 to these 4 b/c of next line
+              for(i in 1:(n2-n1+1)) { # CHANGING TO +1, seems necessary but not in paper
+                for(j in 1:D) {
+                  Q <- setdiff((lb*(G[i,j]-1)/Lb+1):(lb*(G[i,j]+1-1)/Lb-1+1),Vb[,j])  # ADDED -1 TO TRY TO FIX????? CANCELED OUT 1's???????
+                  N <- length(Q)
+                  e1 <- ceiling(eps[i,j]*N)
+                  e2 <- e1-eps[i,j]*N
+                  e <- Q[e1];if(length(e)==0) browser();if(e>lb | e<1)browser()#print(c(i,j,e));
+                  Vb[n1+i-1,j] <<- e
+                  Mb[n1+i-1,j] <<- G[i,j]   -1  # Subtract 1 here to get start at zero??????
+                  Wb[n1+i-1,j] <<- floor(L*G[i,j]/Lb)
+                  Xb[n1+i-1,j] <<- (e-e2)/lb
+                }
+              }
+              
+              # --- end copied code
+              
+              # observe batch
+              # if stop, EXIT
+              b <<- b + 1L
+              nb <<- nb + as.integer(L)
+            #} # end p loop
+          #}  # end r loop
+        #} # end loop over v values    
+        p <<- p + 1L
+        if(p > length(Fslices[[r]])) {
+          p <<- 1L
+          r <<- r + 1L
+          if (r > length(Fslices)) {
+            r <<- 1L
+            vii <<- vii + 1L
+            if(vii > a^D-1) {
+              vii <<- 1L
+              if(nrow(Mb) >= Lb ^ D) { print('Going one deeper')#browser()
+                Lb <<- a * Lb
+                Mb <<- floor(Xb * Lb)
+              } else {
+                print('probably an error 52033895')
+              }
+            }
+          }
+        }
+            
+        return(Xb[n1:n2,])  
+        
+      } # end stage 2 else
+      stop('Only stage 1 and 2')
+    } # end get.batch
+  )
+)
