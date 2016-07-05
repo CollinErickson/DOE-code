@@ -5,7 +5,18 @@ simple.LHS <- function(n,d,scaled=TRUE,centered=FALSE) {
   if(centered) m <- m - ifelse(scaled,.5,n/2+.5)
   m
 }
-
+is.LHS <- function(m,scaled=TRUE) {
+  if(is.matrix(m)) {
+    return(apply(m,2,function(mm){is.LHS(m=mm,scaled=scaled)}))
+  } else {
+    if(scaled) m <- ceiling(m*length(m))
+    return(all(sort(m) == 1:length(m)))
+  }
+  stop('Error 0239357')
+}
+is.OA <- function(m,strength=2) {
+  
+}
 simple.grid <- function(n,d,scaled=TRUE,random=TRUE,centered=FALSE,scaledto=NULL) {
   m <- matrix(1:n,ncol=1)
   if (d>1) {
