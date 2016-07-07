@@ -159,6 +159,7 @@ adapt.concept2 <- function(func,g=3,X=NULL,Z=NULL,adapt.tree=NULL) {#browser()
 # Add second nonoverlapping
 # create should.dive3
 adapt.concept3 <- function(func,g=3,level=1,xlim=c(0,1),ylim=c(0,1),X=NULL,Z=NULL,maxmse.levelup=-Inf,xlim.second=NULL,ylim.second=NULL,adapt.tree=NULL) {browser()
+  # Adapt concept without trees
   print(paste('At level',level))
   
   #get sample
@@ -198,8 +199,9 @@ adapt.concept3 <- function(func,g=3,level=1,xlim=c(0,1),ylim=c(0,1),X=NULL,Z=NUL
     
     # Refit maxmse.levelup???
     if(level>1) {
-      print(c(maxmse.levelup,msfunc(mod.se.pred.func,xlim.second,ylim.second)))
-      maxmse.levelup <- msfunc(mod.se.pred.func,xlim.second,ylim.second)
+      #print(c(maxmse.levelup,msfunc(mod.se.pred.func,xlim.second,ylim.second)))
+      #maxmse.levelup <- msfunc(mod.se.pred.func,xlim.second,ylim.second)
+      maxmse.levelup <- sapply(1:dim(xlim.second)[1],function(i){msfunc(mod.se.pred.func,xlim.second[i,],ylim.second[i,])})
     }
     
     if (  level==1 || 
@@ -230,7 +232,7 @@ adapt.concept3 <- function(func,g=3,level=1,xlim=c(0,1),ylim=c(0,1),X=NULL,Z=NUL
                                xlim=xlim.next, 
                                ylim=ylim.next, 
                                X=X,Z=Z,maxmse.levelup=secondmaxmse,
-                               xlim.second=xlim.nextsecond,ylim.second=ylim.nextsecond,
+                               xlim.second=rbind(xlim.second,xlim.nextsecond),ylim.second=rbind(ylim.second,ylim.nextsecond),
                                adapt.tree = NULL
       )
       
