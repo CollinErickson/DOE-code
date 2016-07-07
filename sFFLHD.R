@@ -192,8 +192,6 @@ sFFLHD.seq <- setRefClass('sFFLHD.seq',
                 FF1.1 = 'matrix',Mb.store='matrix',v.shuffle = 'integer'
                 ),
   methods = list(
-    makeA = function() {print('in method');a<<-123},
-    init = function() {},
     get.batch = function() {
       if(length(stage)==0) { # initialize everything
         stage0()
@@ -236,11 +234,9 @@ sFFLHD.seq <- setRefClass('sFFLHD.seq',
       r <<- 1L
       p <<- 1L
       # end initialization
-    },
+    }, # end stage0 function
     stage1 = function() { # run steps 2 and 3
-      #browser()
       if (p==1L) { # Get the Ar
-        #browser()
         if(D==2) { # Had a problem when D==2, v was c(0,0,0,0) instead of c(0,0)
           v <- c(0,0)
         } else {
@@ -249,40 +245,15 @@ sFFLHD.seq <- setRefClass('sFFLHD.seq',
         Ar <<- sweep(A1,2,v,'+')%%L + 1 #now OAs start at 0, not sure if right, maybe add 1??????
       }
       Arp <- Ar[((p-1)*L+1):(p*L),]
-      if(nb+L > lb) { # Xb reached an LHD
-        #browser()
+      if(nb+L > lb) { # Xb reached an LHD, increase small grid
         lb <<- lb * a
         Vb <<- ceiling(Xb*lb)
       }
-      
-      G <- Arp
-      eps <- matrix(runif(L*D),L,D)
-      
       # Add batch NB(G,eps,b)
+      NB(G=Arp)
       n1 <- nb+1
       n2 <- nb+L
-      # need to create blank rows to be filled in for all matrices
-      Vb <<- rbind(Vb,matrix(NA,n2-n1+1,D))
-      Mb <<- rbind(Mb,matrix(NA,n2-n1+1,D))
-      Wb <<- rbind(Wb,matrix(NA,n2-n1+1,D))
-      Xb <<- rbind(Xb,matrix(NA,n2-n1+1,D))  # Add +1 to these 4 b/c of next line
-      for(i in 1:(n2-n1+1)) { # CHANGING TO +1, seems necessary but not in paper
-        for(j in 1:D) {
-          Q <- setdiff((lb*(G[i,j]-1)/Lb+1):(lb*(G[i,j]+1-1)/Lb-1+1),Vb[,j])  # ADDED -1 TO TRY TO FIX????? CANCELED OUT 1's???????
-          N <- length(Q)
-          e1 <- ceiling(eps[i,j]*N)
-          e2 <- e1-eps[i,j]*N
-          e <- Q[e1];if(length(e)==0) browser();if(e>lb | e<1)browser() #print(c(i,j,e));
-          Vb[n1+i-1,j] <<- e
-          Mb[n1+i-1,j] <<- G[i,j]   -1  # Subtract 1 here to get start at zero??????
-          Wb[n1+i-1,j] <<- floor(L*G[i,j]/Lb)
-          Xb[n1+i-1,j] <<- (e-e2)/lb
-        }
-      }
-      
-      # Observe batch b+1
-      # If stopping crit met, EXIT
-      # else continue
+      # Increment parameters
       b <<- b+1L
       nb <<- nb+as.integer(L)
       if(p == L) {
@@ -300,62 +271,31 @@ sFFLHD.seq <- setRefClass('sFFLHD.seq',
         p <<- p + 1L
       }
       return(Xb[n1:n2,])
-    },
+    }, # end stage1 function
     stage2 = function() { # run steps 4 and 5
-      if (vii==1L & r==1L & p==1L) {
+      if (vii==1L & r==1L & p==1L) { # If first time through, set values
         FF1.1 <<- a*floor(Mb/a)
         Mb.store <<- Mb
         v.shuffle <<- sample(1:(a^D))
       }
-      # loop over all v options
-      #for(vii in 1:(a^D-1)) {
-      if(r==1L & p==1L) { # if new vii, set Fslices for it
-        #browser()
+      if(r==1L & p==1L) { # If new vii, set Fslices for it
         v <- (v.shuffle[vii]%/%(a^((D-1):0))) %% a
         FFv <- FF1.1 + sweep(Mb.store,2,v,'+')%%a
         Fslices1 <- split.matrix(FFv,nsplits=L^(D-2)*(Lb/a/L)^D)
         Fslices <<- lapply(Fslices1,split.matrix,L)
       }
-      #for(r in 1:length(Fslices)) {
-      #  for(p in 1:length(Fslices[[r]])) {
-      if(nb+L > lb) {
+      if(nb+L > lb) { # increase grid if reached LHS
         lb <<- a*lb
         Vb <<- ceiling(Xb*lb)
       }
-      G <- Fslices[[r]][[p]] + 1 # Arp # ADDING 1 TO TRY TO GET IT TO WORK
-      eps <- matrix(runif(L*D),L,D)
-      
       # Add batch NB(G,eps,b)
+      NB(G=Fslices[[r]][[p]] + 1)
       n1 <- nb+1
       n2 <- nb+L
-      # need to create blank rows to be filled in for all matrices
-      Vb <<- rbind(Vb,matrix(NA,n2-n1+1,D))
-      Mb <<- rbind(Mb,matrix(NA,n2-n1+1,D))
-      Wb <<- rbind(Wb,matrix(NA,n2-n1+1,D))
-      Xb <<- rbind(Xb,matrix(NA,n2-n1+1,D))  # Add +1 to these 4 b/c of next line
-      for(i in 1:(n2-n1+1)) { # CHANGING TO +1, seems necessary but not in paper
-        for(j in 1:D) {
-          Q <- setdiff((lb*(G[i,j]-1)/Lb+1):(lb*(G[i,j]+1-1)/Lb-1+1),Vb[,j])  # ADDED -1 TO TRY TO FIX????? CANCELED OUT 1's???????
-          N <- length(Q)
-          e1 <- ceiling(eps[i,j]*N)
-          e2 <- e1-eps[i,j]*N
-          e <- Q[e1];if(length(e)==0) browser();if(e>lb | e<1)browser()#print(c(i,j,e));
-          Vb[n1+i-1,j] <<- e
-          Mb[n1+i-1,j] <<- G[i,j]   -1  # Subtract 1 here to get start at zero??????
-          Wb[n1+i-1,j] <<- floor(L*G[i,j]/Lb)
-          Xb[n1+i-1,j] <<- (e-e2)/lb
-        }
-      }
-      
-      # --- end copied code
-      
-      # observe batch
-      # if stop, EXIT
+      # new batch has been added
       b <<- b + 1L
       nb <<- nb + as.integer(L)
-      #} # end p loop
-      #}  # end r loop
-      #} # end loop over v values    
+      # increment loop parameters
       p <<- p + 1L
       if(p > length(Fslices[[r]])) {
         p <<- 1L
@@ -374,11 +314,37 @@ sFFLHD.seq <- setRefClass('sFFLHD.seq',
           }
         }
       }
-      
       return(Xb[n1:n2,])  
-      
-      
-    }
+    }, # end stage2 function
+    NB = function(G,eps=NULL) {
+      # Add batch NB(G,eps,b)
+      if(is.null(eps)) {eps <- matrix(runif(L*D),L,D)}
+      #n1 <- nb+1
+      #n2 <- nb+L
+      # need to create blank rows to be filled in for all matrices
+      Vb <<- rbind(Vb,matrix(NA,L,D))
+      Mb <<- rbind(Mb,matrix(NA,L,D))
+      Wb <<- rbind(Wb,matrix(NA,L,D))
+      Xb <<- rbind(Xb,matrix(NA,L,D))  # Add +1 to these 4 b/c of next line
+      for(i in 1:L) { # CHANGING TO +1, seems necessary but not in paper
+        for(j in 1:D) {
+          Q <- setdiff((lb*(G[i,j]-1)/Lb+1):(lb*(G[i,j]+1-1)/Lb-1+1),Vb[,j])  # ADDED -1 TO TRY TO FIX????? CANCELED OUT 1's???????
+          N <- length(Q)
+          e1 <- ceiling(eps[i,j]*N)
+          e2 <- e1-eps[i,j]*N
+          e <- Q[e1];if(length(e)==0) browser();if(e>lb | e<1)browser()#print(c(i,j,e));
+          Vb[nb+1+i-1,j] <<- e
+          Mb[nb+1+i-1,j] <<- G[i,j]   -1  # Subtract 1 here to get start at zero??????
+          Wb[nb+1+i-1,j] <<- floor(L*G[i,j]/Lb)
+          Xb[nb+1+i-1,j] <<- (e-e2)/lb
+        }
+      }
+    }, # end stage3 function
+    get.batches = function(num) { # get multiple batches at once
+      out <- matrix(nrow=0,ncol=D)
+      for(i in 1:num) {out <- rbind(out,get.batch())}
+      return(out)
+    } # end get.batches function
   )
 )
 if (F) {
