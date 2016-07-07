@@ -276,7 +276,7 @@ sFFLHD.seq <- setRefClass('sFFLHD.seq',
       if (vii==1L & r==1L & p==1L) { # If first time through, set values
         FF1.1 <<- a*floor(Mb/a)
         Mb.store <<- Mb
-        v.shuffle <<- sample(1:(a^D))
+        v.shuffle <<- sample(1:(a^D-1))
       }
       if(r==1L & p==1L) { # If new vii, set Fslices for it
         v <- (v.shuffle[vii]%/%(a^((D-1):0))) %% a
@@ -344,15 +344,18 @@ sFFLHD.seq <- setRefClass('sFFLHD.seq',
       out <- matrix(nrow=0,ncol=D)
       for(i in 1:num) {out <- rbind(out,get.batch())}
       return(out)
-    } # end get.batches function
+    }, # end get.batches function
+    get.batches.to.golden = function() {
+      get.batches((Lb^D-dim(Xb)[1])/L)
+    } # end get.batches.to.golden function
   )
 )
 if (F) {
-  s <- sFFLHD.seq$new(D=2,L=6,a=6)
+  s <- sFFLHD.seq$new(D=2,L=3)
   plot(s$get.batch(),xlim=0:1,ylim=0:1,pch=19)
-  abline(h=(1:5)/6,v=(1:5)/6,col=2)
-  abline(h=(1:(s$Lb-1))/s$Lb,v=(1:(s$Lb-1))/s$Lb,col=3);points(s$get.batch(),pch=19)
-  for(i in 1:18){abline(h=(1:(s$Lb-1))/s$Lb,v=(1:(s$Lb-1))/s$Lb,col=3);points(s$get.batch(),pch=19)}
+  abline(h=(0:(s$Lb))/s$Lb,v=(0:(s$Lb))/s$Lb,col=3);points(s$get.batch(),pch=19)
+  for(i in 1:27){abline(h=(0:(s$Lb))/s$Lb,v=(0:(s$Lb))/s$Lb,col=3);points(s$get.batch(),pch=19)}
+  abline(h=(0:(s$Lb))/s$Lb,v=(0:(s$Lb))/s$Lb,col=3);points(s$get.batches.to.golden(),pch=19)
   
   
   s <- sFFLHD.seq$new(D=4,L=4,a=2)
