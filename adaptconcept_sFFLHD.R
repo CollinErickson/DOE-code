@@ -1,17 +1,51 @@
-adapt.concept.sFFLHD <- function(func,g=3,level=1,xlim=c(0,1),ylim=c(0,1),dat=NULL,maxmse.levelup=-Inf,xlim.second=NULL,ylim.second=NULL,adapt.tree=NULL) {browser()
+is.in.lim <- function(xx,xlim,ylim) {
+  xx[1]>xlim[1] & xx[1]<xlim[2] & xx[2]>ylim[1] & xx[2]<ylim[2]
+}
+
+adapt.concept.sFFLHD <- function(func,g=3,level=1,xlim=c(0,1),ylim=c(0,1),dat=NULL,maxmse.levelup=-Inf,xlim.second=NULL,ylim.second=NULL,adapt.tree=NULL) {#browser()
   # Adapt concept without trees
   print(paste('At level',level))
+  first.time <- is.null(dat)
+  if(first.time) {
+    dat$X <- matrix(NA,0,2)
+    dat$Z <- matrix(NA,0,2)
+    dat$s <- sFFLHD.seq$new(D=2,L=g)
+    dat$Xnotrun <- matrix(NA,0,2)
+    #plot(NULL,xlim=0:1,ylim=0:1)
+  }
   
   #get sample
-  Xnew <- simple.grid(g,2,scaledto=rbind(xlim,ylim))
+  #Xnew <- simple.grid(g,2,scaledto=rbind(xlim,ylim))
+  if(!first.time) points(dat$Xnotrun,col='yellow')
+  #Xnew <- matrix(NA,0,2)
+  notrun.torun <- which(apply(dat$Xnotrun,1,is.in.lim,xlim,ylim))
+  if(length(notrun.torun)>3) {notrun.torun <- notrun.torun[1:3]}
+  #if(sum(notrun.torun)==1) browser()
+  Xnew <- dat$Xnotrun[notrun.torun,]
+  if(length(notrun.torun)==1) { # If only one row it will be numeric, not matrix, need to fix it
+    Xnew <- matrix(Xnew,nrow=1)
+  }
+  dat$Xnotrun <- dat$Xnotrun[-notrun.torun,]
+  #if(level==3) browser()
+  while(nrow(Xnew)<3) {
+    Xadd <- dat$s$get.batch()
+    in.lims <- apply(Xadd,1,function(xx){xx[1]>xlim[1] & xx[1]<xlim[2] & xx[2]>ylim[1] & xx[2]<ylim[2]})
+    in.lims <- apply(Xadd,1,is.in.lim,xlim,ylim)
+    if(!first.time) points(Xadd,col=in.lims+2)
+    Xnew <- rbind(Xnew,Xadd[in.lims,])
+    dat$Xnotrun <- rbind(dat$Xnotrun,Xadd[!in.lims,])
+    #break
+  }
   Znew <- apply(Xnew,1,func) 
-  if (is.null(dat)) {
-    dat$X <- Xnew
-    dat$Z <- Znew
-  } else {
+  
+  #if (first.time) {
+  #  dat$X <- Xnew
+  #  dat$Z <- Znew
+    #dat$s <- sFFLHD.seq$new(D=2,L=g)
+  #} else {
     dat$X <- rbind(dat$X,Xnew)
     dat$Z <- c(dat$Z,Znew)
-  }
+  #}
   
   while (TRUE) {
     # fit+plot
@@ -19,6 +53,7 @@ adapt.concept.sFFLHD <- function(func,g=3,level=1,xlim=c(0,1),ylim=c(0,1),dat=NU
     
     par(mfrow=c(2,1))
     # Plot fitted values
+    if(anyDuplicated(dat$X)>0) browser()
     contourfilled.func(function(XX){predict.gp(mod,XX)})
     points(dat$X,pch=19)
     rect(xlim[1],ylim[1],xlim[2],ylim[2],lwd=5)
@@ -62,8 +97,8 @@ adapt.concept.sFFLHD <- function(func,g=3,level=1,xlim=c(0,1),ylim=c(0,1),dat=NU
         xlim.nextsecond <- xlim
         ylim.nextsecond <- ylim[1]+(ylim[2]-ylim[1])*c(secondmaxmse.ind[1]-1,secondmaxmse.ind[1])/g
       }
-      rect(xlim.next[1],ylim.next[1],xlim.next[2],ylim.next[2],lwd=5,border='red')
       rect(xlim.nextsecond[1],ylim.nextsecond[1],xlim.nextsecond[2],ylim.nextsecond[2],lwd=2,border='black')
+      rect(xlim.next[1],ylim.next[1],xlim.next[2],ylim.next[2],lwd=5,border='red')
       rect(xlim.next[1],ylim.next[1],xlim.next[2],ylim.next[2],col=1,angle=45,density=6+2*level^2)
       print(paste('Diving to xlim, ylim:',xlim.next[1],xlim.next[2],ylim.next[1],ylim.next[2],collapse = ''))
       
@@ -85,4 +120,9 @@ adapt.concept.sFFLHD <- function(func,g=3,level=1,xlim=c(0,1),ylim=c(0,1),dat=NU
     }
   }
 }
-adapt.concept.sFFLHD(gaussian1)
+if(F) {
+  gaussian1 <- function(xx) exp(-sum((xx-.5)^2)/2/.1)
+  adapt.concept.sFFLHD(gaussian1)
+  rastimoid <- function(xx){sum(sin(2*pi*xx*3)) + 50/(1+exp(-xx[[1]]))}; contourfilled.func(rastimoid)
+  adapt.concept.sFFLHD(rastimoid)
+}
