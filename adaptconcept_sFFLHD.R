@@ -2,7 +2,7 @@ is.in.lim <- function(xx,xlim,ylim) {
   xx[1]>xlim[1] & xx[1]<xlim[2] & xx[2]>ylim[1] & xx[2]<ylim[2]
 }
 
-adapt.concept.sFFLHD <- function(func,g=3,level=1,xlim=c(0,1),ylim=c(0,1),dat=NULL,maxmse.levelup=-Inf,xlim.second=NULL,ylim.second=NULL,adapt.tree=NULL) {#browser()
+adapt.concept.sFFLHD <- function(func,g=3,level=1,xlim=c(0,1),ylim=c(0,1),dat=NULL,maxmse.levelup=-Inf,xlim.second=NULL,ylim.second=NULL,adapt.tree=NULL) {browser()
   # Adapt concept without trees
   print(paste('At level',level))
   first.time <- is.null(dat)
@@ -12,7 +12,9 @@ adapt.concept.sFFLHD <- function(func,g=3,level=1,xlim=c(0,1),ylim=c(0,1),dat=NU
     dat$s <- sFFLHD.seq$new(D=2,L=g)
     dat$Xnotrun <- matrix(NA,0,2)
     #plot(NULL,xlim=0:1,ylim=0:1)
+    #mod <- UGP::UGP(package = "mlegp")
   }
+  mod <- UGP::UGP(package = "mlegp")
   
   #get sample
   #Xnew <- simple.grid(g,2,scaledto=rbind(xlim,ylim))
@@ -49,23 +51,29 @@ adapt.concept.sFFLHD <- function(func,g=3,level=1,xlim=c(0,1),ylim=c(0,1),dat=NU
   
   while (TRUE) {
     # fit+plot
-    mod <- mlegp(dat$X,dat$Z,verbose=0,nugget.known = 0,nugget=1)
+    #mod <- mlegp(dat$X,dat$Z,verbose=0,nugget.known = 0,nugget=1)
+    mod$update(Xall=dat$X,Zall=dat$Z) #<- mlegp(dat$X,dat$Z,verbose=0,nugget.known = 0,nugget=1)
     
     par(mfrow=c(2,1))
     # Plot fitted values
     if(anyDuplicated(dat$X)>0) browser()
-    contourfilled.func(function(XX){predict.gp(mod,XX)})
+    #contourfilled.func(function(XX){predict.gp(mod,XX)})
+    contourfilled.func(mod$predict)
     points(dat$X,pch=19)
     rect(xlim[1],ylim[1],xlim[2],ylim[2],lwd=5)
     abline(v=xlim[1] + 1:(g-1)/g * (xlim[2]-xlim[1]),h=ylim[1] + 1:(g-1)/g * (ylim[2]-ylim[1]))
     # Plot s2 predictions
-    contourfilled.func(function(XX){predict.gp(mod,XX,se.fit = T)$se})
+    #contourfilled.func(function(XX){predict.gp(mod,XX,se.fit = T)$se})
+    #contourfilled.func(function(XX){predict.gp(mod$mod[[1]],XX,se.fit = T)$se})
+    contourfilled.func(mod$predict.se)
     points(dat$X,pch=19)
     rect(xlim[1],ylim[1],xlim[2],ylim[2],lwd=5)
     abline(v=xlim[1] + 1:(g-1)/g * (xlim[2]-xlim[1]),h=ylim[1] + 1:(g-1)/g * (ylim[2]-ylim[1]))
     
     #find lmse
-    mod.se.pred.func <- function(XX){predict.gp(mod,XX,se.fit = T)$se}
+    #mod.se.pred.func <- function(XX){predict.gp(mod,XX,se.fit = T)$se}
+    #mod.se.pred.func <- function(XX){predict.gp(mod$mod[[1]],XX,se.fit = T)$se}
+    mod.se.pred.func <- mod$predict.se
     mses.grid <- outer(1:g,1:g,Vectorize(function(a,b){msfunc(mod.se.pred.func, xlim[1]+(xlim[2]-xlim[1])*c(a-1,a)/g , ylim[1]+(ylim[2]-ylim[1])*c(b-1,b)/g)}))
     #msess <- outer(1:2,1:g,Vectorize(function(d,a){msfunc(mod.se.pred.func, xlim[1]+(xlim[2]-xlim[1])*c(a-1,a)/g*(d==1) , ylim[1]+(ylim[2]-ylim[1])*c(a-1,a)/g*(d==2))}))
     mses <- sapply(1:2,function(d){apply(mses.grid,d,mean)})
@@ -121,8 +129,13 @@ adapt.concept.sFFLHD <- function(func,g=3,level=1,xlim=c(0,1),ylim=c(0,1),dat=NU
   }
 }
 if(F) {
+  source("sFFLHD.R")
+  require(mlegp)
+  require(contourfilled)
+  source('LHS.R')
+  source("adaptconcept.R")
   gaussian1 <- function(xx) exp(-sum((xx-.5)^2)/2/.1)
   adapt.concept.sFFLHD(gaussian1)
-  rastimoid <- function(xx){sum(sin(2*pi*xx*3)) + 50/(1+exp(-xx[[1]]))}; contourfilled.func(rastimoid)
+  rastimoid <- function(xx){sum(sin(2*pi*xx*3)) + 50/(1+exp(-80*(xx[[1]]-.5)))}; contourfilled.func(rastimoid)
   adapt.concept.sFFLHD(rastimoid)
 }
