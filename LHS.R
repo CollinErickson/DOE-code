@@ -231,11 +231,13 @@ trans.prop.LHS <- function(np,s,scaled=TRUE) {
   if(scaled) X <- (X-1)/(np-1)
   X
 }
-#trans.prop.LHS(16,2,data.frame(x1=1,y1=1))
-s1 <- data.frame(x1=1,x2=1)
-s2 <- data.frame(x1=c(1,2),x2=c(2,1))
-s3 <- data.frame(x1=c(1,2,3),x2=c(1,3,2))
-s4 <- data.frame(x1=c(1,2,3,4),x2=c(1,3,2,4))
+if (F) {
+  #trans.prop.LHS(16,2,data.frame(x1=1,y1=1))
+  s1 <- data.frame(x1=1,x2=1)
+  s2 <- data.frame(x1=c(1,2),x2=c(2,1))
+  s3 <- data.frame(x1=c(1,2,3),x2=c(1,3,2))
+  s4 <- data.frame(x1=c(1,2,3,4),x2=c(1,3,2,4))
+}
 if (F) {
   # 2D test
   for (ss in c(12,20,120)){

@@ -204,11 +204,12 @@ sFFLHD.seq <- setRefClass('sFFLHD.seq',
       stop('Only stage 1 and 2')
     }, # end get.batch
     stage0 = function() { # Do steps 0 and 1
+      if(length(D) == 0 | length(L) == 0) {stop('D and L must be specified')}
       if(length(a)==0) {
         a.fac <- factorize(L)
         if(all(a.fac==a.fac[1])) {a <<- a.fac[1]}
         else {a <<- L}
-        print(paste('Setting a to',a))
+        message(paste('Setting a to',a))
       }
       if (min(abs(c(log(L,a)%%1, log(L,a)%%1-1))) > 1e-6) {
         stop('a must be an integer root of L')

@@ -1,22 +1,3 @@
-is.in.lims <- function(xx,lims) {
-  all(xx >= lims[,1], xx <= lims[,2])
-}
-msfunc <- function(func1,lims,pow=1L,batch=F) {#browser()
-  # Find mean square of function over limits using grid sample
-  X1 <- simple.grid(10,nrow(lims),scaledto=lims)
-  if(batch) {return(mean(func1(X1)^pow))}
-  mean(apply(X1,1,func1)^pow)
-}
-outer.inttoind <- function(i,a) {
-  i <- i-1
-  1+sapply(1:length(a),function(j){ifelse(j==1,i%%a[j],i%/%prod(a[1:(j-1)])%%a[j])})
-}
-outer.d1n <- function(...,func) {
-  a <- c(...)
-  b <- array(1:prod(a),dim=a)
-  apply(b,1:length(a),function(xx){func(outer.inttoind(xx,a))})
-}
-
 adapt.concept.sFFLHD <- function(func,D=2,L=5,g=3,level=1,
                                  lims=matrix(c(0,1),D,2,byrow=T),
                                  dat=NULL,
@@ -39,13 +20,13 @@ adapt.concept.sFFLHD <- function(func,D=2,L=5,g=3,level=1,
   #get sample
   if(D==2 & !first.time) points(dat$Xnotrun,col='yellow')
   notrun.torun <- which(apply(dat$Xnotrun,1,is.in.lims,lims))
-  if(length(notrun.torun)>3) {notrun.torun <- notrun.torun[1:3]}
+  if(length(notrun.torun)>L) {notrun.torun <- notrun.torun[1:L]}
   Xnew <- dat$Xnotrun[notrun.torun,]
   if(length(notrun.torun)==1) { # If only one row it will be numeric, not matrix, need to fix it
     Xnew <- matrix(Xnew,nrow=1)
   }
   dat$Xnotrun <- dat$Xnotrun[-notrun.torun,]
-  while(nrow(Xnew)<3) {
+  while(nrow(Xnew)<L) {
     Xadd <- dat$s$get.batch()
     in.lims <- apply(Xadd,1,is.in.lims,lims)
     if (D == 2) {if(!first.time) points(Xadd,col=in.lims+2)}
@@ -104,7 +85,7 @@ adapt.concept.sFFLHD <- function(func,D=2,L=5,g=3,level=1,
     }
     
     if (  level==1 || 
-          (level==2 & maxmse > maxmse.levelup)  ) {
+          (level>=2 & maxmse > maxmse.levelup)  ) {
       secondmaxmse <- maxN(mses,2)
       secondmaxmse.ind <- which(mses==secondmaxmse,arr.ind=T)
       lims.next <- lims
@@ -137,6 +118,7 @@ adapt.concept.sFFLHD <- function(func,D=2,L=5,g=3,level=1,
   }
 }
 if(F) {
+  source("adaptconcept_helpers.R")
   source("sFFLHD.R")
   require(mlegp)
   require(GPfit)
@@ -146,6 +128,6 @@ if(F) {
   gaussian1 <- function(xx) exp(-sum((xx-.5)^2)/2/.1)
   adapt.concept.sFFLHD(gaussian1)
   adapt.concept.sFFLHD(gaussian1,D=3)
-  rastimoid <- function(xx){sum(sin(2*pi*xx*3)) + 50/(1+exp(-80*(xx[[1]]-.5)))}; contourfilled.func(rastimoid)
-  adapt.concept.sFFLHD(rastimoid)
+  sinumoid <- function(xx){sum(sin(2*pi*xx*3)) + 10/(1+exp(-80*(xx[[1]]-.5)))}; contourfilled.func(sinumoid)
+  adapt.concept.sFFLHD(sinumoid)
 }

@@ -1,9 +1,9 @@
-msfunc <- function(func1,xlim,ylim) {
+msfunc2D <- function(func1,xlim,ylim) {
   # Find mean square of function over limits using grid sample
   X1 <- simple.grid(10,2,scaledto=rbind(xlim,ylim))
   mean(apply(X1,1,func1)^2)
 }
-msfunc2 <- function(func1,nd,...) { # for NODES
+msfunctree <- function(func1,nd,...) { # for NODES
   # the ... is just to pass in the model (mod) right now
   X1 <- simple.grid(10,2,scaledto=rbind(nd$xlim,nd$ylim))
   mean(apply(X1,1,func1,...)^2)
@@ -47,7 +47,7 @@ mod.se.pred.func <- function(XX,mod){predict.gp(mod,XX,se.fit = T)$se}
 should.dive <- function(nd,mod) {#browser()
   # Boolean of whether it should go a level deeper
   if(nd$isRoot) {return(TRUE)}
-  nd$maxmse> max(ancestor.apply(nd,function(ND){msfunc2(mod.se.pred.func,ND,mod)}))
+  nd$maxmse> max(ancestor.apply(nd,function(ND){msfunctree(mod.se.pred.func,ND,mod)}))
 }
 child.apply <- function(nd,FUN,store,sname,simplify=T,min.return=F,max.return=F,max2.return=T) {
   # Applies function to children of node, can return min or max or two max
@@ -123,7 +123,7 @@ adapt.concept2 <- function(func,g=3,X=NULL,Z=NULL,adapt.tree=NULL) {#browser()
     #browser()
     
     # Find max child mse
-    maxmse.2nodes <- child.apply(adapt.tree,function(ND){msfunc2(mod.se.pred.func,ND,mod)},T,'mse')
+    maxmse.2nodes <- child.apply(adapt.tree,function(ND){msfunctree(mod.se.pred.func,ND,mod)},T,'mse')
     maxmse.child <- maxmse.2nodes[[1]]
     second.maxmse.child <- maxmse.2nodes[[2]]
     maxmse <- maxmse.child$mse
@@ -191,17 +191,17 @@ adapt.concept3 <- function(func,g=3,level=1,xlim=c(0,1),ylim=c(0,1),X=NULL,Z=NUL
     
     #find lmse
     mod.se.pred.func <- function(XX){predict.gp(mod,XX,se.fit = T)$se}
-    mses.grid <- outer(1:g,1:g,Vectorize(function(a,b){msfunc(mod.se.pred.func, xlim[1]+(xlim[2]-xlim[1])*c(a-1,a)/g , ylim[1]+(ylim[2]-ylim[1])*c(b-1,b)/g)}))
-    #msess <- outer(1:2,1:g,Vectorize(function(d,a){msfunc(mod.se.pred.func, xlim[1]+(xlim[2]-xlim[1])*c(a-1,a)/g*(d==1) , ylim[1]+(ylim[2]-ylim[1])*c(a-1,a)/g*(d==2))}))
+    mses.grid <- outer(1:g,1:g,Vectorize(function(a,b){msfunc2D(mod.se.pred.func, xlim[1]+(xlim[2]-xlim[1])*c(a-1,a)/g , ylim[1]+(ylim[2]-ylim[1])*c(b-1,b)/g)}))
+    #msess <- outer(1:2,1:g,Vectorize(function(d,a){msfunc2D(mod.se.pred.func, xlim[1]+(xlim[2]-xlim[1])*c(a-1,a)/g*(d==1) , ylim[1]+(ylim[2]-ylim[1])*c(a-1,a)/g*(d==2))}))
     mses <- sapply(1:2,function(d){apply(mses.grid,d,mean)})
     maxmse <- max(mses)
     maxmse.ind <- which(mses==maxmse,arr.ind=T)
     
     # Refit maxmse.levelup???
     if(level>1) {
-      #print(c(maxmse.levelup,msfunc(mod.se.pred.func,xlim.second,ylim.second)))
-      #maxmse.levelup <- msfunc(mod.se.pred.func,xlim.second,ylim.second)
-      maxmse.levelup <- sapply(1:dim(xlim.second)[1],function(i){msfunc(mod.se.pred.func,xlim.second[i,],ylim.second[i,])})
+      #print(c(maxmse.levelup,msfunc2D(mod.se.pred.func,xlim.second,ylim.second)))
+      #maxmse.levelup <- msfunc2D(mod.se.pred.func,xlim.second,ylim.second)
+      maxmse.levelup <- sapply(1:dim(xlim.second)[1],function(i){msfunc2D(mod.se.pred.func,xlim.second[i,],ylim.second[i,])})
     }
     
     if (  level==1 || 
