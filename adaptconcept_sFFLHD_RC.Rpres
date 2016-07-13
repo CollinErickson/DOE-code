@@ -1,4 +1,4 @@
-adaptconcept_sFFLHD_RC
+Adaptive sFFLHD sampling concept
 ========================================================
 author: Collin Erickson
 date: 7/13/2016
@@ -48,7 +48,7 @@ for(i in 1:27) points(s$get.batch(), col=i, pch=19)
 
 
 
-Example
+Example: Gaussian
 ================
 
 ```{r,echo=F}
@@ -74,11 +74,11 @@ Adaptive sFFLHD
 title: FALSE
 
 ```{r, echo=F, fig.width=8,fig.height=4.5, dpi=300, out.width="1280px",out.height="800px"}
-a <- adapt.concept.sFFLHD.RC(D=2,L=5,g=3,func=gaussian1)
+a <- adapt.concept.sFFLHD.RC(D=2,L=3,g=3,func=gaussian1)
 a$run(1)
 ```
 
-a
+a2
 ===========
 title: FALSE
 
@@ -87,7 +87,7 @@ a$run(1)
 ```
 
 
-a
+a3
 ===========
 title: FALSE
 
@@ -95,7 +95,7 @@ title: FALSE
 a$run(1)
 ```
 
-a
+a4
 ===========
 title: FALSE
 
@@ -103,7 +103,7 @@ title: FALSE
 a$run(1)
 ```
 
-a
+a5
 ===========
 title: FALSE
 
@@ -112,7 +112,7 @@ a$run(1)
 ```
 
 
-a
+a6
 ===========
 title: FALSE
 
@@ -120,7 +120,145 @@ title: FALSE
 a$run(1)
 ```
 
-a
+a7
+===========
+title: FALSE
+
+```{r, echo=F, fig.width=8,fig.height=4.5, dpi=300, out.width="1280px",out.height="800px"}
+a$run(1)
+```
+
+a8
+===========
+title: FALSE
+
+```{r, echo=F, fig.width=8,fig.height=4.5, dpi=300, out.width="1280px",out.height="800px"}
+a$run(1)
+```
+
+a9
+===========
+title: FALSE
+
+```{r, echo=F, fig.width=8,fig.height=4.5, dpi=300, out.width="1280px",out.height="800px"}
+a$run(1)
+```
+
+a10
+===========
+title: FALSE
+
+```{r, echo=F, fig.width=8,fig.height=4.5, dpi=300, out.width="1280px",out.height="800px"}
+a$run(1)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Example: Sinumoid
+================
+
+```{r,echo=F}
+sinumoid <- function(xx){sum(sin(2*pi*xx*3)) + 20/(1+exp(-80*(xx[[1]]-.5)))}
+```
+
+Actual function: Sinusoid with a plateau
+
+```{r}
+contourfilled.func(sinumoid)
+```
+
+
+Adaptive sFFLHD
+===============
+title: FALSE
+
+```{r, echo=F, fig.width=8,fig.height=4.5, dpi=300, out.width="1280px",out.height="800px"}
+a <- adapt.concept.sFFLHD.RC(D=2,L=4,g=3,func=sinumoid)
+a$run(1)
+```
+
+a2
+===========
+title: FALSE
+
+```{r, echo=F, fig.width=8,fig.height=4.5, dpi=300, out.width="1280px",out.height="800px"}
+a$run(1)
+```
+
+
+a3
+===========
+title: FALSE
+
+```{r, echo=F, fig.width=8,fig.height=4.5, dpi=300, out.width="1280px",out.height="800px"}
+a$run(1)
+```
+
+a4
+===========
+title: FALSE
+
+```{r, echo=F, fig.width=8,fig.height=4.5, dpi=300, out.width="1280px",out.height="800px"}
+a$run(1)
+```
+
+a5
+===========
+title: FALSE
+
+```{r, echo=F, fig.width=8,fig.height=4.5, dpi=300, out.width="1280px",out.height="800px"}
+a$run(1)
+```
+
+
+a6
+===========
+title: FALSE
+
+```{r, echo=F, fig.width=8,fig.height=4.5, dpi=300, out.width="1280px",out.height="800px"}
+a$run(1)
+```
+
+a7
+===========
+title: FALSE
+
+```{r, echo=F, fig.width=8,fig.height=4.5, dpi=300, out.width="1280px",out.height="800px"}
+a$run(1)
+```
+
+a8
+===========
+title: FALSE
+
+```{r, echo=F, fig.width=8,fig.height=4.5, dpi=300, out.width="1280px",out.height="800px"}
+a$run(1)
+```
+
+a9
+===========
+title: FALSE
+
+```{r, echo=F, fig.width=8,fig.height=4.5, dpi=300, out.width="1280px",out.height="800px"}
+a$run(1)
+```
+
+a10
 ===========
 title: FALSE
 

@@ -208,6 +208,7 @@ if (F) {
   gaussian1 <- function(xx) exp(-sum((xx-.5)^2)/2/.1)
   a <- adapt.concept.sFFLHD.RC(D=2,L=5,g=3,func=gaussian1)
   a$run(10)
+  sinumoid <- function(xx){sum(sin(2*pi*xx*3)) + 10/(1+exp(-80*(xx[[1]]-.5)))}; contourfilled.func(sinumoid)
   a <- adapt.concept.sFFLHD.RC(D=2,L=5,g=3,func=sinumoid)
   a$run(5)
 }
