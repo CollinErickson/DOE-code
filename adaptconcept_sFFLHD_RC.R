@@ -23,7 +23,7 @@ adapt.concept.sFFLHD.RC <- setRefClass("adapt.concept.sFFLHD.seq",
       Xnotrun <<- matrix(NA,0,D)
       if(length(lims)==0) {lims <<- matrix(c(0,1),D,2,byrow=T)}
       mod$initialize(package = "mlegp")
-      stats <<- list(iteration=c(),level=c(),pvar=c(),mse=c())
+      stats <<- list(iteration=c(),level=c(),pvar=c(),mse=c(), ppu=c())
       iteration <<- 1
     },
     run = function(maxit) {
@@ -131,11 +131,15 @@ adapt.concept.sFFLHD.RC <- setRefClass("adapt.concept.sFFLHD.seq",
       stats$level <<- c(stats$level, level)
       stats$pvar <<- c(stats$pvar, msfunc(mod$predict.var,cbind(rep(0,D),rep(1,D))))
       stats$mse <<- c(stats$mse, msecalc(a$func,a$mod$predict,cbind(rep(0,D),rep(1,D))))
+      stats$ppu <<- c(stats$ppu, nrow(X) / (nrow(X) + nrow(Xnotrun)))
     },
     plot1 = function(will_dive, mses_in) {#browser()
       if (D == 2) {
         #par(mfrow=c(2,1))
-        split.screen(matrix(c(0,.5,.25,1,  .5,1,.25,1,  0,.5,0,.25, .5,1,0,.25),ncol=4,byrow=T))
+        split.screen(matrix(
+          #c(0,.5,.25,1,  .5,1,.25,1,  0,1/3,0,.25, 1/3,2/3,0,.25, 2/3,1,0,.25),
+          c(0,.5,.25,1,  .5,1,.25,1,  0,1/4,0,.25, 1/4,2/4,0,.25, 2/4,3/4,0,.25, 3/4,1,0,.25),
+          ncol=4,byrow=T))
         screen(1)
         xlim <- lims[1,]
         ylim <- lims[2,]
@@ -177,10 +181,19 @@ adapt.concept.sFFLHD.RC <- setRefClass("adapt.concept.sFFLHD.seq",
           plot(statsdf$iter, statsdf$level, type='o', pch=19,
                xlab="Iteration")#, ylab="Level")
           legend('topleft',legend="Level",fill=1)
+          screen(5)
+          par(mar=c(2,2,0,0.5)) # 5.1 4.1 4.1 2.1 BLTR
+          plot(statsdf$iter, statsdf$ppu, type='o', pch=19,
+               xlab="Iteration")#, ylab="Level")
+          legend('bottomleft',legend="% pts",fill=1)
+          screen(6)
+          par(mar=c(2,2,0,0.5)) # 5.1 4.1 4.1 2.1 BLTR
+          contourfilled.func(function(xx){(mod$predict(xx) - func(xx))^2},n = 10)
         }
         close.screen(all = TRUE)
       } else {
-        par(mfrow=c(2,1))
+        par(mfrow=c(3,1))
+        par(mar=c(2,2,0,0.5)) # 5.1 4.1 4.1 2.1 BLTR
         statsdf <- as.data.frame(stats)
         #print(ggplot(statsdf, aes(x=iteration, y=mse, col=level)) + geom_line())
         #print(ggplot() + 
@@ -188,9 +201,21 @@ adapt.concept.sFFLHD.RC <- setRefClass("adapt.concept.sFFLHD.seq",
         #        geom_line(data=statsdf, aes(x=iteration, y=pvar, col="blue"))
         #)
         if (iteration >= 2) {
-          plot(statsdf$iter, statsdf$mse, type='o')
-          points(statsdf$iter, statsdf$pvar, type='o', col=2)
+          # 1 mse plot
+          plot(rep(statsdf$iter,2), c(statsdf$mse,statsdf$pvar), 
+               type='o', log="y", col="white",
+               xlab="Iteration", ylab=""
+          )
+          legend("topright",legend=c("MSE","PVar"),fill=c(1,2))
+          points(statsdf$iter, statsdf$mse, type='o', pch=19)
+          points(statsdf$iter, statsdf$pvar, type='o', pch = 19, col=2)
+          # 2 level plot
           plot(statsdf$iter, statsdf$level, type='o')
+          legend('topleft',legend="Level",fill=1)
+          # 3 % pts used plot
+          plot(statsdf$iter, statsdf$ppu, type='o', pch=19,
+               xlab="Iteration")#, ylab="Level")
+          legend('bottomleft',legend="% pts",fill=1)
         }
       }
     }
@@ -206,9 +231,12 @@ if (F) {
   require(contourfilled)
   source('LHS.R')
   gaussian1 <- function(xx) exp(-sum((xx-.5)^2)/2/.1)
-  a <- adapt.concept.sFFLHD.RC(D=2,L=5,g=3,func=gaussian1)
+  a <- adapt.concept.sFFLHD.RC(D=2,L=3,g=3,func=gaussian1)
   a$run(10)
-  sinumoid <- function(xx){sum(sin(2*pi*xx*3)) + 10/(1+exp(-80*(xx[[1]]-.5)))}; contourfilled.func(sinumoid)
+  sinumoid <- function(xx){sum(sin(2*pi*xx*3)) + 20/(1+exp(-80*(xx[[1]]-.5)))}; contourfilled.func(sinumoid)
   a <- adapt.concept.sFFLHD.RC(D=2,L=5,g=3,func=sinumoid)
-  a$run(5)
+  a$run(10)
+  # higher dim
+  a <- adapt.concept.sFFLHD.RC(D=3,L=8,g=3,func=gaussian1)
+  a$run(3)
 }

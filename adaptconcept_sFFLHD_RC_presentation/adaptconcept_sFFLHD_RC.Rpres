@@ -18,7 +18,8 @@ sFFLHD
 ================
 
 ```{r, message=FALSE, warning=FALSE, include=FALSE, print=F, results="hide"}
-source('sFFLHD.R')
+#setwd('./..')
+source('../sFFLHD.R')
 ```
 
 ```{r}
@@ -46,19 +47,28 @@ abline(h=(0:l)/l, v=(0:l)/l)
 for(i in 1:27) points(s$get.batch(), col=i, pch=19)
 ```
 
+Can't open file adaptconcept_sFFLHD_RC.R (others are fine), if want to run it have to move files
+==========================
+```{r}
+#source("../adaptconcept_sFFLHD_RC.R")
+#source("../adaptconcept_sFFLHD_RC.R")
+list.files('..')
+dir('..')
+```
 
 
 Example: Gaussian
 ================
 
 ```{r,echo=F}
-source("adaptconcept_sFFLHD_RC.R")
-source("adaptconcept_helpers.R")
+#source("../adaptconcept_sFFLHD_RC.R")
+source( "/Users/collin/Git/DOE-code/adaptconcept_sFFLHD_RC.R")
+source("../adaptconcept_helpers.R")
 #source("sFFLHD.R")
 require(mlegp)
 require(GPfit)
 require(contourfilled)
-source('LHS.R')
+source('../LHS.R')
 gaussian1 <- function(xx) exp(-sum((xx-.5)^2)/2/.1)
 ```
 
