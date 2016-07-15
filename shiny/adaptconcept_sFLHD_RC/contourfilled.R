@@ -28,6 +28,7 @@
 #' @importFrom graphics plot.window 
 #' @importFrom graphics points 
 #' @importFrom graphics title
+#' @importFrom graphics par
 #' @examples 
 #' x <- y <- seq(-4*pi, 4*pi, len = 27)
 #' r <- sqrt(outer(x^2, y^2, "+"))
@@ -127,7 +128,7 @@ contourfilled <-
       title(...)
     else plot.title
     invisible()
-}
+  }
 #' Makes filled contour plot from function without sidebar, uses contourfilled
 #' @param fn0  function to plot, first argument must be two-dimensional
 #' @param n  number of points in each dimension
@@ -136,6 +137,10 @@ contourfilled <-
 #' @param mainminmax  whether the min and max values should be shown in the title of plot
 #' @param batchmax  number of datapoints that can be computed at a time
 #' @param out.col.name  if a column needs to be selected from the function, specify it
+#' @param pretitle Text to be preappended to end of plot title
+#' @param posttitle Text to be appended to end of plot title
+#' @param title Title for the plot
+#' @param mainminmax_minmax Whether [min,max]= should be shown in title or just the numbers
 #' @param ...  Passed to contourfilled
 #' @examples 
 #' contourfilled.func(function(x){x[1]*x[2]})
@@ -145,7 +150,10 @@ contourfilled <-
 #' @references
 #' [2] http://stackoverflow.com/questions/16774928/removing-part-of-a-graphic-in-r, answer by P Lapointe
 #' @export
-contourfilled.func <- function(fn0,n=100,xcontlim=c(0,1),ycontlim=c(0,1),mainminmax=T,batchmax=1,out.col.name=NULL,...) {
+contourfilled.func <- function(fn0,n=100,xcontlim=c(0,1),ycontlim=c(0,1),
+                               mainminmax=T,batchmax=1,out.col.name=NULL,
+                               pretitle="", posttitle="",title=NULL,mainminmax_minmax=TRUE,
+                               ...) {
   if(is.null(out.col.name)) {fn <- fn0} else {fn <- function(xx){fn0(xx)[,out.col.name]}}
   x <- seq(xcontlim[1],xcontlim[2],length.out = n)
   y <- seq(ycontlim[1],ycontlim[2],length.out = n)
@@ -174,7 +182,19 @@ contourfilled.func <- function(fn0,n=100,xcontlim=c(0,1),ycontlim=c(0,1),mainmin
     #contourfilled(x,y,z,main=paste('min = ',signif(min(z),3),', max = ',signif(max(z),3)),...)
     #contourfilled(x,y,z,main=paste('(min, max) = (',signif(min(z),3),', ',signif(max(z),3),')'),...)
     contourfilled(x,y,z)
-    multicolor.title(c('(','min',', ','max',') = (',signif(min(z),3),', ',signif(max(z),3),')'),c(1,"#80FFFFFF",1,"#FF80FFFF",1,1,1,1,1))
+    if(is.null(title)) {
+      title_text <- c(pretitle)
+      title_color <- c(1)
+      if (mainminmax_minmax) {
+        title_text  <- c(title_text, '[','min',      ', ','max',      '] = ')
+        title_color <- c(title_color,1,  "#80FFFFFF",1,   "#FF80FFFF",1)
+      }
+      title_text  <- c(title_text, "[",signif(min(z),3),', ',signif(max(z),3),']',posttitle)
+      title_color <- c(title_color,1,  1,               1,   1,               1,  1)
+      multicolor.title(title_text,title_color)
+    } else {
+      multicolor.title(title, 1)
+    }
     #contourfilled(x,y,z,main=paste('abcde','abc'),...)
   } else {
     contourfilled(x,y,z,...)
@@ -246,7 +266,7 @@ contourfilled.data <- function(x,y=NULL,z=NULL,xcontlim=NULL,ycontlim=NULL,...) 
 multicolor.title <- function(main,col.main,collapse='') {
   if (length(main) != length(col.main)) {stop('main and col must have same length')}
   n <- length(main)
-  if(n==1) {print('n is 1')
+  if(n==1) {
     title(bquote(.(main[1])),col.main=col.main[1])
   } else {
     # print first

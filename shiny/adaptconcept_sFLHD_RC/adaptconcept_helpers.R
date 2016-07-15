@@ -7,6 +7,12 @@ msfunc <- function(func1,lims,pow=1L,batch=F) {#browser()
   if(batch) {return(mean(func1(X1)^pow))}
   mean(apply(X1,1,func1)^pow)
 }
+maxgridfunc <- function(func1,lims,batch=F) {
+  # Find max of function over limits using grid sample
+  X1 <- simple.grid(10,nrow(lims),scaledto=lims)
+  if(batch) {return(max(func1(X1)))}
+  max(apply(X1,1,func1))
+}
 msecalc <- function(truefunc, guessfunc,lims) {
   X1 <- simple.grid(20,nrow(lims),scaledto=lims)
   mean((apply(X1,1,function(xx){truefunc(xx) - guessfunc(xx)}))^2)

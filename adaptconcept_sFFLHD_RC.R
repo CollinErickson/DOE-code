@@ -9,7 +9,8 @@ adapt.concept.sFFLHD.RC <- setRefClass("adapt.concept.sFFLHD.seq",
     X = "matrix", Z = "numeric", Xnotrun = "matrix",
     s = "sFFLHD.seq", mod = "UGP",
     stats = "list", iteration = "numeric",
-    will_dive = "logical", get_mses_out = "list"
+    will_dive = "logical", get_mses_out = "list",
+    obj = "character", obj_func = "function"
   ),
   methods = list(
     initialize = function(...) {
@@ -30,6 +31,17 @@ adapt.concept.sFFLHD.RC <- setRefClass("adapt.concept.sFFLHD.seq",
       mod <<- UGP(package = "mlegp")
       stats <<- list(iteration=c(),level=c(),pvar=c(),mse=c(), ppu=c())
       iteration <<- 1
+      
+      # set objective function to minimize or pick dive area by max
+      if (length(obj)==0 || obj == "mse") {
+        obj_func <<- function(lims) {
+          msfunc(mod$predict.var, lims=lims, pow=1, batch=T)
+        }
+      } else if (obj == "maxerr") {
+        obj_func <<- function(lims) {
+          maxgridfunc(mod$predict.var, lims=lims, batch=T)
+        }
+      }
     },
     run = function(maxit, plotlastonly=F) {
       i <- 1
@@ -79,19 +91,22 @@ adapt.concept.sFFLHD.RC <- setRefClass("adapt.concept.sFFLHD.seq",
       mod$update(Xall=X, Zall=Z)
     },
     get_mses = function() {#browser()
-      mod.se.pred.func <- mod$predict.var
+      #mod.se.pred.func <- mod$predict.var
       mses.grid <- outer.d1n(rep(g,D),
                              func=
                                (function(...){
                                  ii <- c(...)
-                                 #msfunc(mod.se.pred.func, apply(lims,1,function(irow){irow[1]+()*c(ii)/g}))
-                                 msfunc(mod.se.pred.func, 
-                                        lims=t(sapply(1:D,function(jj){
-                                          lims[jj,1]+(lims[jj,2]-lims[jj,1])*c(ii[jj]-1,ii[jj])/g
-                                        })),
-                                        pow=1,
-                                        batch=T
-                                 )
+                                 ##msfunc(mod.se.pred.func, apply(lims,1,function(irow){irow[1]+()*c(ii)/g}))
+                                # msfunc(mod.se.pred.func, 
+                                #        lims=t(sapply(1:D,function(jj){
+                                #          lims[jj,1]+(lims[jj,2]-lims[jj,1])*c(ii[jj]-1,ii[jj])/g
+                                #        })),
+                                #        pow=1,
+                                #        batch=T
+                                 #)
+                                 obj_func(lims = t(sapply(1:D,function(jj){
+                                   lims[jj,1]+(lims[jj,2]-lims[jj,1])*c(ii[jj]-1,ii[jj])/g
+                                 })))
                                })
       )
       mses <- sapply(1:D,function(d){apply(mses.grid,d,mean)})
@@ -100,21 +115,26 @@ adapt.concept.sFFLHD.RC <- setRefClass("adapt.concept.sFFLHD.seq",
       
       # Refit maxmse.levelup???
       if(level>1) {
-        maxmse.levelup <- max(sapply(1:(level-1),function(i){msfunc(mod.se.pred.func,lims.second[[i]])}))
+        #maxmse.levelup <- max(sapply(1:(level-1),function(i){msfunc(mod.se.pred.func,lims.second[[i]])}))
+        mses.levelup <- sapply(1:(level-1),function(i){obj_func(lims.second[[i]])})
+        maxmse.levelup <- max(mses.levelup)
+        lims.maxmse.levelup <- lims.second[[which.max(mses.levelup)]]
       } else {
         maxmse.levelup <- -Inf
+        lims.maxmse.levelup <- NULL
       }
       
       # Don't need this if not diving...
       secondmaxmse <- maxN(mses,2)
       secondmaxmse.ind <- which(mses==secondmaxmse,arr.ind=T)
       lims.next <- lims
+      #browser()
       lims.next[maxmse.ind[2],] <- lims[maxmse.ind[2],1]+(lims[maxmse.ind[2],2]-lims[maxmse.ind[2],1])*c(maxmse.ind[1]-1,maxmse.ind[1])/g
       lims.nextsecond <- lims
       lims.nextsecond[secondmaxmse.ind[2],] <- lims[secondmaxmse.ind[2],1]+(lims[secondmaxmse.ind[2],2]-lims[secondmaxmse.ind[2],1])*c(secondmaxmse.ind[1]-1,secondmaxmse.ind[1])/g
       #lims.second[[level]] <- lims.nextsecond
       
-      get_mses_out <<- list(maxmse=maxmse, maxmse.levelup=maxmse.levelup, 
+      get_mses_out <<- list(maxmse=maxmse, maxmse.levelup=maxmse.levelup, lims.maxmse.levelup=lims.maxmse.levelup, 
                             lims.next=lims.next, lims.nextsecond=lims.nextsecond)
     },
     should_dive = function() {
@@ -156,31 +176,40 @@ adapt.concept.sFFLHD.RC <- setRefClass("adapt.concept.sFFLHD.seq",
         screen(1)
         xlim <- lims[1,]
         ylim <- lims[2,]
-        contourfilled.func(mod$predict,batchmax=500, pretitle="PredSurface ")
+        contourfilled.func(mod$predict,batchmax=500, pretitle="Predicted Surface ")
         points(X,pch=19)
         rect(xlim[1],ylim[1],xlim[2],ylim[2],lwd=5)
-        abline(v=xlim[1] + 1:(g-1)/g * (xlim[2]-xlim[1]),h=ylim[1] + 1:(g-1)/g * (ylim[2]-ylim[1]))
+        #abline(v=xlim[1] + 1:(g-1)/g * (xlim[2]-xlim[1]),h=ylim[1] + 1:(g-1)/g * (ylim[2]-ylim[1]))
+        segments(x0=xlim[1] + 1:(g-1)/g * (xlim[2]-xlim[1]), y0=ylim[1], y1=ylim[2], col=1)
+        segments(x0=xlim[1], x1=xlim[2], y0=ylim[1] + 1:(g-1)/g * (ylim[2]-ylim[1]), col=1)
         if (will_dive) {
           lims.next <- get_mses_out$lims.next
-          lims.nextsecond <- get_mses_out$nextsecond
+          lims.nextsecond <- get_mses_out$lims.nextsecond
           rect(lims.nextsecond[1,1],lims.nextsecond[2,1],lims.nextsecond[1,2],lims.nextsecond[2,2],lwd=2,border='black')
           rect(lims.next[1,1],lims.next[2,1],lims.next[1,2],lims.next[2,2],lwd=5,border='red')
           rect(lims.next[1,1],lims.next[2,1],lims.next[1,2],lims.next[2,2],col=1,angle=45,density=6+2*level^2)
+        } else {
+          lims.up <- get_mses_out$lims.maxmse.levelup
+          rect(lims.up[1,1],lims.up[2,1],lims.up[1,2],lims.up[2,2],lwd=2,border='red')
         }
         # Plot s2 predictions
         screen(2)
-        contourfilled.func(mod$predict.var, batchmax=500, pretitle="PredVar ")
+        contourfilled.func(mod$predict.var, batchmax=500, pretitle="Predictive Variance ")
         points(X,pch=19)
         rect(xlim[1],ylim[1],xlim[2],ylim[2],lwd=5)
-        abline(v=xlim[1] + 1:(g-1)/g * (xlim[2]-xlim[1]),h=ylim[1] + 1:(g-1)/g * (ylim[2]-ylim[1]))
+        #abline(v=xlim[1] + 1:(g-1)/g * (xlim[2]-xlim[1]),h=ylim[1] + 1:(g-1)/g * (ylim[2]-ylim[1]))
+        segments(x0=xlim[1] + 1:(g-1)/g * (xlim[2]-xlim[1]), y0=ylim[1], y1=ylim[2], col=1)
+        segments(x0=xlim[1], x1=xlim[2], y0=ylim[1] + 1:(g-1)/g * (ylim[2]-ylim[1]), col=1)
         if (will_dive) {
           rect(lims.nextsecond[1,1],lims.nextsecond[2,1],lims.nextsecond[1,2],lims.nextsecond[2,2],lwd=2,border='black')
           rect(lims.next[1,1],lims.next[2,1],lims.next[1,2],lims.next[2,2],lwd=5,border='red')
           rect(lims.next[1,1],lims.next[2,1],lims.next[1,2],lims.next[2,2],col=1,angle=45,density=6+2*level^2)
+        } else {
+          rect(lims.up[1,1],lims.up[2,1],lims.up[1,2],lims.up[2,2],lwd=2,border='red')
         }
         screen(3) # actual squared error plot
         par(mar=c(2,2,0,0.5)) # 5.1 4.1 4.1 2.1 BLTR
-        contourfilled.func(func, n = 20)
+        contourfilled.func(func, n = 20, mainminmax_minmax = F, pretitle="Actual ")
         if (iteration >= 2) {
           statsdf <- as.data.frame(stats)
           screen(4) # MSE plot
@@ -205,7 +234,7 @@ adapt.concept.sFFLHD.RC <- setRefClass("adapt.concept.sFFLHD.seq",
         }
         screen(7) # actual squared error plot
         par(mar=c(2,2,0,0.5)) # 5.1 4.1 4.1 2.1 BLTR
-        contourfilled.func(function(xx){(mod$predict(xx) - func(xx))^2},n = 20)
+        contourfilled.func(function(xx){(mod$predict(xx) - func(xx))^2},n = 20, mainminmax_minmax = F, pretitle="SqErr ")
         
         close.screen(all = TRUE)
       } else {
