@@ -306,7 +306,7 @@ sFFLHD.seq <- setRefClass('sFFLHD.seq',
           vii <<- vii + 1L
           if(vii > a^D-1) {
             vii <<- 1L
-            if(nrow(Mb) >= Lb ^ D) { #print('Going one deeper')#browser()
+            if(nrow(Mb) >= Lb ^ D) { print('Going one deeper')#browser()
               Lb <<- a * Lb
               Mb <<- floor(Xb * Lb)
             } else {

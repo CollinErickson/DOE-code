@@ -1,21 +1,29 @@
 library(shiny)
+source("CopyOfsFFLHD.R")
 
 ui <- fluidPage(
   titlePanel("sFFLHD"),
   sidebarLayout(
     sidebarPanel(
+    #wellPanel(
       sliderInput("Dimension",
                   "Dimension",
                   min = 1,
                   max = 9,
-                  value = 2),
+                  value = 2
+                  #width = "400px"
+                  ),
       sliderInput("Batch",
                   "Batch size",
                   min = 1,
                   max = 9,
-                  value = 3),
+                  value = 3
+                  #width = "400px"
+                  ),
       tags$head(tags$script(src = "message-handler.js")),
-      actionButton("do", "Add batch")
+      actionButton("addbatch", "Add batch"),
+      actionButton("restart", "Restart"),
+      width = 2
     ),
     mainPanel(
       plotOutput("plot", width="1000px", height="1000px")
@@ -25,13 +33,21 @@ ui <- fluidPage(
 
 
 server <- function(input, output, session) {
-  #D <- reactive({input$Dimension})
-  #s <- sFFLHD.seq(D = D(), L = 3)
-  sr <- reactive({ sFFLHD.seq(D = input$Dimension, L = input$Batch) })
-  observeEvent(input$do, {
-    s <- sr()
-    #session$sendCustomMessage(type = 'testmessage',
-    #                          message = 'Thank you for clicking')
+  D <- reactive({input$Dimension})
+  L <- reactive({input$Batch})
+  #s <- sFFLHD.seq(D = D(), L = L())
+  #sr <- reactive({ sFFLHD.seq(D = input$Dimension, L = input$Batch) })
+  sr <- reactive({ sFFLHD.seq(D = D(), L = L()) })
+  #D <- renderPrint({input$Dimension})
+  #L <- renderPrint({input$Batch})
+  #s <- sFFLHD.seq(D = D, L = 3)
+  
+  observeEvent(input$addbatch, {
+    s <- sr() # for reactive
+    #if (D != input$Dimension | L != input$Batch) {
+    #  s <- sFFLHD.seq(D = D, L = 3)
+    #}
+    
     s$get.batch()
     output$plot <- renderPlot({
       ppch <- 21+sapply(1:((nrow(s$Xb)/s$L)),function(ii){rep(ii,s$L)})%%5
@@ -51,6 +67,9 @@ server <- function(input, output, session) {
         pairs(s$Xb, lower.panel=pairs_func, upper.panel=pairs_func, xlim=0:1, ylim=0:1)
       }
     })
+  })
+  observeEvent(input$restart, {
+    session$reload()
   })
 }
 
