@@ -2,8 +2,8 @@ name: adaptconcept_sFLHD_RC
 account: collin
 server: shinyapps.io
 appId: 114532
-bundleId: 506348
+bundleId: 508359
 url: https://collin.shinyapps.io/adaptconcept_sFLHD_RC/
-when: 1468625889.00919
+when: 1468864861.30131
 asMultiple: FALSE
 asStatic: FALSE

@@ -27,7 +27,7 @@ sFFLHD <- function(D,L,a) {#browser()
               #  after b batches (d=1:D), also the dth column of Vb
   
   # 1: 
-  OA <- oa.design(nruns=L^2,nfactors=D+1,nlevels=L)
+  OA <- oa.design(nruns=L^2,nfactors=D+1,nlevels=L, columns="min3")
   OA0.5 <- apply(as.matrix(OA),1:2,as.integer) #- 1 # I think Weitau starts at 0
   OA1 <- OA0.5[sample(1:L^2),]
   OA2 <- OA1[,sample(1:(D+1))]
@@ -226,7 +226,7 @@ sFFLHD.seq <- setRefClass('sFFLHD.seq',
       # make sure D,L,a are all set
       if(length(D)==0 | length(L)==0 | length(a)==0) {stop('D, L, and a must be set when creating new object')}
       # get first OA
-      OA <- oa.design(nruns=L^2,nfactors=D+1,nlevels=L)
+      OA <- oa.design(nruns=L^2,nfactors=D+1,nlevels=L, columns="min3")
       OA0.5 <- apply(as.matrix(OA),1:2,as.integer) #- 1 # I think Weitau starts at 0
       OA1 <- OA0.5[sample(1:L^2),]
       OA2 <- OA1[,sample(1:(D+1))]
