@@ -4,8 +4,10 @@ library("UGP")
 #setOldClass("UGP")
 adapt.concept.sFFLHD.RC <- setRefClass("adapt.concept.sFFLHD.seq",
   fields = list(
-    func = "function", D = "numeric", L = "numeric", g = "numeric", level = "numeric",
-    lims = "matrix", lims.second = "list", lims.past = "list", lims.second.past = "list", 
+    func = "function", D = "numeric", L = "numeric", 
+    g = "numeric", level = "numeric",
+    lims = "matrix", lims.second = "list", lims.past = "list", 
+    lims.second.past = "list", lims.secondparallel = "list",
     X = "matrix", Z = "numeric", Xnotrun = "matrix",
     s = "sFFLHD.seq", mod = "UGP",
     stats = "list", iteration = "numeric",
@@ -114,11 +116,21 @@ adapt.concept.sFFLHD.RC <- setRefClass("adapt.concept.sFFLHD.seq",
       maxmse.ind <- which(mses==maxmse,arr.ind=T)
       
       # Refit maxmse.levelup???
-      if(level>1) {
+      if(level>1) { #browser()
         #maxmse.levelup <- max(sapply(1:(level-1),function(i){msfunc(mod.se.pred.func,lims.second[[i]])}))
-        mses.levelup <- sapply(1:(level-1),function(i){obj_func(lims.second[[i]])})
-        maxmse.levelup <- max(mses.levelup)
-        lims.maxmse.levelup <- lims.second[[which.max(mses.levelup)]]
+        mses.levelup.1 <- sapply(1:(level-1),function(i){obj_func(lims.second[[i]])})
+        mses.levelup.parallel <- sapply(1:(level-1),function(i){
+          if(!is.matrix(lims.secondparallel[[i]])) {return(-Inf)}
+          obj_func(lims.secondparallel[[i]])
+        })
+        #mses.levelup <- max(mses.levelup.1,mses.levelup.parallel)
+        if (max(mses.levelup.1) >= max(mses.levelup.parallel)) {
+          maxmse.levelup <- max(mses.levelup.1)
+          lims.maxmse.levelup <- lims.second[[which.max(mses.levelup.1)]]
+        } else {
+          maxmse.levelup <- max(mses.levelup.parallel)
+          lims.maxmse.levelup <- lims.secondparallel[[which.max(mses.levelup.parallel)]]
+        }
       } else {
         maxmse.levelup <- -Inf
         lims.maxmse.levelup <- NULL
@@ -133,9 +145,22 @@ adapt.concept.sFFLHD.RC <- setRefClass("adapt.concept.sFFLHD.seq",
       lims.nextsecond <- lims
       lims.nextsecond[secondmaxmse.ind[2],] <- lims[secondmaxmse.ind[2],1]+(lims[secondmaxmse.ind[2],2]-lims[secondmaxmse.ind[2],1])*c(secondmaxmse.ind[1]-1,secondmaxmse.ind[1])/g
       #lims.second[[level]] <- lims.nextsecond
+      if (maxmse.ind[2] != secondmaxmse.ind[2]) { # not parallel
+        secondparallelmaxmse.ind <- c(maxN(mses[,maxmse.ind[2]],2, all.indices=T)[2], maxmse.ind[2])
+        lims.nextsecondparallel <- lims
+        lims.nextsecondparallel[secondparallelmaxmse.ind[2],] <- 
+          lims[secondparallelmaxmse.ind[2],1]+
+          (lims[secondparallelmaxmse.ind[2],2]-lims[secondparallelmaxmse.ind[2],1])*
+          c(secondparallelmaxmse.ind[1]-1,secondparallelmaxmse.ind[1])/g
+      } else {
+        lims.nextsecondparallel <- NA # Don't use NULL
+      }
       
-      get_mses_out <<- list(maxmse=maxmse, maxmse.levelup=maxmse.levelup, lims.maxmse.levelup=lims.maxmse.levelup, 
-                            lims.next=lims.next, lims.nextsecond=lims.nextsecond)
+      get_mses_out <<- list(maxmse=maxmse, maxmse.levelup=maxmse.levelup, 
+                            lims.maxmse.levelup=lims.maxmse.levelup, 
+                            lims.next=lims.next, 
+                            lims.nextsecond=lims.nextsecond, 
+                            lims.nextsecondparallel=lims.nextsecondparallel)
     },
     should_dive = function() {
       if (level == 1) {
@@ -149,11 +174,13 @@ adapt.concept.sFFLHD.RC <- setRefClass("adapt.concept.sFFLHD.seq",
         lims.past[[level]] <<- lims
         lims <<- get_mses_out$lims.next
         lims.second[[level]] <<- get_mses_out$lims.nextsecond
+        lims.secondparallel[[level]] <<- get_mses_out$lims.nextsecondparallel
         level <<- level + 1
       } else {
         lims <<- lims.past[[level-1]]
         lims.past[[level-1]] <<- NULL
         lims.second[[level-1]] <<- NULL
+        lims.secondparallel[[level-1]] <<- NULL
         level <<- level - 1
       }
     },
