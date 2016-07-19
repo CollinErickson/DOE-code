@@ -283,7 +283,7 @@ adapt.concept.sFFLHD.RC <- setRefClass("adapt.concept.sFFLHD.seq",
           points(statsdf$iter, statsdf$mse, type='o', pch=19)
           points(statsdf$iter, statsdf$pvar, type='o', pch = 19, col=2)
           # 2 level plot
-          plot(statsdf$iter, statsdf$level, type='o')
+          plot(statsdf$iter, statsdf$level, type='o', pch=19)
           legend('topleft',legend="Level",fill=1)
           # 3 % pts used plot
           plot(statsdf$iter, statsdf$ppu, type='o', pch=19,

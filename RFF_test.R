@@ -1,31 +1,33 @@
-mag <- matrix(c(1,1),ncol = 1)
-dirr <- matrix(c(1,1),nrow=1)
-fff <- function(x,mag,dirr) {#browser()
-  x <- matrix(x,ncol=1)
-  rowSums(sin(2*pi* sweep(x %*% dirr, 2,1:length(mag),'*')) %*% mag)
+nsin <- function(xx) {-1+2*ceiling(sin(xx))} # block wave
+vsin <- function(xx) { # v/w wave
+  yy <- xx%%(2*pi)
+  ifelse(yy<pi/2,yy/(pi/2),0) + 
+    ifelse(yy>=pi/2 & yy<3*pi/2,2-yy/(pi/2),0) + 
+    ifelse(yy>=3*pi/2,-4+yy/(pi/2),0)
 }
-fff((0:10)/10, mag,dirr)
-curve(fff(x,mag,dirr))
-
-mag <- matrix(c(1,1),ncol = 1) # M x 1, magnitude
-dirr <- matrix(c(1,0,0,1),nrow=2,byrow=T) # M x D, each row is dirrection  
-offset <- runif(2)
-fff <- function(x,mag,dirr,offset) {#browser()
-  #x <- matrix(x,ncol=2)
-  (sin(2*pi* sweep(sweep(x %*% t(dirr),2,offset,'+'), 2,1:length(mag),'*')) %*% mag)
-}
-fff(matrix(c(.5,.5),ncol=2),mag,dirr,offset)
-contourfilled::contourfilled.func(function(xx){fff(xx,mag,dirr,offset)},batchmax = 10)
-
-D <- 2
-M <- 30
+#D <- 2
+#M <- 30
 #mag <- matrix(runif(M,-1,1),ncol=1)
-mag <- matrix(sapply(1:M,function(i){runif(1,-1/i,1/i)}), ncol=1)
-dirr <- matrix(runif(D*M,-1,1),ncol=D)
-offset <- runif(M)
-fff <- function(x,mag,dirr,offset) {#browser()
+#freq <- sort((rexp(M,1/7)))
+#mag <- matrix(sapply(1:M,function(i){runif(1,-1/freq[i],1/freq[i])}), ncol=1)
+#dirr <- matrix(runif(D*M,-1,1),ncol=D)
+#dirrnorm <- apply(dirr,1,function(a)sqrt(sum(a^2)))
+#dirr <- sweep(dirr,1,dirrnorm,'/')
+#offset <- runif(M)
+RFF <- function(x,mag,dirr,offset) {#browser()
   #x <- matrix(x,ncol=2)
-  (sin(2*pi* sweep(sweep(x %*% t(dirr),2,offset,'+'), 2,1:length(mag),'*')) %*% mag)
+  (sin(2*pi* sweep(sweep(x %*% t(dirr),2,offset,'+'), 2,freq,'*')) %*% mag)
 }
-if (D==1)curve(fff(x,mag,dirr,offset))
-if(D==2)contourfilled::contourfilled.func(function(xx){fff(xx,mag,dirr,offset)},batchmax = 10)
+#if (D==1)curve(RFF(x,mag,dirr,offset))
+#if(D==2)contourfilled::contourfilled.func(function(xx){RFF(xx,mag,dirr,offset)},batchmax = 10)
+
+RFF_get <- function(D=2, M=30) {
+  freq <- sort((rexp(M,1/7))) + 0.5 # can use ceiling to get ints, then don't add anything
+  mag <- matrix(sapply(1:M,function(i){runif(1,-1/freq[i],1/freq[i])}), ncol=1)
+  dirr <- matrix(runif(D*M,-1,1),ncol=D)
+  dirrnorm <- apply(dirr,1,function(a)sqrt(sum(a^2)))
+  dirr <- sweep(dirr,1,dirrnorm,'/')
+  offset <- runif(M)
+  function(x) {RFF(x, mag=mag, dirr=dirr, offset=offset)
+  }
+}

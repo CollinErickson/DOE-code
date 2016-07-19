@@ -1,14 +1,15 @@
 library(shiny)
 #source("CopyOfsFFLHD.R")
 library(mlegp)
-if (F) { # Use for local runs. Then copy files and comment this section out before uploading
-  #library(UGP)
-  #library(contourfilled)
-  #library(TestFunctions)
-  #source("../../sFFLHD.R")
-  #source("../../adaptconcept_helpers.R")
-  #source("../../LHS.R")
-  #source("../../adaptconcept_sFFLHD_RC.R")
+if (T) { # Use for local runs. Then copy files and comment this section out before uploading
+  library(UGP)
+  library(contourfilled)
+  library(TestFunctions)
+  source("../../sFFLHD.R")
+  source("../../adaptconcept_helpers.R")
+  source("../../LHS.R")
+  source("../../adaptconcept_sFFLHD_RC.R")
+  source("../../RFF_test.R")
 } else { # ONLY USE FOR uploading to Shiny
   source("UGP.R")
   source("contourfilled.R")
@@ -26,6 +27,7 @@ ui <- fluidPage(
       selectInput("func", label = "Function", 
                   choices = list("Gaussian" = "Gaussian", 
                                  "Sinumoid" = "Sinumoid", 
+                                 "RFF" = "RFF",
                                  "Diagonal plateau" = "Diagonal plateau",
                                  "Branin (2D)" = "Branin", 
                                  "Franke (2D)" = "Franke",
@@ -33,7 +35,7 @@ ui <- fluidPage(
                                  "Lim (2D)" = "lim2002", 
                                  "Zhou" = "zhou1998"
                                  ), 
-                  selected = "Gaussian"),
+                  selected = "RFF"),
       selectInput("obj", label = "Objective", 
                   choices = list("MSE" = "mse", 
                                  "Max Error" = "maxerr"
@@ -92,6 +94,9 @@ server <- function(input, output, session) {
     }
     if (funcin == "Sinumoid") {
       return(sinumoid)
+    }
+    if (funcin == "RFF") {
+      return(RFF_get(D=D()))
     }
     if (funcin == "Diagonal plateau") {
       return(diagonal_plateau)
