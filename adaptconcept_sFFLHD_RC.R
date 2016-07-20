@@ -1,7 +1,6 @@
 source("sFFLHD.R")
 library("UGP")
-#setOldClass("sFFLHD.seq")
-#setOldClass("UGP")
+
 adapt.concept.sFFLHD.RC <- setRefClass("adapt.concept.sFFLHD.seq",
   fields = list(
     func = "function", D = "numeric", L = "numeric", 
@@ -11,13 +10,12 @@ adapt.concept.sFFLHD.RC <- setRefClass("adapt.concept.sFFLHD.seq",
     X = "matrix", Z = "numeric", Xnotrun = "matrix",
     s = "sFFLHD.seq", mod = "UGP",
     stats = "list", iteration = "numeric",
-    will_dive = "logical", get_mses_out = "list",
+    will_dive = "numeric", get_mses_out = "list",
     obj = "character", obj_func = "function"
   ),
   methods = list(
     initialize = function(...) {
       callSuper(...)
-      #initFieldArgs(...)
       
       if (any(length(D)==0, length(L)==0, length(g)==0)) {
         message("D, L, and g must be specified")
@@ -45,11 +43,11 @@ adapt.concept.sFFLHD.RC <- setRefClass("adapt.concept.sFFLHD.seq",
         }
       }
     },
-    run = function(maxit, plotlastonly=F) {
+    run = function(maxit, plotlastonly=F, noplot=F) {
       i <- 1
       while(i <= maxit) {
         #print(paste('Starting iteration', iteration))
-        iplotit <- (i == maxit) | !plotlastonly
+        iplotit <- ((i == maxit) | !plotlastonly) & !noplot
         run1(plotit=iplotit)
         i <- i + 1
       }
@@ -66,13 +64,10 @@ adapt.concept.sFFLHD.RC <- setRefClass("adapt.concept.sFFLHD.seq",
       set_params()
       iteration <<- iteration + 1
     },
-    add_data = function() {#browser()
+    add_data = function() {
       notrun.torun <- which(apply(Xnotrun,1,is.in.lims,lims))
       if(length(notrun.torun)>L) {notrun.torun <- notrun.torun[1:L]}
       Xnew <- Xnotrun[notrun.torun, , drop=FALSE]
-      #if(length(notrun.torun)==1) { # If only one row it will be numeric, not matrix, need to fix it
-      #  Xnew <- matrix(Xnew,nrow=1)
-      #}
       Xnotrun <<- Xnotrun[-notrun.torun, , drop=FALSE]
       while(nrow(Xnew)<L) {
         Xadd <- s$get.batch()
@@ -92,20 +87,11 @@ adapt.concept.sFFLHD.RC <- setRefClass("adapt.concept.sFFLHD.seq",
     update_mod = function() {
       mod$update(Xall=X, Zall=Z)
     },
-    get_mses = function() {#browser()
-      #mod.se.pred.func <- mod$predict.var
+    get_mses = function() {
       mses.grid <- outer.d1n(rep(g,D),
                              func=
                                (function(...){
                                  ii <- c(...)
-                                 ##msfunc(mod.se.pred.func, apply(lims,1,function(irow){irow[1]+()*c(ii)/g}))
-                                # msfunc(mod.se.pred.func, 
-                                #        lims=t(sapply(1:D,function(jj){
-                                #          lims[jj,1]+(lims[jj,2]-lims[jj,1])*c(ii[jj]-1,ii[jj])/g
-                                #        })),
-                                #        pow=1,
-                                #        batch=T
-                                 #)
                                  obj_func(lims = t(sapply(1:D,function(jj){
                                    lims[jj,1]+(lims[jj,2]-lims[jj,1])*c(ii[jj]-1,ii[jj])/g
                                  })))
@@ -116,7 +102,7 @@ adapt.concept.sFFLHD.RC <- setRefClass("adapt.concept.sFFLHD.seq",
       maxmse.ind <- which(mses==maxmse,arr.ind=T)
       
       # Refit maxmse.levelup???
-      if(level>1) { #browser()
+      if(level>1) {
         #maxmse.levelup <- max(sapply(1:(level-1),function(i){msfunc(mod.se.pred.func,lims.second[[i]])}))
         mses.levelup.1 <- sapply(1:(level-1),function(i){obj_func(lims.second[[i]])})
         mses.levelup.parallel <- sapply(1:(level-1),function(i){
@@ -160,28 +146,46 @@ adapt.concept.sFFLHD.RC <- setRefClass("adapt.concept.sFFLHD.seq",
                             lims.maxmse.levelup=lims.maxmse.levelup, 
                             lims.next=lims.next, 
                             lims.nextsecond=lims.nextsecond, 
-                            lims.nextsecondparallel=lims.nextsecondparallel)
+                            lims.nextsecondparallel=lims.nextsecondparallel,
+                            currentlims.mse=mean(mses.grid))
     },
     should_dive = function() {
       if (level == 1) {
-        will_dive <<- TRUE
+        #will_dive <<- TRUE
+        #will_dive <<- 1
+        if (get_mses_out$maxmse > 1.0 * max(get_mses_out$maxmse.levelup,get_mses_out$currentlims.mse)) {
+          will_dive <<- 1
+        } else {
+          will_dive <<- 0
+        }
       } else {
-        will_dive <<- get_mses_out$maxmse > get_mses_out$maxmse.levelup
+        #will_dive <<- get_mses_out$maxmse > get_mses_out$maxmse.levelup
+        if (get_mses_out$maxmse > 1.0 * max(get_mses_out$maxmse.levelup,get_mses_out$currentlims.mse)) {
+          will_dive <<- 1
+        } else if (get_mses_out$currentlims.mse >= 1.0 * get_mses_out$maxmse.levelup){
+          will_dive <<- 0
+        } else {
+          will_dive <<- -1
+        }
       }
     },
     set_params = function() {
-      if (will_dive) {
+      if (will_dive == 1) {
         lims.past[[level]] <<- lims
         lims <<- get_mses_out$lims.next
         lims.second[[level]] <<- get_mses_out$lims.nextsecond
         lims.secondparallel[[level]] <<- get_mses_out$lims.nextsecondparallel
         level <<- level + 1
-      } else {
+      } else if (will_dive == 0) {
+        # Nothing, just stay
+      } else if (will_dive == -1) {
         lims <<- lims.past[[level-1]]
         lims.past[[level-1]] <<- NULL
         lims.second[[level-1]] <<- NULL
         lims.secondparallel[[level-1]] <<- NULL
         level <<- level - 1
+      } else{
+        stop("Fatal error 5023644")
       }
     },
     update_stats = function() {
@@ -299,7 +303,6 @@ if (F) {
   source('sFFLHD.R')
   library("UGP")
   source("adaptconcept_helpers.R")
-  #source("sFFLHD.R")
   require(mlegp)
   require(GPfit)
   require(contourfilled)

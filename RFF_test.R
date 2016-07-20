@@ -14,7 +14,7 @@ vsin <- function(xx) { # v/w wave
 #dirrnorm <- apply(dirr,1,function(a)sqrt(sum(a^2)))
 #dirr <- sweep(dirr,1,dirrnorm,'/')
 #offset <- runif(M)
-RFF <- function(x,mag,dirr,offset) {#browser()
+RFF <- function(x,freq,mag,dirr,offset) {#browser()
   #x <- matrix(x,ncol=2)
   (sin(2*pi* sweep(sweep(x %*% t(dirr),2,offset,'+'), 2,freq,'*')) %*% mag)
 }
@@ -28,6 +28,6 @@ RFF_get <- function(D=2, M=30) {
   dirrnorm <- apply(dirr,1,function(a)sqrt(sum(a^2)))
   dirr <- sweep(dirr,1,dirrnorm,'/')
   offset <- runif(M)
-  function(x) {RFF(x, mag=mag, dirr=dirr, offset=offset)
+  function(x) {RFF(x, freq=freq, mag=mag, dirr=dirr, offset=offset)
   }
 }
