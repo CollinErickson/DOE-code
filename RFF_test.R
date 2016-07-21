@@ -21,7 +21,7 @@ RFF <- function(x,freq,mag,dirr,offset) {#browser()
 #if (D==1)curve(RFF(x,mag,dirr,offset))
 #if(D==2)contourfilled::contourfilled.func(function(xx){RFF(xx,mag,dirr,offset)},batchmax = 10)
 
-RFF_get <- function(D=2, M=30) {
+RFF_get <- function(D=2, M=30) {#browser()
   freq <- sort((rexp(M,1/7))) + 0.5 # can use ceiling to get ints, then don't add anything
   mag <- matrix(sapply(1:M,function(i){runif(1,-1/freq[i],1/freq[i])}), ncol=1)
   dirr <- matrix(runif(D*M,-1,1),ncol=D)
