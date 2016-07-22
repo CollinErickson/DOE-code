@@ -11,7 +11,9 @@ adapt.concept.sFFLHD.RC <- setRefClass("adapt.concept.sFFLHD.seq",
     s = "sFFLHD.seq", mod = "UGP",
     stats = "list", iteration = "numeric",
     will_dive = "numeric", get_mses_out = "list",
-    obj = "character", obj_func = "function"
+    obj = "character", obj_func = "function",
+    n0 = "numeric", never_dive = "logical",
+    package = "character"
   ),
   methods = list(
     initialize = function(...) {
@@ -28,7 +30,8 @@ adapt.concept.sFFLHD.RC <- setRefClass("adapt.concept.sFFLHD.seq",
       Xnotrun <<- matrix(NA,0,D)
       if(length(lims)==0) {lims <<- matrix(c(0,1),D,2,byrow=T)}
       #mod$initialize(package = "mlegp")
-      mod <<- UGP(package = "laGP")
+      if(length(package) == 0) {package <<- "laGP"}
+      mod <<- UGP(package = package)
       stats <<- list(iteration=c(),level=c(),pvar=c(),mse=c(), ppu=c())
       iteration <<- 1
       
@@ -42,6 +45,20 @@ adapt.concept.sFFLHD.RC <- setRefClass("adapt.concept.sFFLHD.seq",
           maxgridfunc(mod$predict.var, lims=lims, batch=T)
         }
       }
+      
+      if (length(n0) != 0) {
+        Xnew <- matrix(NA, 0, D)
+        while (nrow(Xnew) < n0) {
+          Xnew <- rbind(Xnew, s$get.batch())
+        }
+        X <<- rbind(X, Xnew[1:n0, , drop=F])
+        Z <<- c(Z, apply(X,1,func))
+        if (nrow(Xnew) > n0) {
+          Xnotrun <<- rbind(Xnotrun, Xnew[(n0+1):nrow(Xnew), , drop=F])
+        }
+      }
+      
+      if (length(never_dive)==0) {never_dive <<- FALSE}
     },
     run = function(maxit, plotlastonly=F, noplot=F) {
       i <- 1
@@ -150,6 +167,7 @@ adapt.concept.sFFLHD.RC <- setRefClass("adapt.concept.sFFLHD.seq",
                             currentlims.mse=mean(mses.grid))
     },
     should_dive = function() {
+      if (never_dive) {will_dive <<- 0; return()}
       if (level == 1) {
         #will_dive <<- TRUE
         #will_dive <<- 1
@@ -295,6 +313,9 @@ adapt.concept.sFFLHD.RC <- setRefClass("adapt.concept.sFFLHD.seq",
           legend('bottomleft',legend="% pts",fill=1)
         }
       }
+    },
+    delete = function() {
+      u$delete()
     }
   )
 )
