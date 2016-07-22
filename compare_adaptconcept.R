@@ -1,4 +1,4 @@
-
+library(ggplot2)
 compare.adapt <- function(func, D, L, g, batches=10, reps=5) {
   outdf <- data.frame()
   
@@ -36,6 +36,18 @@ compare.adapt <- function(func, D, L, g, batches=10, reps=5) {
   outdf
 }
 if (F) {
+  source('sFFLHD.R')
+  library("UGP")
+  source("adaptconcept_helpers.R")
+  require(mlegp)
+  require(GPfit)
+  require(contourfilled)
+  source('LHS.R')
+  gaussian1 <- function(xx) exp(-sum((xx-.5)^2)/2/.1)
+  library(laGP)
+  source("RFF_test.R")
+  source("adaptconcept_sFFLHD_RC.R")
+  source("adaptconcept_sFFLHD_RC_noadapt.R")
   compare.adapt(func=gaussian1, D=2, L=4, g=3)
-  compare.adapt(func=RFF_get(), D=2, L=4, g=3, batches=2)
+  compare.adapt(func=RFF_get(), D=2, L=4, g=3, batches=5, reps = 3)
 }

@@ -28,7 +28,7 @@ adapt.concept.sFFLHD.RC.noadapt <- setRefClass("adapt.concept.sFFLHD.seq",
      Xnotrun <<- matrix(NA,0,D)
      if(length(lims)==0) {lims <<- matrix(c(0,1),D,2,byrow=T)}
      #mod$initialize(package = "mlegp")
-     mod <<- UGP(package = "mlegp")
+     mod <<- UGP(package = "laGP")
      stats <<- list(iteration=c(),level=c(),pvar=c(),mse=c(), ppu=c())
      iteration <<- 1
      
