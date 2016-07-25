@@ -15,14 +15,14 @@ compare.adapt <- function(func, D, L, g, batches=10, reps=5, ...) {#browser()
     outdf <- rbind(outdf, data.frame(i=v$stats$iteration, mse=v$stats$mse, 
                       pvar=v$stats$pvar, method='No adapt', num=paste('n',i),
                       time = systime[3], row.names=NULL))
-    u$delete()
+    v$delete()
     
     w <- adapt.concept2.sFFLHD.RC(func=func, D=D, L=L, g=g, ...=...)
     systime <- system.time(w$run(batches,noplot=T))
     outdf <- rbind(outdf, data.frame(i=w$stats$iteration, mse=w$stats$mse, 
                       pvar=w$stats$pvar, method='Adapt2', num=paste('a2',i),
                       time = systime[3], row.names=NULL))
-    u$delete()
+    w$delete()
   }  
 
   plot(u$stats$iteration, u$stats$mse, type='b', col=1, log='y')
@@ -62,5 +62,6 @@ if (F) {
 #  source("adaptconcept_sFFLHD_RC_noadapt.R")
   compare.adapt(func=gaussian1, D=2, L=4, g=3)
   compare.adapt(func=RFF_get(), D=2, L=4, g=3, batches=5, reps = 3)
-  system.time(compare.adapt(func=RFF_get(), D=2, L=4, g=3, batches=5, reps = 3, n0=10))
+  system.time(compare.adapt(func=RFF_get(), D=2, L=4, g=3, batches=5, reps = 3, n0=3))
+  system.time(compare.adapt(func=RFF_get(D=3), D=3, L=4, g=3, batches=5, reps = 3, n0=12))
 }

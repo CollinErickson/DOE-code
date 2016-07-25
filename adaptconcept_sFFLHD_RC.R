@@ -315,7 +315,7 @@ adapt.concept.sFFLHD.RC <- setRefClass("adapt.concept.sFFLHD.seq",
       }
     },
     delete = function() {
-      u$delete()
+      mod$delete()
     }
   )
 )

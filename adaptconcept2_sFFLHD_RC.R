@@ -13,7 +13,8 @@ adapt.concept2.sFFLHD.RC <- setRefClass("adapt.concept.sFFLHD.seq",
    #will_dive = "numeric", get_mses_out = "list",
    obj = "character", obj_func = "function",
    n0 = "numeric",#, never_dive = "logical"
-   package = "character"
+   package = "character",
+   batch.tracker = "numeric"
   ),
   methods = list(
    initialize = function(...) {
@@ -32,7 +33,7 @@ adapt.concept2.sFFLHD.RC <- setRefClass("adapt.concept.sFFLHD.seq",
      #mod$initialize(package = "mlegp")
      if(length(package) == 0) {package <<- "laGP"}
      mod <<- UGP(package = package)
-     stats <<- list(iteration=c(),pvar=c(),mse=c(), ppu=c())
+     stats <<- list(iteration=c(),pvar=c(),mse=c(), ppu=c(), minbatch=c())
      iteration <<- 1
      
      # set objective function to minimize or pick dive area by max
@@ -51,9 +52,11 @@ adapt.concept2.sFFLHD.RC <- setRefClass("adapt.concept.sFFLHD.seq",
        Xnew <- matrix(NA, 0, D)
        while (nrow(Xnew) < n0) {
          Xnew <- rbind(Xnew, s$get.batch())
+         batch.tracker <<- rep(s$b,L)
        }
        X <<- rbind(X, Xnew[1:n0, , drop=F])
        Z <<- c(Z, apply(X,1,func))
+       batch.tracker <<- batch.tracker[-(1:n0)]
        if (nrow(Xnew) > n0) {
          Xnotrun <<- rbind(Xnotrun, Xnew[(n0+1):nrow(Xnew), , drop=F])
        }
@@ -61,8 +64,8 @@ adapt.concept2.sFFLHD.RC <- setRefClass("adapt.concept.sFFLHD.seq",
      }
      
      #if (length(never_dive)==0) {never_dive <<- FALSE}
-   },
-   run = function(maxit, plotlastonly=F, noplot=F) {
+    },
+    run = function(maxit, plotlastonly=F, noplot=F) {
      i <- 1
      while(i <= maxit) {
        #print(paste('Starting iteration', iteration))
@@ -70,8 +73,8 @@ adapt.concept2.sFFLHD.RC <- setRefClass("adapt.concept.sFFLHD.seq",
        run1(plotit=iplotit)
        i <- i + 1
      }
-   },
-   run1 = function(plotit=TRUE) {#browser()
+    },
+    run1 = function(plotit=TRUE) {#browser()
      add_data()
      update_mod()
      #get_mses()
@@ -82,40 +85,44 @@ adapt.concept2.sFFLHD.RC <- setRefClass("adapt.concept.sFFLHD.seq",
      }
      #set_params()
      iteration <<- iteration + 1
-   },
-   add_data = function() {#browser()
+    },
+    add_data = function() {#browser()
      if (nrow(X) == 0) {
        X <<- rbind(X, s$get.batch())
        Z <<- c(Z,apply(X, 1, func))
        return()
      }
-    while(nrow(Xnotrun) < max(L^2, 20)) {
+    #while(nrow(Xnotrun) < max(L^2, 20)) {
+    for (iii in 1:3) {
       Xnotrun <<- rbind(Xnotrun, s$get.batch())
+      batch.tracker <<- c(batch.tracker, rep(s$b, L))
     }
     objs <- obj_func(Xnotrun)
     bestL <- order(objs, decreasing = T)[1:L]
     Xnew <- Xnotrun[bestL,]
     Xnotrun <<- Xnotrun[-bestL, , drop=FALSE]
+    batch.tracker <<- batch.tracker[-bestL]
     Znew <- apply(Xnew,1,func) 
      
      X <<- rbind(X,Xnew)
      Z <<- c(Z,Znew)
-   },
-   update_mod = function() {#browser()
+    },
+    update_mod = function() {#browser()
      mod$update(Xall=X, Zall=Z)
-   },
-   # REMOVED get_mses AND should_dive
-   set_params = function() {
-   },
-   update_stats = function() {
+    },
+    # REMOVED get_mses AND should_dive
+    set_params = function() {
+    },
+    update_stats = function() {
      # stats$ <<- c(stats$, )
      stats$iteration <<- c(stats$iteration, iteration)
      #stats$level <<- c(stats$level, level)
      stats$pvar <<- c(stats$pvar, msfunc(mod$predict.var,cbind(rep(0,D),rep(1,D))))
      stats$mse <<- c(stats$mse, msecalc(func,mod$predict,cbind(rep(0,D),rep(1,D))))
      stats$ppu <<- c(stats$ppu, nrow(X) / (nrow(X) + nrow(Xnotrun)))
-   },
-   plot1 = function() {#browser()
+     stats$minbatch <<- c(stats$minbatch, if (length(batch.tracker>0)) min(batch.tracker) else 0)
+    },
+    plot1 = function() {#browser()
      if (D == 2) {
        #par(mfrow=c(2,1))
        ln <- 5 # number of lower plots
@@ -177,9 +184,9 @@ adapt.concept2.sFFLHD.RC <- setRefClass("adapt.concept.sFFLHD.seq",
          points(statsdf$iter, statsdf$pvar, type='o', pch = 19, col=2)
          screen(5) # level plot
          par(mar=c(2,2,0,0.5)) # 5.1 4.1 4.1 2.1 BLTR
-         #plot(statsdf$iter, statsdf$level, type='o', pch=19,
-        #      xlab="Iteration")#, ylab="Level")
-         #legend('topleft',legend="Level",fill=1)
+         plot(statsdf$iter, statsdf$minbatch, type='o', pch=19,
+              xlab="Iteration")#, ylab="Level")
+         legend('bottomright',legend="Batch not run",fill=1)
          screen(6) # % of pts used plot 
          par(mar=c(2,2,0,0.5)) # 5.1 4.1 4.1 2.1 BLTR
          plot(statsdf$iter, statsdf$ppu, type='o', pch=19,
@@ -188,7 +195,8 @@ adapt.concept2.sFFLHD.RC <- setRefClass("adapt.concept.sFFLHD.seq",
        }
        screen(7) # actual squared error plot
        par(mar=c(2,2,0,0.5)) # 5.1 4.1 4.1 2.1 BLTR
-       contourfilled.func(function(xx){(mod$predict(xx) - func(xx))^2},n = 20, mainminmax_minmax = F, pretitle="SqErr ")
+       contourfilled.func(function(xx){(mod$predict(xx) - func(xx))^2},
+                          n = 20, mainminmax_minmax = F, pretitle="SqErr ")
        
        close.screen(all = TRUE)
      } else {
@@ -227,10 +235,10 @@ adapt.concept2.sFFLHD.RC <- setRefClass("adapt.concept.sFFLHD.seq",
          legend('bottomleft',legend="% pts",fill=1)
        }
      }
-   },
-   delete = function() {
-     u$delete()
-   }
+    },
+    delete = function() {
+     mod$delete()
+    }
   )
 )
 
@@ -242,12 +250,19 @@ if (F) {
   require(GPfit)
   require(contourfilled)
   source('LHS.R')
+  source("RFF_test.R")
+  
   gaussian1 <- function(xx) exp(-sum((xx-.5)^2)/2/.1)
   a <- adapt.concept2.sFFLHD.RC(D=2,L=3,g=3,func=gaussian1)
   a$run(2)
+  
   sinumoid <- function(xx){sum(sin(2*pi*xx*3)) + 20/(1+exp(-80*(xx[[1]]-.5)))}; contourfilled.func(sinumoid)
-  a <- adapt.concept.sFFLHD.RC(D=2,L=3,g=3,func=sinumoid)
+  a <- adapt.concept2.sFFLHD.RC(D=2,L=3,g=3,func=sinumoid)
   a$run(10)
+  
+  a <- adapt.concept2.sFFLHD.RC(D=2,L=3,g=3,func=RFF_get())
+  a$run(4, plotlastonly = T)
+  
   # higher dim
   a <- adapt.concept.sFFLHD.RC(D=3,L=8,g=3,func=gaussian1)
   a$run(3)
