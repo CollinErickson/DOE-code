@@ -99,9 +99,10 @@ adapt.concept2.sFFLHD.RC <- setRefClass("adapt.concept.sFFLHD.seq",
     }
     objs <- obj_func(Xnotrun)
     bestL <- order(objs, decreasing = T)[1:L]
-    Xnew <- Xnotrun[bestL,]
-    Xnotrun <<- Xnotrun[-bestL, , drop=FALSE]
-    batch.tracker <<- batch.tracker[-bestL]
+    newL <- if (runif(1) > 0.1) {bestL} else {print(paste('first L',iteration));1:L}
+    Xnew <- Xnotrun[newL,]
+    Xnotrun <<- Xnotrun[-newL, , drop=FALSE]
+    batch.tracker <<- batch.tracker[-newL]
     Znew <- apply(Xnew,1,func) 
      
      X <<- rbind(X,Xnew)
