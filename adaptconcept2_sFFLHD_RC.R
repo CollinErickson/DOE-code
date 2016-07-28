@@ -1,4 +1,5 @@
-source("sFFLHD.R")
+if (interactive())
+  source("sFFLHD.R")
 library("UGP")
 
 adapt.concept2.sFFLHD.RC <- setRefClass("adapt.concept.sFFLHD.seq",
@@ -99,7 +100,7 @@ adapt.concept2.sFFLHD.RC <- setRefClass("adapt.concept.sFFLHD.seq",
     }
     objs <- obj_func(Xnotrun)
     bestL <- order(objs, decreasing = T)[1:L]
-    newL <- if (runif(1) > 0.1) {bestL} else {print(paste('first L',iteration));1:L}
+    newL <- if (runif(1) > 0.2) {bestL} else {1:L}#{print(paste('first L',iteration));1:L}
     Xnew <- Xnotrun[newL,]
     Xnotrun <<- Xnotrun[-newL, , drop=FALSE]
     batch.tracker <<- batch.tracker[-newL]
