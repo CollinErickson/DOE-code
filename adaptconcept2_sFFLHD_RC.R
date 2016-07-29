@@ -5,7 +5,7 @@ library("UGP")
 adapt.concept2.sFFLHD.RC <- setRefClass("adapt.concept.sFFLHD.seq",
   fields = list(
    func = "function", D = "numeric", L = "numeric", 
-   g = "numeric", #level = "numeric",
+   g = "numeric", #level = "numeric", g not used but I'll leave it for now
    #lims = "matrix", lims.second = "list", lims.past = "list", 
    #lims.second.past = "list", lims.secondparallel = "list",
    X = "matrix", Z = "numeric", Xnotrun = "matrix",
@@ -21,7 +21,8 @@ adapt.concept2.sFFLHD.RC <- setRefClass("adapt.concept.sFFLHD.seq",
    initialize = function(...) {
      callSuper(...)
      
-     if (any(length(D)==0, length(L)==0, length(g)==0)) {
+     #if (any(length(D)==0, length(L)==0, length(g)==0)) {
+     if (any(length(D)==0, length(L)==0)) {
        message("D, L, and g must be specified")
      }
      
@@ -255,7 +256,7 @@ if (F) {
   source("RFF_test.R")
   
   gaussian1 <- function(xx) exp(-sum((xx-.5)^2)/2/.1)
-  a <- adapt.concept2.sFFLHD.RC(D=2,L=3,g=3,func=gaussian1)
+  a <- adapt.concept2.sFFLHD.RC(D=2,L=3,func=gaussian1)
   a$run(2)
   
   sinumoid <- function(xx){sum(sin(2*pi*xx*3)) + 20/(1+exp(-80*(xx[[1]]-.5)))}; contourfilled.func(sinumoid)

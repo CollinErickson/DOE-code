@@ -74,6 +74,7 @@ Working idea
 - Take 3 batches of size L at each iteration
 - Select L best
 - 20% of batches are just oldest points in queue
+- INTERACTIVE: <https://collin.shinyapps.io/adaptconcept2_sFFLHD_RC/>
 
 
 ================
@@ -100,13 +101,7 @@ Working idea
 =============
 <img src="adaptconcept_presentation2-figure/unnamed-chunk-7-1.png" title="plot of chunk unnamed-chunk-7" alt="plot of chunk unnamed-chunk-7" width="1280px" height="800px" />
 
-
-
-
-
-
 =============
-
 <img src="adaptconcept_presentation2-figure/unnamed-chunk-8-1.png" title="plot of chunk unnamed-chunk-8" alt="plot of chunk unnamed-chunk-8" width="1280px" height="800px" />
 
 
@@ -117,11 +112,48 @@ Working idea
 =============
 <img src="adaptconcept_presentation2-figure/unnamed-chunk-10-1.png" title="plot of chunk unnamed-chunk-10" alt="plot of chunk unnamed-chunk-10" width="1280px" height="800px" />
 
+
+
+
+
+
+
 =============
+
 <img src="adaptconcept_presentation2-figure/unnamed-chunk-11-1.png" title="plot of chunk unnamed-chunk-11" alt="plot of chunk unnamed-chunk-11" width="1280px" height="800px" />
+
 
 =============
 <img src="adaptconcept_presentation2-figure/unnamed-chunk-12-1.png" title="plot of chunk unnamed-chunk-12" alt="plot of chunk unnamed-chunk-12" width="1280px" height="800px" />
 
+
 =============
 <img src="adaptconcept_presentation2-figure/unnamed-chunk-13-1.png" title="plot of chunk unnamed-chunk-13" alt="plot of chunk unnamed-chunk-13" width="1280px" height="800px" />
+
+=============
+<img src="adaptconcept_presentation2-figure/unnamed-chunk-14-1.png" title="plot of chunk unnamed-chunk-14" alt="plot of chunk unnamed-chunk-14" width="1280px" height="800px" />
+
+=============
+<img src="adaptconcept_presentation2-figure/unnamed-chunk-15-1.png" title="plot of chunk unnamed-chunk-15" alt="plot of chunk unnamed-chunk-15" width="1280px" height="800px" />
+
+=============
+<img src="adaptconcept_presentation2-figure/unnamed-chunk-16-1.png" title="plot of chunk unnamed-chunk-16" alt="plot of chunk unnamed-chunk-16" width="1280px" height="800px" />
+
+=============
+<img src="adaptconcept_presentation2-figure/unnamed-chunk-17-1.png" title="plot of chunk unnamed-chunk-17" alt="plot of chunk unnamed-chunk-17" width="1280px" height="800px" />
+
+=============
+<img src="adaptconcept_presentation2-figure/unnamed-chunk-18-1.png" title="plot of chunk unnamed-chunk-18" alt="plot of chunk unnamed-chunk-18" width="1280px" height="800px" />
+
+=============
+<img src="adaptconcept_presentation2-figure/unnamed-chunk-19-1.png" title="plot of chunk unnamed-chunk-19" alt="plot of chunk unnamed-chunk-19" width="1280px" height="800px" />
+
+=============
+<img src="adaptconcept_presentation2-figure/unnamed-chunk-20-1.png" title="plot of chunk unnamed-chunk-20" alt="plot of chunk unnamed-chunk-20" width="1280px" height="800px" />
+
+
+
+
+Future ideas
+===================
+- Pick points within sFFLHD instead of choosing between points returned

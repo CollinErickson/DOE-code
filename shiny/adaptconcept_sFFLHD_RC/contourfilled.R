@@ -137,10 +137,12 @@ contourfilled <-
 #' @param mainminmax  whether the min and max values should be shown in the title of plot
 #' @param batchmax  number of datapoints that can be computed at a time
 #' @param out.col.name  if a column needs to be selected from the function, specify it
+#' @param out.name Selects with a $ the name from output to be used, for lists and data frames
 #' @param pretitle Text to be preappended to end of plot title
 #' @param posttitle Text to be appended to end of plot title
 #' @param title Title for the plot
 #' @param mainminmax_minmax Whether [min,max]= should be shown in title or just the numbers
+#' @param pts Points to plot on top of contour
 #' @param ...  Passed to contourfilled
 #' @examples 
 #' contourfilled.func(function(x){x[1]*x[2]})
@@ -152,9 +154,17 @@ contourfilled <-
 #' @export
 contourfilled.func <- function(fn0,n=100,xcontlim=c(0,1),ycontlim=c(0,1),
                                mainminmax=T,batchmax=1,out.col.name=NULL,
-                               pretitle="", posttitle="",title=NULL,mainminmax_minmax=TRUE,
+                               out.name=NULL,
+                               pretitle="", posttitle="",title=NULL,
+                               mainminmax_minmax=TRUE, pts=NULL,
                                ...) {
-  if(is.null(out.col.name)) {fn <- fn0} else {fn <- function(xx){fn0(xx)[,out.col.name]}}
+  if(!is.null(out.col.name)) {
+    fn <- function(xx){fn0(xx)[,out.col.name]}
+  } else if (!is.null(out.name)) {
+    fn <- function(xx){fn0(xx)[[out.name]]}
+  } else {
+    fn <- fn0
+  }
   x <- seq(xcontlim[1],xcontlim[2],length.out = n)
   y <- seq(ycontlim[1],ycontlim[2],length.out = n)
   z <- matrix(NA,n,n)
@@ -199,6 +209,9 @@ contourfilled.func <- function(fn0,n=100,xcontlim=c(0,1),ycontlim=c(0,1),
   } else {
     contourfilled(x,y,z,...)
   }
+  if (!is.null(pts)) {
+    points(pts, pch=19)
+  }
 }
 #' Makes filled contour plot from data without sidebar by interpolating with Gaussian process, uses contourfilled
 #' @param x  either just x data, x and y data, or x, y and z data
@@ -209,6 +222,7 @@ contourfilled.func <- function(fn0,n=100,xcontlim=c(0,1),ycontlim=c(0,1),
 #' @param ...  passed to contourfilled.func
 #' @importFrom mlegp mlegp
 #' @importFrom mlegp predict.gp
+#' @importFrom utils capture.output
 #' @examples 
 #' x <- runif(20)
 #' y <- runif(20)
@@ -244,7 +258,7 @@ contourfilled.data <- function(x,y=NULL,z=NULL,xcontlim=NULL,ycontlim=NULL,...) 
     x <- x[,1]
   }
   # Fits a Gaussian process model that interpolates perfectly
-  mod <- mlegp::mlegp(X=data.frame(x,y),Z=z,verbose=0)
+  co <- capture.output(mod <- mlegp::mlegp(X=data.frame(x,y),Z=z,verbose=0))
   pred.func <- function(xx) {mlegp::predict.gp(mod,xx)}
   minx <- min(x);maxx <- max(x);miny <- min(y);maxy <- max(y)
   if(is.null(xcontlim)) {xcontlim <- c(minx-.05*(maxx-minx),maxx+.05*(maxx-minx))}
