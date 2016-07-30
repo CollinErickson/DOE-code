@@ -1,3 +1,4 @@
+# No more boxes
 if (interactive())
   source("sFFLHD.R")
 library("UGP")
@@ -48,6 +49,8 @@ adapt.concept2.sFFLHD.RC <- setRefClass("adapt.concept.sFFLHD.seq",
        obj_func <<- function(lims) {
          maxgridfunc(mod$predict.var, lims=lims, batch=T)
        }
+     } else if (obj == "grad") {
+       obj_func <<- mod$grad_norm#{apply(xx, 1, mod$grad_norm)}
      }
      
      if (length(n0) != 0) {
@@ -99,8 +102,17 @@ adapt.concept2.sFFLHD.RC <- setRefClass("adapt.concept.sFFLHD.seq",
       Xnotrun <<- rbind(Xnotrun, s$get.batch())
       batch.tracker <<- c(batch.tracker, rep(s$b, L))
     }
-    objs <- obj_func(Xnotrun)
-    bestL <- order(objs, decreasing = T)[1:L]
+    if (F) {
+      objs <- obj_func(Xnotrun)
+      bestL <- order(objs, decreasing = T)[1:L]
+    } else { # SMED NEW STUFF !!!!
+      #browser()
+      bestL <- SMED_select(f=obj_func,p=ncol(X),n=L, X0=X, Xopt=Xnotrun)
+      # contourfilled::contourfilled.func(mod$grad_norm)
+      # points(X, col=2, pch=19)
+      # text(Xnotrun[,1],Xnotrun[,2])
+      # SMED_select(f=obj_func,p=ncol(X),n=8, X0=X, Xopt=Xnotrun)
+    }
     newL <- if (runif(1) > 0.2) {bestL} else {1:L}#{print(paste('first L',iteration));1:L}
     Xnew <- Xnotrun[newL,]
     Xnotrun <<- Xnotrun[-newL, , drop=FALSE]
@@ -255,18 +267,24 @@ if (F) {
   source('LHS.R')
   source("RFF_test.R")
   
-  gaussian1 <- function(xx) exp(-sum((xx-.5)^2)/2/.1)
-  a <- adapt.concept2.sFFLHD.RC(D=2,L=3,func=gaussian1)
+  gaussian1 <- function(xx) exp(-sum((xx-.5)^2)/2/.01)
+  a <- adapt.concept2.sFFLHD.RC(D=2,L=3,func=gaussian1, obj="grad")
   a$run(2)
   
-  sinumoid <- function(xx){sum(sin(2*pi*xx*3)) + 20/(1+exp(-80*(xx[[1]]-.5)))}; contourfilled.func(sinumoid)
-  a <- adapt.concept2.sFFLHD.RC(D=2,L=3,g=3,func=sinumoid)
-  a$run(10)
   
-  a <- adapt.concept2.sFFLHD.RC(D=2,L=3,g=3,func=RFF_get())
+  sinumoid <- function(xx){sum(sin(2*pi*xx*3)) + 20/(1+exp(-80*(xx[[1]]-.5)))}; contourfilled.func(sinumoid)
+  a <- adapt.concept2.sFFLHD.RC(D=2,L=3,g=3,func=sinumoid,  obj="grad")
+  a$run(4, plotlastonly = T)
+  
+  a <- adapt.concept2.sFFLHD.RC(D=2,L=3,g=3,func=RFF_get(), obj="grad")
   a$run(4, plotlastonly = T)
   
   # higher dim
-  a <- adapt.concept.sFFLHD.RC(D=3,L=8,g=3,func=gaussian1)
+  a <- adapt.concept2.sFFLHD.RC(D=3,L=8,g=3,func=gaussian1)
   a$run(3)
+  
+  # grad cont
+  contourfilled::contourfilled.func(a$mod$grad_norm)
+  
+  
 }
