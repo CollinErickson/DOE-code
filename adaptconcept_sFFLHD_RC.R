@@ -337,4 +337,8 @@ if (F) {
   # higher dim
   a <- adapt.concept.sFFLHD.RC(D=3,L=8,g=3,func=gaussian1)
   a$run(3)
+  
+  a <- adapt.concept.sFFLHD.RC(D=2,L=4,g=3,n0=8,func=banana, never_dive=T)
+  a$run(3)
+  
 }

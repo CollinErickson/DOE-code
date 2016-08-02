@@ -3,7 +3,7 @@ compare.adapt <- function(func, D, L, g, batches=10, reps=5, ...) {#browser()
   outdf <- data.frame()
   
   for (i in 1:reps) {
-    u <- adapt.concept.sFFLHD.RC(func=func, D=D, L=L, g=g, ...=...)
+    u <- adapt.concept2.sFFLHD.RC(func=func, D=D, L=L, g=g,  obj="func",...=...)
     systime <- system.time(u$run(batches,noplot=T))
     outdf <- rbind(outdf, data.frame(i=u$stats$iteration, mse=u$stats$mse, 
                       pvar=u$stats$pvar, method='Adapt', num=paste('a',i),
@@ -17,7 +17,7 @@ compare.adapt <- function(func, D, L, g, batches=10, reps=5, ...) {#browser()
                       time = systime[3], row.names=NULL))
     v$delete()
     
-    w <- adapt.concept2.sFFLHD.RC(func=func, D=D, L=L, g=g, ...=...)
+    w <- adapt.concept2.sFFLHD.RC(func=func, D=D, L=L, g=g, obj="grad", ...=...)
     systime <- system.time(w$run(batches,noplot=T))
     outdf <- rbind(outdf, data.frame(i=w$stats$iteration, mse=w$stats$mse, 
                       pvar=w$stats$pvar, method='Adapt2', num=paste('a2',i),
@@ -59,9 +59,13 @@ if (F) {
   source("RFF_test.R")
   source("adaptconcept_sFFLHD_RC.R")
   source("adaptconcept2_sFFLHD_RC.R")
+  source("../SMED/SMED-Code/SMED_select.R")
+  
 #  source("adaptconcept_sFFLHD_RC_noadapt.R")
   compare.adapt(func=gaussian1, D=2, L=4, g=3)
-  compare.adapt(func=RFF_get(), D=2, L=4, g=3, batches=5, reps = 3)
+  compare.adapt(func=RFF_get(), D=2, L=4, g=3, batches=5, reps = 5)
   system.time(compare.adapt(func=RFF_get(), D=2, L=4, g=3, batches=5, reps = 3, n0=3))
   system.time(compare.adapt(func=RFF_get(D=3), D=3, L=4, g=3, batches=5, reps = 3, n0=12))
+  
+  compare.adapt(func=banana, D=2, L=4, g=3, n0=8, batches=5, reps = 10)
 }

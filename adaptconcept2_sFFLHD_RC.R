@@ -3,7 +3,7 @@ if (interactive())
   source("sFFLHD.R")
 library("UGP")
 
-adapt.concept2.sFFLHD.RC <- setRefClass("adapt.concept.sFFLHD.seq",
+adapt.concept2.sFFLHD.RC <- setRefClass("adapt.concept2.sFFLHD.seq",
   fields = list(
    func = "function", D = "numeric", L = "numeric", 
    g = "numeric", #level = "numeric", g not used but I'll leave it for now
@@ -41,7 +41,7 @@ adapt.concept2.sFFLHD.RC <- setRefClass("adapt.concept.sFFLHD.seq",
      
      # set objective function to minimize or pick dive area by max
      if (length(obj)==0 || obj == "mse") {
-       obj_func <<- function(xx) {apply(xx, 1, mod$predict.var)}
+       obj_func <<- mod$predict.var #function(xx) {apply(xx, 1, mod$predict.var)}
        #function(lims) {
       #   msfunc(mod$predict.var, lims=lims, pow=1, batch=T)
       # }
@@ -51,6 +51,8 @@ adapt.concept2.sFFLHD.RC <- setRefClass("adapt.concept.sFFLHD.seq",
        }
      } else if (obj == "grad") {
        obj_func <<- mod$grad_norm#{apply(xx, 1, mod$grad_norm)}
+     } else if (obj == "func") {
+       obj_func <<- function(xx) max(1e-16, mod$predict(xx))#{apply(xx, 1, mod$grad_norm)}
      }
      
      if (length(n0) != 0) {
@@ -151,7 +153,7 @@ adapt.concept2.sFFLHD.RC <- setRefClass("adapt.concept.sFFLHD.seq",
        contourfilled.func(mod$predict,batchmax=500, pretitle="Predicted Surface ")
        points(X,pch=19)
        points(X[(nrow(X)-L+1):nrow(X),],col='yellow',pch=19, cex=.5) # plot last L separately
-       points(Xnotrun, col=2)
+       ###points(Xnotrun, col=2)
        #rect(xlim[1],ylim[1],xlim[2],ylim[2],lwd=5)
        #abline(v=xlim[1] + 1:(g-1)/g * (xlim[2]-xlim[1]),h=ylim[1] + 1:(g-1)/g * (ylim[2]-ylim[1]))
        #segments(x0=xlim[1] + 1:(g-1)/g * (xlim[2]-xlim[1]), y0=ylim[1], y1=ylim[2], col=1)
@@ -171,7 +173,7 @@ adapt.concept2.sFFLHD.RC <- setRefClass("adapt.concept.sFFLHD.seq",
        contourfilled.func(mod$predict.var, batchmax=500, pretitle="Predictive Variance ")
        points(X,pch=19)
        points(X[(nrow(X)-L+1):nrow(X),],col='yellow',pch=19, cex=.5) # plot last L separately
-       points(Xnotrun, col=2)
+       ###points(Xnotrun, col=2)
        #rect(xlim[1],ylim[1],xlim[2],ylim[2],lwd=5)
        #abline(v=xlim[1] + 1:(g-1)/g * (xlim[2]-xlim[1]),h=ylim[1] + 1:(g-1)/g * (ylim[2]-ylim[1]))
        #segments(x0=xlim[1] + 1:(g-1)/g * (xlim[2]-xlim[1]), y0=ylim[1], y1=ylim[2], col=1)
@@ -266,6 +268,7 @@ if (F) {
   require(contourfilled)
   source('LHS.R')
   source("RFF_test.R")
+  source("../SMED/SMED-Code/SMED_select.R")
   
   gaussian1 <- function(xx) exp(-sum((xx-.5)^2)/2/.01)
   a <- adapt.concept2.sFFLHD.RC(D=2,L=3,func=gaussian1, obj="grad")
@@ -273,6 +276,7 @@ if (F) {
   
   
   sinumoid <- function(xx){sum(sin(2*pi*xx*3)) + 20/(1+exp(-80*(xx[[1]]-.5)))}; contourfilled.func(sinumoid)
+  sinumoid <- function(xx){sum(sin(2*pi*xx*3)) }; contourfilled.func(sinumoid)
   a <- adapt.concept2.sFFLHD.RC(D=2,L=3,g=3,func=sinumoid,  obj="grad")
   a$run(4, plotlastonly = T)
   
@@ -282,6 +286,9 @@ if (F) {
   # higher dim
   a <- adapt.concept2.sFFLHD.RC(D=3,L=8,g=3,func=gaussian1)
   a$run(3)
+  
+  a <- adapt.concept2.sFFLHD.RC(D=2,L=4,n0=8,func=banana, obj="func")
+  a$run(1)
   
   # grad cont
   contourfilled::contourfilled.func(a$mod$grad_norm)
