@@ -115,7 +115,10 @@ adapt.concept2.sFFLHD.RC <- setRefClass("adapt.concept2.sFFLHD.seq",
       # text(Xnotrun[,1],Xnotrun[,2])
       # SMED_select(f=obj_func,p=ncol(X),n=8, X0=X, Xopt=Xnotrun)
     }
-    newL <- if (runif(1) > 0.2) {bestL} else {1:L}#{print(paste('first L',iteration));1:L}
+    rand1 <- runif(1)
+    newL <- if (rand1 < 0.0) {1:L} 
+            else if (rand1 < 0.2 + 1.0) {order(mod$predict.var(Xnotrun), decreasing=T)[1:L]}
+            else {bestL}#{print(paste('first L',iteration));1:L}
     Xnew <- Xnotrun[newL,]
     Xnotrun <<- Xnotrun[-newL, , drop=FALSE]
     batch.tracker <<- batch.tracker[-newL]
@@ -268,7 +271,7 @@ if (F) {
   require(contourfilled)
   source('LHS.R')
   source("RFF_test.R")
-  source("../SMED/SMED-Code/SMED_select.R")
+  source("/Users/collin/Git/SMED-Code/SMED_select.R")
   
   gaussian1 <- function(xx) exp(-sum((xx-.5)^2)/2/.01)
   a <- adapt.concept2.sFFLHD.RC(D=2,L=3,func=gaussian1, obj="grad")
