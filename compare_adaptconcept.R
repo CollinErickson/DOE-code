@@ -3,6 +3,8 @@ compare.adapt <- function(func, D, L, g, batches=10, reps=5, ...) {#browser()
   outdf <- data.frame()
   
   for (i in 1:reps) {
+    set.seed(i)
+    func <- RFF_get()
     u <- adapt.concept2.sFFLHD.RC(func=func, D=D, L=L, g=g,  obj="func",...=...)
     systime <- system.time(u$run(batches,noplot=T))
     outdf <- rbind(outdf, data.frame(i=u$stats$iteration, mse=u$stats$mse, 

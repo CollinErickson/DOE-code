@@ -16,7 +16,8 @@ adapt.concept2.sFFLHD.RC <- setRefClass("adapt.concept2.sFFLHD.seq",
    obj = "character", obj_func = "function",
    n0 = "numeric",#, never_dive = "logical"
    package = "character",
-   batch.tracker = "numeric"
+   batch.tracker = "numeric",
+   force_old = "numeric", force_pvar = "numeric"
   ),
   methods = list(
    initialize = function(...) {
@@ -71,6 +72,8 @@ adapt.concept2.sFFLHD.RC <- setRefClass("adapt.concept2.sFFLHD.seq",
      }
      
      #if (length(never_dive)==0) {never_dive <<- FALSE}
+     if (length(force_old) == 0) {force_old <<- 0}
+     if (length(force_pvar) == 0) {force_pvar <<- 0}
     },
     run = function(maxit, plotlastonly=F, noplot=F) {
      i <- 1
@@ -116,8 +119,8 @@ adapt.concept2.sFFLHD.RC <- setRefClass("adapt.concept2.sFFLHD.seq",
       # SMED_select(f=obj_func,p=ncol(X),n=8, X0=X, Xopt=Xnotrun)
     }
     rand1 <- runif(1)
-    newL <- if (rand1 < 0.0) {1:L} 
-            else if (rand1 < 0.2 + 1.0) {order(mod$predict.var(Xnotrun), decreasing=T)[1:L]}
+    newL <- if (rand1 < force_old) {1:L} 
+            else if (rand1 < force_old + force_pvar) {order(mod$predict.var(Xnotrun), decreasing=T)[1:L]}
             else {bestL}#{print(paste('first L',iteration));1:L}
     Xnew <- Xnotrun[newL,]
     Xnotrun <<- Xnotrun[-newL, , drop=FALSE]
@@ -269,9 +272,11 @@ if (F) {
   require(mlegp)
   require(GPfit)
   require(contourfilled)
+  require(TestFunctions)
   source('LHS.R')
   source("RFF_test.R")
   source("/Users/collin/Git/SMED-Code/SMED_select.R")
+  source("../SMED/SMED-Code/SMED_select.R")
   
   gaussian1 <- function(xx) exp(-sum((xx-.5)^2)/2/.01)
   a <- adapt.concept2.sFFLHD.RC(D=2,L=3,func=gaussian1, obj="grad")
@@ -290,8 +295,9 @@ if (F) {
   a <- adapt.concept2.sFFLHD.RC(D=3,L=8,g=3,func=gaussian1)
   a$run(3)
   
-  a <- adapt.concept2.sFFLHD.RC(D=2,L=4,n0=8,func=banana, obj="func")
+  a <- adapt.concept2.sFFLHD.RC(D=2,L=4,n0=8,func=banana, obj="grad", force_pvar=.2)
   a$run(1)
+  a$run(20, plotl=T)
   
   # grad cont
   contourfilled::contourfilled.func(a$mod$grad_norm)
