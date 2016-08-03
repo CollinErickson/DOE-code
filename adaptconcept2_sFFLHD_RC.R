@@ -54,6 +54,11 @@ adapt.concept2.sFFLHD.RC <- setRefClass("adapt.concept2.sFFLHD.seq",
        obj_func <<- mod$grad_norm#{apply(xx, 1, mod$grad_norm)}
      } else if (obj == "func") {
        obj_func <<- function(xx) max(1e-16, mod$predict(xx))#{apply(xx, 1, mod$grad_norm)}
+       obj_func <<- function(xx) {pv <- mod$predict(xx);ifelse(pv<0,1e-16, pv)}#{apply(xx, 1, mod$grad_norm)}
+     } else if (obj == "pvar") {
+       obj_func <<- function(xx) max(1e-16, mod$predict(xx))#{apply(xx, 1, mod$grad_norm)}
+     } else if (obj == "nonadapt") {
+       # use next batch only #obj_func <<- NULL
      }
      
      if (length(n0) != 0) {
@@ -97,11 +102,17 @@ adapt.concept2.sFFLHD.RC <- setRefClass("adapt.concept2.sFFLHD.seq",
      iteration <<- iteration + 1
     },
     add_data = function() {#browser()
-     if (nrow(X) == 0) {
+     if (nrow(X) == 0 ) {
        X <<- rbind(X, s$get.batch())
        Z <<- c(Z,apply(X, 1, func))
        return()
      }
+      if (obj %in% c("nonadapt", "noadapt")) {
+        Xnew <- s$get.batch()
+        X <<- rbind(X, Xnew)
+        Z <<- c(Z,apply(Xnew, 1, func))
+        return()
+      }
     #while(nrow(Xnotrun) < max(L^2, 20)) {
     for (iii in 1:3) {
       Xnotrun <<- rbind(Xnotrun, s$get.batch())
