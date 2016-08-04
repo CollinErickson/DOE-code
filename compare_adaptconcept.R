@@ -116,6 +116,7 @@ if (F) {
   source("adaptconcept_sFFLHD_RC.R")
   source("adaptconcept2_sFFLHD_RC.R")
   source("../SMED/SMED-Code/SMED_select.R")
+  source("../SMED-Code/SMED_select.R")
   library(plyr)
   library(TestFunctions)
   

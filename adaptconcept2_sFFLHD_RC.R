@@ -61,7 +61,7 @@ adapt.concept2.sFFLHD.RC <- setRefClass("adapt.concept2.sFFLHD.seq",
        # use next batch only #obj_func <<- NULL
      }
      
-     if (length(n0) != 0) {
+     if (length(n0) != 0 & n0 > 0) {
        Xnew <- matrix(NA, 0, D)
        while (nrow(Xnew) < n0) {
          Xnew <- rbind(Xnew, s$get.batch())
