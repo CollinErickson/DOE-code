@@ -89,7 +89,7 @@ adapt.concept2.sFFLHD.RC <- setRefClass("adapt.concept2.sFFLHD.seq",
        i <- i + 1
      }
     },
-    run1 = function(plotit=TRUE) {#browser()
+    run1 = function(plotit=TRUE) {#if(iteration>24)browser()
      add_data()
      update_mod()
      #get_mses()

@@ -13,8 +13,9 @@ maxgridfunc <- function(func1,lims,batch=F) {
   if(batch) {return(max(func1(X1)))}
   max(apply(X1,1,func1))
 }
-msecalc <- function(truefunc, guessfunc,lims) {
-  X1 <- simple.grid(20,nrow(lims),scaledto=lims)
+msecalc <- function(truefunc, guessfunc,lims, n=500) {
+  #X1 <- simple.grid(20,nrow(lims),scaledto=lims)
+  X1 <- lhs::maximinLHS(n, nrow(lims))
   mean((apply(X1,1,function(xx){truefunc(xx) - guessfunc(xx)}))^2)
 }
 outer.inttoind <- function(i,a) {
