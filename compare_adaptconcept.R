@@ -33,8 +33,6 @@ compare.adapt <- function(func, D, L, g, batches=10, reps=5,
                             force2=paste0(forces[iforce], '_', force.vals[iforce]))
         outdf <- rbind(outdf, newdf1)
         u$delete()
-        
-        outdf <- rbind(outdf, newdf1)
       }
     }
   }  
@@ -45,7 +43,7 @@ compare.adapt <- function(func, D, L, g, batches=10, reps=5,
   plotply2 <- plyr::dlply(plotdf, .(method, force2, i))
   cols <- 1:length(plot.after)
   names(cols) <- plot.after
-  pchs <- 14 + 1:length(unique(plotdf$method))
+  pchs <- 20 + 1:length(unique(plotdf$method))
   names(pchs) <- unique(plotdf$method)
   pchs2 <- 14 + 1:length(plot.after)
   names(pchs2) <- plot.after
@@ -67,15 +65,59 @@ compare.adapt <- function(func, D, L, g, batches=10, reps=5,
   #browser()
   oparmar <- par()$mar
   par(mar=c(8,3,1,1))
+  #stripchart(lapply(plotply2, function(xx) xx$mse), 
+  #           las=2, 
+  #           #col=cols2[as.character(sapply(plotply2, function(xx) xx$method[1]))],
+  #           #pch=pchs2[as.character(sapply(plotply2, function(xx) xx$i[1]))],
+  #           col=cols[as.character(sapply(plotply2, function(xx) xx$i[1]))],
+  #           bg= cols[as.character(sapply(plotply2, function(xx) xx$i[1]))],
+  #           pch=pchs[as.character(sapply(plotply2, function(xx) xx$method[1]))],
+  #           vertical = T, log='y'
+  #           #,glab=gsub("\\.","\n",names(plotply2))
+  #)
+  #stripchart(lapply(plotply2, function(xx) xx$pvar), 
+  #           las=2, 
+  #           #col=cols2[as.character(sapply(plotply2, function(xx) xx$method[1]))],
+  #           #pch=pchs2[as.character(sapply(plotply2, function(xx) xx$i[1]))],
+  #           col=cols[as.character(sapply(plotply2, function(xx) xx$i[1]))]+2,
+  #           bg="gray51",
+  #           pch=pchs[as.character(sapply(plotply2, function(xx) xx$method[1]))],
+  #           vertical = T, log='y', add=T,at = 1:length(plotply2)-.1
+  #           #,glab=gsub("\\.","\n",names(plotply2))
+  #)
+  
+  #browser()
   stripchart(lapply(plotply2, function(xx) xx$mse), 
              las=2, 
-             #col=cols2[as.character(sapply(plotply2, function(xx) xx$method[1]))],
-             #pch=pchs2[as.character(sapply(plotply2, function(xx) xx$i[1]))],
-             col=cols[as.character(sapply(plotply2, function(xx) xx$i[1]))],
-             pch=pchs[as.character(sapply(plotply2, function(xx) xx$method[1]))],
-             vertical = T, log='y'
+             col="white",
+             vertical = T, log='y', 
+             xlim=c(1-.3,length(plotply2)),
+             ylim=c(min(plotdf$mse, plotdf$pvar), max(plotdf$mse, plotdf$pvar))
              #,glab=gsub("\\.","\n",names(plotply2))
   )
+  #browser()
+  #abline(v=1:length(plotply2))
+  for (j in 1:length(plotply2)) {
+    for (k in 1:length(plotply2[[j]]$mse)) {
+      lines(y=c(plotply2[[j]]$mse[k],plotply2[[j]]$pvar[k]),x=c(j,j-.3),col="gray51")
+    }
+    stripchart(plotply2[[j]]$mse, 
+               las=2, 
+               col=cols[as.character(plotply2[[j]]$i[1])],
+               bg= cols[as.character(plotply2[[j]]$i[1])],
+               pch=pchs[as.character(plotply2[[j]]$method[1])],
+               vertical = T, log='y', add=T, at=j
+               #,glab=gsub("\\.","\n",names(plotply2))
+    )
+    stripchart(plotply2[[j]]$pvar, 
+               las=2, 
+               col=cols[as.character(plotply2[[j]]$i[1])],
+               bg="gray51",
+               pch=pchs[as.character(plotply2[[j]]$method[1])],
+               vertical = T, log='y', add=T,at = j-.3
+               #,glab=gsub("\\.","\n",names(plotply2))
+    )
+  }
   par(mar=oparmar)
   
   #plot(u$stats$iteration, u$stats$mse, type='b', col=1, log='y')
@@ -132,6 +174,7 @@ if (F) {
   
   compare.adapt(func=banana, D=2, L=4, g=3, n0=8, batches=5, reps = 5)
   compare.adapt(func=banana, D=2, L=4, g=3, n0=8, batches=15, reps = 3, plot.after=c(5,10), objs=c("nonadapt", "pvar", "grad"),forces=c("old","pvar"),force.vals = c(.2,.2))
+  compare.adapt(func=banana, D=2, L=4, g=3, n0=8, batches=5, reps = 3, plot.after=c(3), objs=c("nonadapt", "pvar", "grad"),forces=c("old"),force.vals = c(.2))
   compare.adapt(func=function(xx)banana(xx[1:2]), D=3, L=4, g=3, n0=8, batches=15, reps = 3, plot.after=c(5,10), objs=c("nonadapt", "pvar", "grad"),forces=c("old"),force.vals = c(.2))
   compare.adapt(func=sinumoid, D=2, L=4, g=3, n0=8, batches=15, reps = 3, plot.after=c(5,10), objs=c("nonadapt", "pvar", "grad"),forces=c("old","pvar"),force.vals = c(.2,.2))
   compare.adapt(func=RFF_get(), D=2, L=4, g=3, batches=5, reps = 5, plot.after=3, objs=c("nonadapt", "pvar", "grad"),forces=c("old","pvar"),force.vals = c(.2,.2))

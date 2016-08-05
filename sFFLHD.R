@@ -189,7 +189,8 @@ sFFLHD.seq <- setRefClass('sFFLHD.seq',
                 Xb = 'matrix',Vb = 'matrix',Mb = 'matrix',Wb = 'matrix',
                 A1 = 'matrix',r = 'integer',p = 'integer',Ar = 'matrix',
                 stage = 'integer',vii = 'integer',Fslices = 'list',
-                FF1.1 = 'matrix',Mb.store='matrix',v.shuffle = 'integer'
+                FF1.1 = 'matrix',Mb.store='matrix',v.shuffle = 'integer',
+                maximin = 'logical'
                 ),
   methods = list(
     get.batch = function() {
@@ -209,7 +210,7 @@ sFFLHD.seq <- setRefClass('sFFLHD.seq',
         a.fac <- factorize(L)
         if(all(a.fac==a.fac[1])) {a <<- a.fac[1]}
         else {a <<- L}
-        message(paste('Setting a to',a))
+        #message(paste('Setting a to',a))
       }
       if (min(abs(c(log(L,a)%%1, log(L,a)%%1-1))) > 1e-6) {
         stop('a must be an integer root of L')
@@ -234,6 +235,7 @@ sFFLHD.seq <- setRefClass('sFFLHD.seq',
       A1 <<- OA3[,2:(D+1)]
       r <<- 1L
       p <<- 1L
+      maximin <<- FALSE# TRUE # Not working yet
       # end initialization
     }, # end stage0 function
     stage1 = function() { # run steps 2 and 3
@@ -332,12 +334,20 @@ sFFLHD.seq <- setRefClass('sFFLHD.seq',
           Q <- setdiff((lb*(G[i,j]-1)/Lb+1):(lb*(G[i,j]+1-1)/Lb-1+1),Vb[,j])  # ADDED -1 TO TRY TO FIX????? CANCELED OUT 1's???????
           N <- length(Q)
           e1 <- ceiling(eps[i,j]*N)
-          e2 <- e1-eps[i,j]*N
+          e2 <- e1-eps[i,j]*N # The remainder, should be random between 0 and 1
           e <- Q[e1];if(length(e)==0) browser();if(e>lb | e<1)browser()#print(c(i,j,e));
           Vb[nb+1+i-1,j] <<- e
           Mb[nb+1+i-1,j] <<- G[i,j]   -1  # Subtract 1 here to get start at zero??????
           Wb[nb+1+i-1,j] <<- floor(L*G[i,j]/Lb)
           Xb[nb+1+i-1,j] <<- (e-e2)/lb
+        }
+        if (maximin && (b > 0 | i > 1)) {
+          #browser()
+          optim.func <- function(xx) {#browser()
+            -min(rowSums(sweep(Xb[1:(nb+i-1),,drop=FALSE], 2, (Vb[nb+i,]-xx)/lb)^2))
+          }
+          opt.out <- optim(rep(.5,D), optim.func, lower=rep(1e-6, D), upper=rep(1-1e-6, D), method="L-BFGS-B")
+          Xb[nb+i,] <<- (Vb[nb+i,]-opt.out$par)/lb
         }
       }
     }, # end stage3 function
