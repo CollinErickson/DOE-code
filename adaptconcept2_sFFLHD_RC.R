@@ -295,7 +295,7 @@ if (F) {
   
   
   sinumoid <- function(xx){sum(sin(2*pi*xx*3)) + 20/(1+exp(-80*(xx[[1]]-.5)))}; contourfilled.func(sinumoid)
-  sinumoid <- function(xx){sum(sin(2*pi*xx*3)) }; contourfilled.func(sinumoid)
+  #sinumoid <- function(xx){sum(sin(2*pi*xx*3)) }; contourfilled.func(sinumoid)
   a <- adapt.concept2.sFFLHD.RC(D=2,L=3,g=3,func=sinumoid,  obj="grad")
   a$run(4, plotlastonly = T)
   
