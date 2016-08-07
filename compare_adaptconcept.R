@@ -178,4 +178,9 @@ if (F) {
   compare.adapt(func=function(xx)banana(xx[1:2]), D=3, L=4, g=3, n0=8, batches=15, reps = 3, plot.after=c(5,10), objs=c("nonadapt", "pvar", "grad"),forces=c("old"),force.vals = c(.2))
   compare.adapt(func=sinumoid, D=2, L=4, g=3, n0=8, batches=15, reps = 3, plot.after=c(5,10), objs=c("nonadapt", "pvar", "grad"),forces=c("old","pvar"),force.vals = c(.2,.2))
   compare.adapt(func=RFF_get(), D=2, L=4, g=3, batches=5, reps = 5, plot.after=3, objs=c("nonadapt", "pvar", "grad"),forces=c("old","pvar"),force.vals = c(.2,.2))
+  
+  # check run time
+  library(lineprof)
+  l <- lineprof(compare.adapt(func=banana, D=2, L=4, g=3, n0=8, batches=5, reps = 3, plot.after=c(3), objs=c("nonadapt", "pvar", "grad"),forces=c("old"),force.vals = c(.2)))
+  shine(l)
 }

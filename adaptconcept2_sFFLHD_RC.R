@@ -61,7 +61,7 @@ adapt.concept2.sFFLHD.RC <- setRefClass("adapt.concept2.sFFLHD.seq",
        # use next batch only #obj_func <<- NULL
      }
      
-     if (length(n0) != 0 & n0 > 0) {
+     if (length(n0) != 0 && n0 > 0) {
        Xnew <- matrix(NA, 0, D)
        while (nrow(Xnew) < n0) {
          Xnew <- rbind(Xnew, s$get.batch())
@@ -290,7 +290,7 @@ if (F) {
   source("../SMED/SMED-Code/SMED_select.R")
   
   gaussian1 <- function(xx) exp(-sum((xx-.5)^2)/2/.01)
-  a <- adapt.concept2.sFFLHD.RC(D=2,L=3,func=gaussian1, obj="grad")
+  a <- adapt.concept2.sFFLHD.RC(D=2,L=3,func=gaussian1, obj="grad", n0=0)
   a$run(2)
   
   
@@ -313,5 +313,8 @@ if (F) {
   # grad cont
   contourfilled::contourfilled.func(a$mod$grad_norm)
   
-  
+  # test run times
+  a <- adapt.concept2.sFFLHD.RC(D=2,L=3,func=gaussian1, obj="grad", n0=0)
+  a$run(20,plotlastonly = T)
+  l <- lineprof::lineprof(a$run())
 }
