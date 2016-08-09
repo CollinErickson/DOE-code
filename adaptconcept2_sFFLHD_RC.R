@@ -102,44 +102,73 @@ adapt.concept2.sFFLHD.RC <- setRefClass("adapt.concept2.sFFLHD.seq",
      iteration <<- iteration + 1
     },
     add_data = function() {#browser()
-     if (nrow(X) == 0 ) {
+      if (nrow(X) == 0 ) {
        X <<- rbind(X, s$get.batch())
        Z <<- c(Z,apply(X, 1, func))
        return()
-     }
+      }
       if (obj %in% c("nonadapt", "noadapt")) {
         Xnew <- s$get.batch()
         X <<- rbind(X, Xnew)
         Z <<- c(Z,apply(Xnew, 1, func))
         return()
       }
-    #while(nrow(Xnotrun) < max(L^2, 20)) {
-    for (iii in 1:3) {
-      Xnotrun <<- rbind(Xnotrun, s$get.batch())
-      batch.tracker <<- c(batch.tracker, rep(s$b, L))
-    }
-    if (F) {
-      objs <- obj_func(Xnotrun)
-      bestL <- order(objs, decreasing = T)[1:L]
-    } else { # SMED NEW STUFF !!!!
+      
+      # Add new points
+      for (iii in 1:3) {
+        Xnotrun <<- rbind(Xnotrun, s$get.batch())
+        batch.tracker <<- c(batch.tracker, rep(s$b, L))
+      }
+      newL <- NULL
       #browser()
-      bestL <- SMED_select(f=obj_func,p=ncol(X),n=L, X0=X, Xopt=Xnotrun)
-      # contourfilled::contourfilled.func(mod$grad_norm)
-      # points(X, col=2, pch=19)
-      # text(Xnotrun[,1],Xnotrun[,2])
-      # SMED_select(f=obj_func,p=ncol(X),n=8, X0=X, Xopt=Xnotrun)
-    }
-    rand1 <- runif(1)
-    newL <- if (rand1 < force_old) {1:L} 
-            else if (rand1 < force_old + force_pvar) {order(mod$predict.var(Xnotrun), decreasing=T)[1:L]}
-            else {bestL}#{print(paste('first L',iteration));1:L}
-    Xnew <- Xnotrun[newL,]
-    Xnotrun <<- Xnotrun[-newL, , drop=FALSE]
-    batch.tracker <<- batch.tracker[-newL]
-    Znew <- apply(Xnew,1,func) 
-     
-     X <<- rbind(X,Xnew)
-     Z <<- c(Z,Znew)
+      # Check if forcing old or pvar
+      if (force_old > 0 & force_pvar > 0) {
+        stop("No can force_old and force_pvar")
+      } else if (force_old > 0 & force_old <= 1) {
+        rand1 <- runif(1)
+        if (rand1 < force_old) {newL <- 1:L} 
+      } else if (force_old > 1) {
+        if ((iteration %% as.integer(force_old)) == 0) {
+          newL <- 1:L
+        }
+      } else if (force_pvar > 0 & force_pvar <= 1) {
+        rand1 <- runif(1)
+        if (rand1 < force_pvar) {newL <- order(mod$predict.var(Xnotrun), decreasing=T)[1:L]} 
+      } else if (force_pvar > 1) {
+        if ((iteration %% as.integer(force_pvar)) == 0) {
+          newL <- order(mod$predict.var(Xnotrun), decreasing=T)[1:L]
+          #newL <- SMED_selectC(f=mod$predict.var, n=L, X0=X, Xopt=Xnotrun)
+        }
+      } 
+      # if nothing forced, run SMED_select
+      if (is.null(newL)) {
+        bestL <- SMED_selectC(f=obj_func, n=L, X0=X, Xopt=Xnotrun)
+        newL <- bestL
+      }
+      
+      #while(nrow(Xnotrun) < max(L^2, 20)) {
+      #if (F) {
+      #  objs <- obj_func(Xnotrun)
+      #  bestL <- order(objs, decreasing = T)[1:L]
+      #} else { # SMED NEW STUFF !!!!
+        #browser()
+      #  bestL <- SMED_selectC(f=obj_func, n=L, X0=X, Xopt=Xnotrun)
+        # contourfilled::contourfilled.func(mod$grad_norm)
+        # points(X, col=2, pch=19)
+        # text(Xnotrun[,1],Xnotrun[,2])
+        # SMED_select(f=obj_func,p=ncol(X),n=8, X0=X, Xopt=Xnotrun)
+      #}
+      #rand1 <- runif(1)
+      #newL <- if (rand1 < force_old) {1:L} 
+      #        else if (rand1 < force_old + force_pvar) {order(mod$predict.var(Xnotrun), decreasing=T)[1:L]}
+      #        else {bestL}#{print(paste('first L',iteration));1:L}
+      Xnew <- Xnotrun[newL,]
+      Xnotrun <<- Xnotrun[-newL, , drop=FALSE]
+      batch.tracker <<- batch.tracker[-newL]
+      Znew <- apply(Xnew,1,func) 
+       
+      X <<- rbind(X,Xnew)
+      Z <<- c(Z,Znew)
     },
     update_mod = function() {#browser()
      mod$update(Xall=X, Zall=Z)
@@ -315,6 +344,7 @@ if (F) {
   
   # test run times
   a <- adapt.concept2.sFFLHD.RC(D=2,L=3,func=gaussian1, obj="grad", n0=0)
-  a$run(20,plotlastonly = T)
-  l <- lineprof::lineprof(a$run())
+  system.time(a$run(20,plotlastonly = T))
+  l <- lineprof::lineprof(a$run(1))
+  lineprof::shine(l)
 }

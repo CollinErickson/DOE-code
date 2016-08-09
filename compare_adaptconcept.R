@@ -39,8 +39,8 @@ compare.adapt <- function(func, D, L, g, batches=10, reps=5,
   #browser()
   
   plotdf <- outdf[which(outdf$i %in% plot.after),]
-  plotply <- plyr::dlply(plotdf, .(method, i))
-  plotply2 <- plyr::dlply(plotdf, .(method, force2, i))
+  plotply <- plyr::dlply(plotdf, c("method", "i"))
+  plotply2 <- plyr::dlply(plotdf, c("method", "force2", "i"))
   cols <- 1:length(plot.after)
   names(cols) <- plot.after
   pchs <- 20 + 1:length(unique(plotdf$method))
@@ -183,4 +183,5 @@ if (F) {
   library(lineprof)
   l <- lineprof(compare.adapt(func=banana, D=2, L=4, g=3, n0=8, batches=5, reps = 3, plot.after=c(3), objs=c("nonadapt", "pvar", "grad"),forces=c("old"),force.vals = c(.2)))
   shine(l)
+  system.time(compare.adapt(func=banana, D=2, L=4, g=3, n0=8, batches=30, reps = 3, plot.after=c(10,20), objs=c("nonadapt", "pvar", "grad"),forces=c("old"),force.vals = c(.2)))
 }

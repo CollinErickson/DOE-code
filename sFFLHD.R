@@ -235,7 +235,7 @@ sFFLHD.seq <- setRefClass('sFFLHD.seq',
       A1 <<- OA3[,2:(D+1)]
       r <<- 1L
       p <<- 1L
-      maximin <<- FALSE# TRUE # Not working yet
+      maximin <<- TRUE # Seems to work, slows it down a little bit
       # end initialization
     }, # end stage0 function
     stage1 = function() { # run steps 2 and 3
@@ -341,12 +341,14 @@ sFFLHD.seq <- setRefClass('sFFLHD.seq',
           Wb[nb+1+i-1,j] <<- floor(L*G[i,j]/Lb)
           Xb[nb+1+i-1,j] <<- (e-e2)/lb
         }
-        if (maximin && (b > 0 | i > 1)) {
+        #browser()
+        if (maximin && (b > 0 | i > 1)) { # all but first point
           #browser()
           optim.func <- function(xx) {#browser()
             -min(rowSums(sweep(Xb[1:(nb+i-1),,drop=FALSE], 2, (Vb[nb+i,]-xx)/lb)^2))
           }
-          opt.out <- optim(rep(.5,D), optim.func, lower=rep(1e-6, D), upper=rep(1-1e-6, D), method="L-BFGS-B")
+          # don't let it get exactly in any corner, might end up in wrong square
+          opt.out <- optim(rep(.5,D), optim.func, lower=rep(1e-4, D), upper=rep(1-1e-4, D), method="L-BFGS-B")
           Xb[nb+i,] <<- (Vb[nb+i,]-opt.out$par)/lb
         }
       }
