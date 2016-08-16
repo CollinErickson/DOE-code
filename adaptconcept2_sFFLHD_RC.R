@@ -2,7 +2,7 @@
 if (interactive())
   source("sFFLHD.R")
 library("UGP")
-
+setOldClass("UGP")
 adapt.concept2.sFFLHD.RC <- setRefClass("adapt.concept2.sFFLHD.seq",
   fields = list(
    func = "function", D = "numeric", L = "numeric", 
@@ -36,7 +36,7 @@ adapt.concept2.sFFLHD.RC <- setRefClass("adapt.concept2.sFFLHD.seq",
      #if(length(lims)==0) {lims <<- matrix(c(0,1),D,2,byrow=T)}
      #mod$initialize(package = "mlegp")
      if(length(package) == 0) {package <<- "laGP"}
-     mod <<- UGP(package = package)
+     mod <<- UGP$new(package = package)
      stats <<- list(iteration=c(),pvar=c(),mse=c(), ppu=c(), minbatch=c())
      iteration <<- 1
      
@@ -89,7 +89,7 @@ adapt.concept2.sFFLHD.RC <- setRefClass("adapt.concept2.sFFLHD.seq",
        i <- i + 1
      }
     },
-    run1 = function(plotit=TRUE) {#if(iteration>24)browser()
+    run1 = function(plotit=TRUE) {#browser()#if(iteration>24)browser()
      add_data()
      update_mod()
      #get_mses()
@@ -245,11 +245,14 @@ adapt.concept2.sFFLHD.RC <- setRefClass("adapt.concept2.sFFLHD.seq",
          legend("topright",legend=c("MSE","PVar"),fill=c(1,2))
          points(statsdf$iter, statsdf$mse, type='o', pch=19)
          points(statsdf$iter, statsdf$pvar, type='o', pch = 19, col=2)
+         
          screen(5) # level plot
-         par(mar=c(2,2,0,0.5)) # 5.1 4.1 4.1 2.1 BLTR
-         plot(statsdf$iter, statsdf$minbatch, type='o', pch=19,
-              xlab="Iteration")#, ylab="Level")
-         legend('bottomright',legend="Batch not run",fill=1)
+         #par(mar=c(2,2,0,0.5)) # 5.1 4.1 4.1 2.1 BLTR
+         #plot(statsdf$iter, statsdf$minbatch, type='o', pch=19,
+         #     xlab="Iteration")#, ylab="Level")
+         #legend('bottomright',legend="Batch not run",fill=1)
+         contourfilled.func(mod$grad_norm, n=20, mainminmax_minmax = F, pretitle="Grad ")
+         
          screen(6) # % of pts used plot 
          par(mar=c(2,2,0,0.5)) # 5.1 4.1 4.1 2.1 BLTR
          plot(statsdf$iter, statsdf$ppu, type='o', pch=19,
@@ -317,6 +320,8 @@ if (F) {
   source("RFF_test.R")
   source("/Users/collin/Git/SMED-Code/SMED_select.R")
   source("../SMED/SMED-Code/SMED_select.R")
+  source("/Users/collin/Git/SMED-Code/SMED_selectC.R")
+  source("../SMED/SMED-Code/SMED_selectC.R")
   
   gaussian1 <- function(xx) exp(-sum((xx-.5)^2)/2/.01)
   a <- adapt.concept2.sFFLHD.RC(D=2,L=3,func=gaussian1, obj="grad", n0=0)

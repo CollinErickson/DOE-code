@@ -4,7 +4,7 @@ compare.adapt <- function(func, D, L, g, batches=10, reps=5,
                           plot.after=c(), 
                           forces=c("old"),force.vals=c(0),
                           n0=0,
-                          ...) {#browser()
+                          ...) {browser()
   outdf <- data.frame()
   plotdf <- data.frame()
   plot.after <- c(plot.after[plot.after < batches], batches)
