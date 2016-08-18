@@ -1,4 +1,5 @@
 
+setOldClass("UGP")
 adapt.concept2.sFFLHD.RC <- setRefClass("adapt.concept2.sFFLHD.seq",
                                         fields = list(
                                           func = "function", D = "numeric", L = "numeric", 

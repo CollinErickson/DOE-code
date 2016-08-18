@@ -19,6 +19,7 @@ if (F) { # Use for local runs. Then copy files and comment this section out befo
   source("adaptconcept2_sFFLHD_RC.R")
   source("TestFunctions.R")
   source("RFF_test.R")
+  source("SMED_selectC.R")
 }
 
 ui <- fluidPage(
@@ -57,6 +58,26 @@ ui <- fluidPage(
                   max = 9,
                   value = 3
       ),
+      sliderInput("n0",
+                  "n0",
+                  min = 0,
+                  max = 9,
+                  value = 0
+      ),
+      sliderInput("force_pvar",
+                  "Force pvar",
+                  min = 0,
+                  max = 1,
+                  value = 0,
+                  round=-2
+      ),
+      sliderInput("force_old",
+                  "Force old",
+                  min = 0,
+                  max = 1,
+                  value = 0,
+                  round=-2
+      ),
       #sliderInput("g",
       #            "Divisions",
       #            min = 2,
@@ -89,6 +110,9 @@ server <- function(input, output, session) {
   diagonal_plateau <- function(xx){sum(xx) > length(xx) / 2}
   D <- reactive({input$Dimension})
   L <- reactive({input$Batch})
+  n0 <- reactive({input$n0})
+  force_pvar <- reactive({input$force_pvar})
+  force_old <- reactive({input$force_old})
   #g <- reactive({input$g})
   obj <- reactive({input$obj})
   funcr <- reactive({
@@ -128,7 +152,8 @@ server <- function(input, output, session) {
   #sr <- reactive({ sFFLHD.seq(D = input$Dimension, L = input$Batch) })
   #sr <- reactive({ sFFLHD.seq(D = D(), L = L()) })
   #ar <- reactive({ adapt.concept2.sFFLHD.RC(D=D(),L=L(),g=g(),func=funcr(), obj=obj()) })
-  ar <- reactive({ adapt.concept2.sFFLHD.RC(D=D(),L=L(),func=funcr(), obj=obj()) })
+  ar <- reactive({ adapt.concept2.sFFLHD.RC(D=D(),L=L(),func=funcr(), obj=obj(), n0=n0(),
+                                            force_pvar=force_pvar(), force_old=force_old()) })
   #D <- renderPrint({input$Dimension})
   #L <- renderPrint({input$Batch})
   #s <- sFFLHD.seq(D = D, L = 3)
