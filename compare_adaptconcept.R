@@ -152,7 +152,7 @@ if (F) {
   source("adaptconcept_helpers.R")
   require(mlegp)
   require(GPfit)
-  require(contourfilled)
+  require(cf)
   source('LHS.R')
   gaussian1 <- function(xx) exp(-sum((xx-.5)^2)/2/.1)
   sinumoid <- function(xx){sum(sin(2*pi*xx*3)) + 20/(1+exp(-80*(xx[[1]]-.5)))}

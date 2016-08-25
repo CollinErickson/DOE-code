@@ -27,7 +27,7 @@ sFFLHD <- function(D,L,a) {#browser()
               #  after b batches (d=1:D), also the dth column of Vb
   
   # 1: 
-  OA <- oa.design(nruns=L^2,nfactors=D+1,nlevels=L, columns="min3")
+  OA <- DoE.base::oa.design(nruns=L^2,nfactors=D+1,nlevels=L, columns="min3")
   OA0.5 <- apply(as.matrix(OA),1:2,as.integer) #- 1 # I think Weitau starts at 0
   OA1 <- OA0.5[sample(1:L^2),]
   OA2 <- OA1[,sample(1:(D+1))]
@@ -194,7 +194,7 @@ sFFLHD.seq <- setRefClass('sFFLHD.seq',
                 ),
   methods = list(
     get.batch = function() {
-      if(length(stage)==0) { # initialize everything
+      if (length(stage)==0) { # initialize everything
         stage0()
       }
       if (stage == 1L) { # still first stage, already initialized, get batch
@@ -205,8 +205,9 @@ sFFLHD.seq <- setRefClass('sFFLHD.seq',
       stop('Only stage 1 and 2')
     }, # end get.batch
     stage0 = function() { # Do steps 0 and 1
-      if(length(D) == 0 | length(L) == 0) {stop('D and L must be specified')}
-      if(length(a)==0) {
+      if (length(D) == 0 | length(L) == 0) {stop('D and L must be specified')}
+      if (D == 1) {stop("Doesn't work in 1 dimension")}
+      if (length(a)==0) {
         a.fac <- factorize(L)
         if(all(a.fac==a.fac[1])) {a <<- a.fac[1]}
         else {a <<- L}
@@ -225,20 +226,22 @@ sFFLHD.seq <- setRefClass('sFFLHD.seq',
       Xb <<- matrix(NA,nrow=0,ncol=D)
       stage <<- 1L # stage 1 is step 2, stage 2 is step 4
       # make sure D,L,a are all set
-      if(length(D)==0 | length(L)==0 | length(a)==0) {stop('D, L, and a must be set when creating new object')}
+      if (length(D)==0 | length(L)==0 | length(a)==0) {
+        stop('D, L, and a must be set when creating new object')
+      }
       # get first OA
-      OA <- oa.design(nruns=L^2,nfactors=D+1,nlevels=L, columns="min3")
+      OA <- DoE.base::oa.design(nruns=L^2,nfactors=D+1,nlevels=L, columns="min3")
       OA0.5 <- apply(as.matrix(OA),1:2,as.integer) #- 1 # I think Weitau starts at 0
       OA1 <- OA0.5[sample(1:L^2),]
       OA2 <- OA1[,sample(1:(D+1))]
       OA3 <- OA2[order(OA2[,1]),]#;browser()
-      A1 <<- OA3[,2:(D+1)]
+      A1 <<- OA3[,2:(D+1), drop=F]
       r <<- 1L
       p <<- 1L
       maximin <<- TRUE # Seems to work, slows it down a little bit
       # end initialization
     }, # end stage0 function
-    stage1 = function() { # run steps 2 and 3
+    stage1 = function() { #browser()# run steps 2 and 3
       if (p==1L) { # Get the Ar
         if(D==2) { # Had a problem when D==2, v was c(0,0,0,0) instead of c(0,0)
           v <- c(0,0)
@@ -281,13 +284,13 @@ sFFLHD.seq <- setRefClass('sFFLHD.seq',
         Mb.store <<- Mb
         v.shuffle <<- sample(1:(a^D-1))
       }
-      if(r==1L & p==1L) { # If new vii, set Fslices for it
+      if (r==1L & p==1L) { # If new vii, set Fslices for it
         v <- (v.shuffle[vii]%/%(a^((D-1):0))) %% a
         FFv <- FF1.1 + sweep(Mb.store,2,v,'+')%%a
         Fslices1 <- split.matrix(FFv,nsplits=L^(D-2)*(Lb/a/L)^D)
         Fslices <<- lapply(Fslices1,split.matrix,L)
       }
-      if(nb+L > lb) { # increase grid if reached LHS
+      if (nb+L > lb) { # increase grid if reached LHS
         lb <<- a*lb
         Vb <<- ceiling(Xb*lb)
       }
@@ -300,15 +303,15 @@ sFFLHD.seq <- setRefClass('sFFLHD.seq',
       nb <<- nb + as.integer(L)
       # increment loop parameters
       p <<- p + 1L
-      if(p > length(Fslices[[r]])) {
+      if (p > length(Fslices[[r]])) {
         p <<- 1L
         r <<- r + 1L
         if (r > length(Fslices)) {
           r <<- 1L
           vii <<- vii + 1L
-          if(vii > a^D-1) {
+          if (vii > a^D-1) {
             vii <<- 1L
-            if(nrow(Mb) >= Lb ^ D) { #print('Going one deeper')#browser()
+            if (nrow(Mb) >= Lb ^ D) { #print('Going one deeper')#browser()
               Lb <<- a * Lb
               Mb <<- floor(Xb * Lb)
             } else {
@@ -329,8 +332,8 @@ sFFLHD.seq <- setRefClass('sFFLHD.seq',
       Mb <<- rbind(Mb,matrix(NA,L,D))
       Wb <<- rbind(Wb,matrix(NA,L,D))
       Xb <<- rbind(Xb,matrix(NA,L,D))  # Add +1 to these 4 b/c of next line
-      for(i in 1:L) { # CHANGING TO +1, seems necessary but not in paper
-        for(j in 1:D) {
+      for (i in 1:L) { # CHANGING TO +1, seems necessary but not in paper
+        for (j in 1:D) {
           Q <- setdiff((lb*(G[i,j]-1)/Lb+1):(lb*(G[i,j]+1-1)/Lb-1+1),Vb[,j])  # ADDED -1 TO TRY TO FIX????? CANCELED OUT 1's???????
           N <- length(Q)
           e1 <- ceiling(eps[i,j]*N)
@@ -355,7 +358,7 @@ sFFLHD.seq <- setRefClass('sFFLHD.seq',
     }, # end stage3 function
     get.batches = function(num) { # get multiple batches at once
       out <- matrix(nrow=0,ncol=D)
-      for(i in 1:num) {out <- rbind(out,get.batch())}
+      for (i in 1:num) {out <- rbind(out,get.batch())}
       return(out)
     }, # end get.batches function
     get.batches.to.golden = function() {

@@ -153,7 +153,7 @@ adapt.concept2.sFFLHD.RC <- setRefClass("adapt.concept2.sFFLHD.seq",
       #} else { # SMED NEW STUFF !!!!
         #browser()
       #  bestL <- SMED_selectC(f=obj_func, n=L, X0=X, Xopt=Xnotrun)
-        # contourfilled::contourfilled.func(mod$grad_norm)
+        # cf::cf_func(mod$grad_norm)
         # points(X, col=2, pch=19)
         # text(Xnotrun[,1],Xnotrun[,2])
         # SMED_select(f=obj_func,p=ncol(X),n=8, X0=X, Xopt=Xnotrun)
@@ -196,7 +196,7 @@ adapt.concept2.sFFLHD.RC <- setRefClass("adapt.concept2.sFFLHD.seq",
        screen(1)
        #xlim <- lims[1,]
        #ylim <- lims[2,]
-       contourfilled.func(mod$predict,batchmax=500, pretitle="Predicted Surface ")
+       cf_func(mod$predict,batchmax=500, pretitle="Predicted Surface ")
        points(X,pch=19)
        points(X[(nrow(X)-L+1):nrow(X),],col='yellow',pch=19, cex=.5) # plot last L separately
        ###points(Xnotrun, col=2)
@@ -216,7 +216,7 @@ adapt.concept2.sFFLHD.RC <- setRefClass("adapt.concept2.sFFLHD.seq",
       # }
        # Plot s2 predictions
        screen(2)
-       contourfilled.func(mod$predict.var, batchmax=500, pretitle="Predictive Variance ")
+       cf_func(mod$predict.var, batchmax=500, pretitle="Predictive Variance ")
        points(X,pch=19)
        points(X[(nrow(X)-L+1):nrow(X),],col='yellow',pch=19, cex=.5) # plot last L separately
        ###points(Xnotrun, col=2)
@@ -233,7 +233,7 @@ adapt.concept2.sFFLHD.RC <- setRefClass("adapt.concept2.sFFLHD.seq",
        #}
        screen(3) # actual squared error plot
        par(mar=c(2,2,0,0.5)) # 5.1 4.1 4.1 2.1 BLTR
-       contourfilled.func(func, n = 20, mainminmax_minmax = F, pretitle="Actual ")
+       cf_func(func, n = 20, mainminmax_minmax = F, pretitle="Actual ")
        if (iteration >= 2) {
          statsdf <- as.data.frame(stats)
          screen(4) # MSE plot
@@ -251,7 +251,7 @@ adapt.concept2.sFFLHD.RC <- setRefClass("adapt.concept2.sFFLHD.seq",
          #plot(statsdf$iter, statsdf$minbatch, type='o', pch=19,
          #     xlab="Iteration")#, ylab="Level")
          #legend('bottomright',legend="Batch not run",fill=1)
-         contourfilled.func(mod$grad_norm, n=20, mainminmax_minmax = F, pretitle="Grad ")
+         cf_func(mod$grad_norm, n=20, mainminmax_minmax = F, pretitle="Grad ")
          
          screen(6) # % of pts used plot 
          par(mar=c(2,2,0,0.5)) # 5.1 4.1 4.1 2.1 BLTR
@@ -261,7 +261,7 @@ adapt.concept2.sFFLHD.RC <- setRefClass("adapt.concept2.sFFLHD.seq",
        }
        screen(7) # actual squared error plot
        par(mar=c(2,2,0,0.5)) # 5.1 4.1 4.1 2.1 BLTR
-       contourfilled.func(function(xx){(mod$predict(xx) - func(xx))^2},
+       cf_func(function(xx){(mod$predict(xx) - func(xx))^2},
                           n = 20, mainminmax_minmax = F, pretitle="SqErr ")
        
        close.screen(all = TRUE)
@@ -314,7 +314,7 @@ if (F) {
   source("adaptconcept_helpers.R")
   require(mlegp)
   require(GPfit)
-  require(contourfilled)
+  require(cf)
   require(TestFunctions)
   source('LHS.R')
   source("RFF_test.R")
@@ -323,13 +323,12 @@ if (F) {
   source("/Users/collin/Git/SMED-Code/SMED_selectC.R")
   source("../SMED/SMED-Code/SMED_selectC.R")
   
-  gaussian1 <- function(xx) exp(-sum((xx-.5)^2)/2/.01)
+  #gaussian1 <- function(xx) exp(-sum((xx-.5)^2)/2/.01)
   a <- adapt.concept2.sFFLHD.RC(D=2,L=3,func=gaussian1, obj="grad", n0=0)
   a$run(2)
   
   
-  sinumoid <- function(xx){sum(sin(2*pi*xx*3)) + 20/(1+exp(-80*(xx[[1]]-.5)))}; contourfilled.func(sinumoid)
-  #sinumoid <- function(xx){sum(sin(2*pi*xx*3)) }; contourfilled.func(sinumoid)
+  #sinumoid <- function(xx){sum(sin(2*pi*xx*3)) + 20/(1+exp(-80*(xx[[1]]-.5)))}; cf_func(sinumoid)
   a <- adapt.concept2.sFFLHD.RC(D=2,L=3,g=3,func=sinumoid,  obj="grad")
   a$run(4, plotlastonly = T)
   
@@ -345,7 +344,7 @@ if (F) {
   a$run(20, plotl=T)
   
   # grad cont
-  contourfilled::contourfilled.func(a$mod$grad_norm)
+  cf::cf_func(a$mod$grad_norm)
   
   # test run times
   a <- adapt.concept2.sFFLHD.RC(D=2,L=3,func=gaussian1, obj="grad", n0=0)
