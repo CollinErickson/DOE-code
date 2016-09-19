@@ -4,14 +4,31 @@ compare.adapt <- function(func, D, L, g, batches=10, reps=5,
                           plot.after=c(), 
                           forces=c("old"),force.vals=c(0),
                           n0=0,
+                          saveOutput=F, funcString = NULL,
+                          seed.start=NULL,
                           ...) {browser()
+  if (saveOutput) {
+    if (is.null(funcString)) {
+      if (is.character(func)) {funcString <- func}
+      else {funcString <- deparse(substitute(func))}
+    }
+    folderTime0 <- gsub(" ","_", Sys.time())
+    folderTime <- gsub(":","-", folderTime0)
+    t1 <- c(funcString,"_D=",D,"_L=",L,"_B=",batches,"_R=",reps,"_n0=",n0,
+            "_F=",c(rbind(forces,"-",force.vals,"_")))
+    if (!is.null(seed.start)) {t1 <- c(t1,"S=",seed.start,"_")}
+    folderName <- paste0(c(t1,"",folderTime), collapse = "")
+    folderPath <- paste0("./compare_adaptconcept_output/",folderName)
+    dir.create(path = folderPath)
+  }
   outdf <- data.frame()
   plotdf <- data.frame()
   plot.after <- c(plot.after[plot.after < batches], batches)
   
   for (i in 1:reps) {
-      #set.seed(i)
-      #func <- RFF_get()
+    if (!is.null(seed.start)) {
+      set.seed(seed.start + i - 1)
+    }
     if (is.function(func)) {funci <- func}
     else if (func == "RFF") {funci <- RFF_get(D=D)}
     else {stop("No function given")}
@@ -49,44 +66,16 @@ compare.adapt <- function(func, D, L, g, batches=10, reps=5,
   names(pchs2) <- plot.after
   cols2 <- 1:length(unique(plotdf$method))
   names(cols2) <- unique(plotdf$method)
-  #stripchart(lapply(plotply, function(xx) xx$mse), las=T, col=sapply(plotply, function(xx) xx$i[1]))
-  #stripchart(lapply(plotply, function(xx) xx$mse), 
-  #           las=T, 
-  #           col=cols[as.character(sapply(plotply, function(xx) xx$i[1]))],
-  #           pch=pchs[as.character(sapply(plotply, function(xx) xx$method[1]))]
-  #)
-  #stripchart(lapply(plotply, function(xx) xx$mse), 
-  #           las=T, 
-  #           col=cols[as.character(sapply(plotply, function(xx) xx$i[1]))],
-  #           #bg=cols[as.character(sapply(plotply, function(xx) xx$i[1]))],
-  #           pch=pchs[as.character(sapply(plotply, function(xx) xx$method[1]))],
-  #           vertical = T
-  #)
-  #browser()
+  
+  
+  # Make compare plot
+  if (saveOutput) {
+    png(filename = paste0(folderPath,"/plot.png"),
+           width = 480, height = 480)
+  }
   oparmar <- par()$mar
   par(mar=c(8,3,1,1))
-  #stripchart(lapply(plotply2, function(xx) xx$mse), 
-  #           las=2, 
-  #           #col=cols2[as.character(sapply(plotply2, function(xx) xx$method[1]))],
-  #           #pch=pchs2[as.character(sapply(plotply2, function(xx) xx$i[1]))],
-  #           col=cols[as.character(sapply(plotply2, function(xx) xx$i[1]))],
-  #           bg= cols[as.character(sapply(plotply2, function(xx) xx$i[1]))],
-  #           pch=pchs[as.character(sapply(plotply2, function(xx) xx$method[1]))],
-  #           vertical = T, log='y'
-  #           #,glab=gsub("\\.","\n",names(plotply2))
-  #)
-  #stripchart(lapply(plotply2, function(xx) xx$pvar), 
-  #           las=2, 
-  #           #col=cols2[as.character(sapply(plotply2, function(xx) xx$method[1]))],
-  #           #pch=pchs2[as.character(sapply(plotply2, function(xx) xx$i[1]))],
-  #           col=cols[as.character(sapply(plotply2, function(xx) xx$i[1]))]+2,
-  #           bg="gray51",
-  #           pch=pchs[as.character(sapply(plotply2, function(xx) xx$method[1]))],
-  #           vertical = T, log='y', add=T,at = 1:length(plotply2)-.1
-  #           #,glab=gsub("\\.","\n",names(plotply2))
-  #)
   
-  #browser()
   stripchart(lapply(plotply2, function(xx) xx$mse), 
              las=2, 
              col="white",
@@ -119,6 +108,7 @@ compare.adapt <- function(func, D, L, g, batches=10, reps=5,
     )
   }
   par(mar=oparmar)
+  if (saveOutput) {dev.off()}
   
   #plot(u$stats$iteration, u$stats$mse, type='b', col=1, log='y')
   #points(v$stats$iteration, v$stats$mse, type='b', col=2)
@@ -143,7 +133,8 @@ compare.adapt <- function(func, D, L, g, batches=10, reps=5,
   
   #stripchart(plotdf$mse ~ plotdf$method + plotdf$i, las=T, pch=19)
   #with(plotdf, stripchart(mse ~ method + i, las=T, pch=19, col=batch))
-  
+
+  if (saveOutput) {write.csv(outdf, paste0(folderPath,"/data.csv"))}  
   outdf
 }
 if (F) {
@@ -154,14 +145,16 @@ if (F) {
   require(GPfit)
   require(cf)
   source('LHS.R')
-  gaussian1 <- function(xx) exp(-sum((xx-.5)^2)/2/.1)
-  sinumoid <- function(xx){sum(sin(2*pi*xx*3)) + 20/(1+exp(-80*(xx[[1]]-.5)))}
+  #gaussian1 <- function(xx) exp(-sum((xx-.5)^2)/2/.1)
+  #sinumoid <- function(xx){sum(sin(2*pi*xx*3)) + 20/(1+exp(-80*(xx[[1]]-.5)))}
   library(laGP)
   source("RFF_test.R")
-  source("adaptconcept_sFFLHD_RC.R")
+  #source("adaptconcept_sFFLHD_RC.R")
   source("adaptconcept2_sFFLHD_RC.R")
   source("../SMED/SMED-Code/SMED_select.R")
   source("../SMED-Code/SMED_select.R")
+  source("../SMED/SMED-Code/SMED_selectC.R")
+  source("../SMED-Code/SMED_selectC.R")
   library(plyr)
   library(TestFunctions)
   
