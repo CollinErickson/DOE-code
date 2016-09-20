@@ -1,8 +1,10 @@
 # No more boxes
-if (interactive())
-  source("sFFLHD.R")
+#if (interactive())
+#  source("sFFLHD.R")
+library("sFFLHD")
 library("UGP")
 setOldClass("UGP")
+
 adapt.concept2.sFFLHD.RC <- setRefClass("adapt.concept2.sFFLHD.seq",
   fields = list(
    func = "function", D = "numeric", L = "numeric", 
@@ -10,7 +12,7 @@ adapt.concept2.sFFLHD.RC <- setRefClass("adapt.concept2.sFFLHD.seq",
    #lims = "matrix", lims.second = "list", lims.past = "list", 
    #lims.second.past = "list", lims.secondparallel = "list",
    X = "matrix", Z = "numeric", Xnotrun = "matrix",
-   s = "sFFLHD.seq", mod = "UGP",
+   s = "sFFLHD", mod = "UGP",
    stats = "list", iteration = "numeric",
    #will_dive = "numeric", get_mses_out = "list",
    obj = "character", obj_func = "function",
@@ -41,7 +43,8 @@ adapt.concept2.sFFLHD.RC <- setRefClass("adapt.concept2.sFFLHD.seq",
      iteration <<- 1
      
      # set objective function to minimize or pick dive area by max
-     if (length(obj)==0 || obj == "mse") {
+     if (length(obj)==0 || obj == "mse") { # The default
+       obj <<- "mse" # Don't want it to be character(0) when I have to check it later
        obj_func <<- mod$predict.var #function(xx) {apply(xx, 1, mod$predict.var)}
        #function(lims) {
       #   msfunc(mod$predict.var, lims=lims, pow=1, batch=T)
@@ -101,7 +104,7 @@ adapt.concept2.sFFLHD.RC <- setRefClass("adapt.concept2.sFFLHD.seq",
      #set_params()
      iteration <<- iteration + 1
     },
-    add_data = function() {#browser()
+    add_data = function() {
       if (nrow(X) == 0 ) {
        X <<- rbind(X, s$get.batch())
        Z <<- c(Z,apply(X, 1, func))
@@ -309,20 +312,16 @@ adapt.concept2.sFFLHD.RC <- setRefClass("adapt.concept2.sFFLHD.seq",
 )
 
 if (F) {
-  source('sFFLHD.R')
-  library("UGP")
+  library(sFFLHD)
+  library(UGP)
   source("adaptconcept_helpers.R")
   require(mlegp)
   require(GPfit)
   require(cf)
   require(TestFunctions)
   source('LHS.R')
-  source("RFF_test.R")
-  source("/Users/collin/Git/SMED-Code/SMED_select.R")
-  source("../SMED/SMED-Code/SMED_select.R")
-  source("/Users/collin/Git/SMED-Code/SMED_selectC.R")
-  source("../SMED/SMED-Code/SMED_selectC.R")
-  
+  library(SMED)  
+
   #gaussian1 <- function(xx) exp(-sum((xx-.5)^2)/2/.01)
   a <- adapt.concept2.sFFLHD.RC(D=2,L=3,func=gaussian1, obj="grad", n0=0)
   a$run(2)

@@ -138,27 +138,19 @@ compare.adapt <- function(func, D, L, g, batches=10, reps=5,
   outdf
 }
 if (F) {
-  source('sFFLHD.R')
-  library("UGP")
+  library(sFFLHD)
+  library(UGP)
   source("adaptconcept_helpers.R")
   require(mlegp)
   require(GPfit)
   require(cf)
   source('LHS.R')
-  #gaussian1 <- function(xx) exp(-sum((xx-.5)^2)/2/.1)
-  #sinumoid <- function(xx){sum(sin(2*pi*xx*3)) + 20/(1+exp(-80*(xx[[1]]-.5)))}
   library(laGP)
-  source("RFF_test.R")
-  #source("adaptconcept_sFFLHD_RC.R")
   source("adaptconcept2_sFFLHD_RC.R")
-  source("../SMED/SMED-Code/SMED_select.R")
-  source("../SMED-Code/SMED_select.R")
-  source("../SMED/SMED-Code/SMED_selectC.R")
-  source("../SMED-Code/SMED_selectC.R")
+  library(SMED)
   library(plyr)
   library(TestFunctions)
   
-#  source("adaptconcept_sFFLHD_RC_noadapt.R")
   compare.adapt(func=gaussian1, D=2, L=4, g=3)
   compare.adapt(func=RFF_get(), D=2, L=4, g=3, batches=5, reps = 5, plot.after=3)
   compare.adapt(func=RFF_get(), D=2, L=4, g=3, batches=25, reps = 10, plot.after=c(5,15))
