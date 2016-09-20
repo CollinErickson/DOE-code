@@ -1,3 +1,4 @@
+source("adaptconcept2_sFFLHD_RC.R")
 library(ggplot2)
 compare.adapt <- function(func, D, L, g, batches=10, reps=5, 
                           objs=c("nonadapt", "grad"), 

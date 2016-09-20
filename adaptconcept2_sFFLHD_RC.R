@@ -1,8 +1,10 @@
-# No more boxes
-#if (interactive())
-#  source("sFFLHD.R")
-library("sFFLHD")
-library("UGP")
+source("adaptconcept_helpers.R")
+source('LHS.R')
+library(TestFunctions)
+library(cf)
+library(SMED)  
+library(sFFLHD)
+library(UGP)
 setOldClass("UGP")
 
 adapt.concept2.sFFLHD.RC <- setRefClass("adapt.concept2.sFFLHD.seq",
