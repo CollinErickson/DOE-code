@@ -1,10 +1,11 @@
+if (!exists('lib.loc')) {lib.loc <- NULL}
 source("adaptconcept_helpers.R")
 source('LHS.R')
-library(TestFunctions)
-library(cf)
-library(SMED)  
-library(sFFLHD)
-library(UGP)
+library(TestFunctions, lib.loc = lib.loc)
+library(cf, lib.loc = lib.loc)
+library(SMED, lib.loc = lib.loc)
+library(sFFLHD, lib.loc = lib.loc)
+library(UGP, lib.loc = lib.loc)
 setOldClass("UGP")
 
 adapt.concept2.sFFLHD.RC <- setRefClass("adapt.concept2.sFFLHD.seq",

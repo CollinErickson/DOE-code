@@ -7,7 +7,7 @@ compare.adapt <- function(func, D, L, g, batches=10, reps=5,
                           n0=0,
                           saveOutput=F, funcString = NULL,
                           seed.start=NULL,
-                          ...) {browser()
+                          ...) {#browser()
   if (saveOutput) {
     if (is.null(funcString)) {
       if (is.character(func)) {funcString <- func}
