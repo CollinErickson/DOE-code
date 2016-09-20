@@ -1,0 +1,17 @@
+#!/bin/bash
+#PBS -N GPC_Submit
+#PBS -j oe
+#PBS -m abe
+#PBS -M CollinErickson2014@u.northwestern.edu
+#PBS -l walltime=00:01:00
+#PBS -l select=1:mem=2gb:ncpus=1
+
+# Created for the SSCC by Submit: Wed Nov  4 10:11:34 CST 2015
+
+cd /sscc/home/c/cbe117/Research/DOE-code
+
+module load python/anaconda
+
+R CMD BATCH DOE_Submit.R
+
+exit
