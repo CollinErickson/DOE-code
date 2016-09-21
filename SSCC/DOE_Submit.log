@@ -45,113 +45,213 @@ The following object is masked from ‘package:base’:
 
 > 
 > 
-> # qsub <- function() {system('qsub /sscc/home/c/cbe117/Research/GPC/GPC_Codes/GPC_Submit.pbs')}
+> # qsub <- function() {system('qsub /sscc/home/c/cbe117/Research/DOE-code/SSCC/DOE_Submit.pbs')}
 > # pbstat <- function() {system('pbstat')}
 > # system('qsub /sscc/home/c/cbe117/Research/GPC/GPC_Codes/GPC_Submit.pbs -a 0254') # submit at a certain time
 > 
 > 
-> compare.adapt(func=gaussian1, D=2, L=4, g=3, saveOutput=T)
-     i          mse         pvar   method       num  time batch force force.to
-1    1 1.981868e-02 2.564373e-04 nonadapt nonadapt1 1.579     1   old        0
-2    2 2.562197e-02 9.565163e-04 nonadapt nonadapt1 1.579     1   old        0
-3    3 1.854901e-02 3.705519e-04 nonadapt nonadapt1 1.579     1   old        0
-4    4 2.566375e-02 3.794066e-04 nonadapt nonadapt1 1.579     1   old        0
-5    5 3.225939e-03 1.587313e-02 nonadapt nonadapt1 1.579     1   old        0
-6    6 1.716783e-03 9.679638e-03 nonadapt nonadapt1 1.579     1   old        0
-7    7 1.304854e-03 7.625040e-03 nonadapt nonadapt1 1.579     1   old        0
-8    8 1.129384e-03 4.446551e-03 nonadapt nonadapt1 1.579     1   old        0
-9    9 7.305467e-04 3.344023e-03 nonadapt nonadapt1 1.579     1   old        0
-10  10 7.683570e-04 1.800193e-03 nonadapt nonadapt1 1.579     1   old        0
-11   1 3.238425e-02 4.104773e-04     grad     grad1 2.939     1   old        0
-12   2 2.672303e-02 4.547899e-04     grad     grad1 2.939     1   old        0
-13   3 1.507435e-02 5.963023e-04     grad     grad1 2.939     1   old        0
-14   4 1.315294e-03 2.727307e-02     grad     grad1 2.939     1   old        0
-15   5 9.074170e-04 1.917391e-02     grad     grad1 2.939     1   old        0
-16   6 1.320847e-03 1.555832e-02     grad     grad1 2.939     1   old        0
-17   7 2.588568e-04 1.275143e-02     grad     grad1 2.939     1   old        0
-18   8 5.250165e-05 1.011505e-02     grad     grad1 2.939     1   old        0
-19   9 9.147077e-05 8.631359e-03     grad     grad1 2.939     1   old        0
-20  10 3.796584e-05 5.963091e-03     grad     grad1 2.939     1   old        0
-21   1 3.006504e-02 3.520341e-05 nonadapt nonadapt2 0.824     2   old        0
-22   2 1.358213e-02 1.251759e-02 nonadapt nonadapt2 0.824     2   old        0
-23   3 1.584014e-02 7.810918e-03 nonadapt nonadapt2 0.824     2   old        0
-24   4 8.382898e-03 8.429993e-03 nonadapt nonadapt2 0.824     2   old        0
-25   5 3.713727e-03 7.192683e-03 nonadapt nonadapt2 0.824     2   old        0
-26   6 2.564170e-03 4.544821e-03 nonadapt nonadapt2 0.824     2   old        0
-27   7 1.490783e-03 4.490776e-03 nonadapt nonadapt2 0.824     2   old        0
-28   8 1.209216e-03 3.244999e-03 nonadapt nonadapt2 0.824     2   old        0
-29   9 4.326703e-04 3.898701e-03 nonadapt nonadapt2 0.824     2   old        0
-30  10 3.814671e-04 3.241398e-03 nonadapt nonadapt2 0.824     2   old        0
-31   1 2.552460e-02 4.518967e-07     grad     grad2 2.537     2   old        0
-32   2 1.423108e-02 9.885022e-03     grad     grad2 2.537     2   old        0
-33   3 1.053429e-02 5.780112e-03     grad     grad2 2.537     2   old        0
-34   4 5.640297e-03 6.500599e-03     grad     grad2 2.537     2   old        0
-35   5 1.060671e-03 1.717113e-02     grad     grad2 2.537     2   old        0
-36   6 5.155488e-04 1.638261e-02     grad     grad2 2.537     2   old        0
-37   7 5.404275e-04 1.279040e-02     grad     grad2 2.537     2   old        0
-38   8 2.218061e-04 9.728046e-03     grad     grad2 2.537     2   old        0
-39   9 9.322762e-05 7.555082e-03     grad     grad2 2.537     2   old        0
-40  10 6.233491e-05 5.803038e-03     grad     grad2 2.537     2   old        0
-41   1 3.273561e-02 5.412179e-06 nonadapt nonadapt3 0.886     3   old        0
-42   2 3.460229e-02 2.887386e-03 nonadapt nonadapt3 0.886     3   old        0
-43   3 1.680582e-02 1.608488e-03 nonadapt nonadapt3 0.886     3   old        0
-44   4 6.310003e-03 3.619856e-03 nonadapt nonadapt3 0.886     3   old        0
-45   5 8.541000e-03 2.248459e-03 nonadapt nonadapt3 0.886     3   old        0
-46   6 3.796147e-03 2.049252e-03 nonadapt nonadapt3 0.886     3   old        0
-47   7 9.725774e-03 2.030305e-03 nonadapt nonadapt3 0.886     3   old        0
-48   8 4.373650e-03 1.667112e-03 nonadapt nonadapt3 0.886     3   old        0
-49   9 1.011775e-03 4.063422e-03 nonadapt nonadapt3 0.886     3   old        0
-50  10 9.757332e-04 2.983212e-03 nonadapt nonadapt3 0.886     3   old        0
-51   1 2.523532e-02 5.252748e-06     grad     grad3 2.385     3   old        0
-52   2 3.734259e-02 1.756592e-06     grad     grad3 2.385     3   old        0
-53   3 1.111848e-02 1.193220e-02     grad     grad3 2.385     3   old        0
-54   4 5.815671e-03 1.196131e-02     grad     grad3 2.385     3   old        0
-55   5 1.099019e-03 1.891387e-02     grad     grad3 2.385     3   old        0
-56   6 1.084428e-03 1.181219e-02     grad     grad3 2.385     3   old        0
-57   7 2.908877e-04 1.165780e-02     grad     grad3 2.385     3   old        0
-58   8 3.092303e-04 8.533928e-03     grad     grad3 2.385     3   old        0
-59   9 6.613015e-05 6.981227e-03     grad     grad3 2.385     3   old        0
-60  10 6.270155e-05 6.085968e-03     grad     grad3 2.385     3   old        0
-61   1 2.790969e-02 2.336191e-04 nonadapt nonadapt4 0.923     4   old        0
-62   2 1.553095e-02 1.190654e-02 nonadapt nonadapt4 0.923     4   old        0
-63   3 1.354544e-02 8.131736e-03 nonadapt nonadapt4 0.923     4   old        0
-64   4 6.622140e-03 3.534891e-03 nonadapt nonadapt4 0.923     4   old        0
-65   5 5.130967e-03 4.483857e-03 nonadapt nonadapt4 0.923     4   old        0
-66   6 6.296143e-03 3.306451e-03 nonadapt nonadapt4 0.923     4   old        0
-67   7 4.992108e-03 2.950241e-03 nonadapt nonadapt4 0.923     4   old        0
-68   8 4.444449e-03 3.784113e-03 nonadapt nonadapt4 0.923     4   old        0
-69   9 2.081434e-03 2.576048e-03 nonadapt nonadapt4 0.923     4   old        0
-70  10 2.106095e-03 1.726705e-03 nonadapt nonadapt4 0.923     4   old        0
-71   1 2.347905e-02 5.591370e-03     grad     grad4 2.567     4   old        0
-72   2 2.304403e-02 1.222456e-03     grad     grad4 2.567     4   old        0
-73   3 1.671779e-02 1.444693e-03     grad     grad4 2.567     4   old        0
-74   4 3.165098e-02 1.823331e-03     grad     grad4 2.567     4   old        0
-75   5 1.146534e-03 2.163318e-02     grad     grad4 2.567     4   old        0
-76   6 6.395304e-04 1.427409e-02     grad     grad4 2.567     4   old        0
-77   7 2.431323e-04 1.224218e-02     grad     grad4 2.567     4   old        0
-78   8 9.050044e-05 9.220732e-03     grad     grad4 2.567     4   old        0
-79   9 5.685904e-05 7.597946e-03     grad     grad4 2.567     4   old        0
-80  10 6.991093e-05 6.837096e-03     grad     grad4 2.567     4   old        0
-81   1 3.008171e-02 1.285071e-04 nonadapt nonadapt5 0.967     5   old        0
-82   2 1.257337e-02 1.585594e-02 nonadapt nonadapt5 0.967     5   old        0
-83   3 2.011652e-02 4.597482e-03 nonadapt nonadapt5 0.967     5   old        0
-84   4 1.369772e-02 3.429340e-03 nonadapt nonadapt5 0.967     5   old        0
-85   5 4.882150e-03 1.184333e-02 nonadapt nonadapt5 0.967     5   old        0
-86   6 3.113851e-03 7.939807e-03 nonadapt nonadapt5 0.967     5   old        0
-87   7 1.757834e-03 6.462539e-03 nonadapt nonadapt5 0.967     5   old        0
-88   8 1.205691e-03 3.771303e-03 nonadapt nonadapt5 0.967     5   old        0
-89   9 1.187099e-03 2.811156e-03 nonadapt nonadapt5 0.967     5   old        0
-90  10 5.158679e-04 2.398958e-03 nonadapt nonadapt5 0.967     5   old        0
-91   1 2.223021e-02 2.037845e-04     grad     grad5 2.556     5   old        0
-92   2 1.834227e-02 3.374632e-03     grad     grad5 2.556     5   old        0
-93   3 1.831593e-02 2.307207e-03     grad     grad5 2.556     5   old        0
-94   4 1.712649e-02 3.009978e-03     grad     grad5 2.556     5   old        0
-95   5 1.616300e-02 2.605298e-03     grad     grad5 2.556     5   old        0
-96   6 6.606780e-04 1.369899e-02     grad     grad5 2.556     5   old        0
-97   7 2.724126e-04 1.093661e-02     grad     grad5 2.556     5   old        0
-98   8 1.659540e-04 8.632523e-03     grad     grad5 2.556     5   old        0
-99   9 9.957636e-05 6.575463e-03     grad     grad5 2.556     5   old        0
-100 10 1.056661e-04 5.011283e-03     grad     grad5 2.556     5   old        0
+> compare.adapt(func=banana, D=2, L=4, n0=8, batches=20, reps=5, plot.after=c(5,10,15,20), objs=c("nonadapt","grad"), saveOutput=T)
+     i         mse        pvar   method       num  time batch force force.to
+1    1 0.051609417 0.005621007 nonadapt nonadapt1 2.031     1   old        0
+2    2 0.040368563 0.007069161 nonadapt nonadapt1 2.031     1   old        0
+3    3 0.040529231 0.005334772 nonadapt nonadapt1 2.031     1   old        0
+4    4 0.032804860 0.009366011 nonadapt nonadapt1 2.031     1   old        0
+5    5 0.029681685 0.007033817 nonadapt nonadapt1 2.031     1   old        0
+6    6 0.020651876 0.011646876 nonadapt nonadapt1 2.031     1   old        0
+7    7 0.024498041 0.009170898 nonadapt nonadapt1 2.031     1   old        0
+8    8 0.020534245 0.007617266 nonadapt nonadapt1 2.031     1   old        0
+9    9 0.024358770 0.006160680 nonadapt nonadapt1 2.031     1   old        0
+10  10 0.015711826 0.004713102 nonadapt nonadapt1 2.031     1   old        0
+11  11 0.015763099 0.004819785 nonadapt nonadapt1 2.031     1   old        0
+12  12 0.017355454 0.006271860 nonadapt nonadapt1 2.031     1   old        0
+13  13 0.015779021 0.007915118 nonadapt nonadapt1 2.031     1   old        0
+14  14 0.015316837 0.005505108 nonadapt nonadapt1 2.031     1   old        0
+15  15 0.014805602 0.006456852 nonadapt nonadapt1 2.031     1   old        0
+16  16 0.013440436 0.006954383 nonadapt nonadapt1 2.031     1   old        0
+17  17 0.011464558 0.006282529 nonadapt nonadapt1 2.031     1   old        0
+18  18 0.011275474 0.005790565 nonadapt nonadapt1 2.031     1   old        0
+19  19 0.010563499 0.005803003 nonadapt nonadapt1 2.031     1   old        0
+20  20 0.014845497 0.004523364 nonadapt nonadapt1 2.031     1   old        0
+21   1 0.025485901 0.019037251     grad     grad1 9.083     1   old        0
+22   2 0.025028177 0.016154283     grad     grad1 9.083     1   old        0
+23   3 0.027401282 0.015545912     grad     grad1 9.083     1   old        0
+24   4 0.018403432 0.022601665     grad     grad1 9.083     1   old        0
+25   5 0.017391278 0.036548632     grad     grad1 9.083     1   old        0
+26   6 0.011839720 0.035579945     grad     grad1 9.083     1   old        0
+27   7 0.013142493 0.030101834     grad     grad1 9.083     1   old        0
+28   8 0.011445283 0.027245123     grad     grad1 9.083     1   old        0
+29   9 0.009851626 0.025058674     grad     grad1 9.083     1   old        0
+30  10 0.008040316 0.026967138     grad     grad1 9.083     1   old        0
+31  11 0.007876780 0.025056779     grad     grad1 9.083     1   old        0
+32  12 0.006784718 0.029163414     grad     grad1 9.083     1   old        0
+33  13 0.005801965 0.028360678     grad     grad1 9.083     1   old        0
+34  14 0.005906888 0.025920346     grad     grad1 9.083     1   old        0
+35  15 0.003943592 0.024828542     grad     grad1 9.083     1   old        0
+36  16 0.004122334 0.023349500     grad     grad1 9.083     1   old        0
+37  17 0.003349993 0.021410257     grad     grad1 9.083     1   old        0
+38  18 0.002899599 0.018943541     grad     grad1 9.083     1   old        0
+39  19 0.002480620 0.015504646     grad     grad1 9.083     1   old        0
+40  20 0.002582121 0.014786114     grad     grad1 9.083     1   old        0
+41   1 0.054179389 0.017168064 nonadapt nonadapt2 2.090     2   old        0
+42   2 0.036334654 0.019683758 nonadapt nonadapt2 2.090     2   old        0
+43   3 0.026614325 0.009281306 nonadapt nonadapt2 2.090     2   old        0
+44   4 0.027757028 0.008086162 nonadapt nonadapt2 2.090     2   old        0
+45   5 0.019022195 0.014629934 nonadapt nonadapt2 2.090     2   old        0
+46   6 0.020368802 0.011643277 nonadapt nonadapt2 2.090     2   old        0
+47   7 0.016846177 0.007837647 nonadapt nonadapt2 2.090     2   old        0
+48   8 0.013658309 0.010184855 nonadapt nonadapt2 2.090     2   old        0
+49   9 0.012659266 0.009430831 nonadapt nonadapt2 2.090     2   old        0
+50  10 0.012100405 0.006629529 nonadapt nonadapt2 2.090     2   old        0
+51  11 0.016356700 0.005805399 nonadapt nonadapt2 2.090     2   old        0
+52  12 0.012611431 0.004482020 nonadapt nonadapt2 2.090     2   old        0
+53  13 0.012912809 0.004117692 nonadapt nonadapt2 2.090     2   old        0
+54  14 0.009912825 0.002855376 nonadapt nonadapt2 2.090     2   old        0
+55  15 0.009979945 0.002697189 nonadapt nonadapt2 2.090     2   old        0
+56  16 0.009636605 0.003224508 nonadapt nonadapt2 2.090     2   old        0
+57  17 0.012777618 0.002342587 nonadapt nonadapt2 2.090     2   old        0
+58  18 0.009600780 0.006970335 nonadapt nonadapt2 2.090     2   old        0
+59  19 0.005742288 0.007850438 nonadapt nonadapt2 2.090     2   old        0
+60  20 0.004750627 0.007541432 nonadapt nonadapt2 2.090     2   old        0
+61   1 0.049621250 0.011325544     grad     grad2 9.073     2   old        0
+62   2 0.052579555 0.012310884     grad     grad2 9.073     2   old        0
+63   3 0.021699559 0.029202061     grad     grad2 9.073     2   old        0
+64   4 0.014176022 0.027986809     grad     grad2 9.073     2   old        0
+65   5 0.011157267 0.037991507     grad     grad2 9.073     2   old        0
+66   6 0.010830880 0.041271387     grad     grad2 9.073     2   old        0
+67   7 0.008185782 0.037938945     grad     grad2 9.073     2   old        0
+68   8 0.009349954 0.030407153     grad     grad2 9.073     2   old        0
+69   9 0.006802470 0.034824468     grad     grad2 9.073     2   old        0
+70  10 0.007383093 0.031152817     grad     grad2 9.073     2   old        0
+71  11 0.007483728 0.027798924     grad     grad2 9.073     2   old        0
+72  12 0.006032547 0.025982680     grad     grad2 9.073     2   old        0
+73  13 0.005944366 0.024612318     grad     grad2 9.073     2   old        0
+74  14 0.004098568 0.023346648     grad     grad2 9.073     2   old        0
+75  15 0.004206801 0.020439473     grad     grad2 9.073     2   old        0
+76  16 0.003105005 0.017876458     grad     grad2 9.073     2   old        0
+77  17 0.003342669 0.017750907     grad     grad2 9.073     2   old        0
+78  18 0.003316656 0.016912618     grad     grad2 9.073     2   old        0
+79  19 0.003180875 0.015932376     grad     grad2 9.073     2   old        0
+80  20 0.002863172 0.015547650     grad     grad2 9.073     2   old        0
+81   1 0.052685173 0.008011376 nonadapt nonadapt3 2.217     3   old        0
+82   2 0.025045633 0.021159305 nonadapt nonadapt3 2.217     3   old        0
+83   3 0.026570598 0.027482553 nonadapt nonadapt3 2.217     3   old        0
+84   4 0.023110551 0.017001660 nonadapt nonadapt3 2.217     3   old        0
+85   5 0.023306825 0.014306205 nonadapt nonadapt3 2.217     3   old        0
+86   6 0.032644615 0.028205758 nonadapt nonadapt3 2.217     3   old        0
+87   7 0.038261160 0.026162599 nonadapt nonadapt3 2.217     3   old        0
+88   8 0.028837988 0.022467591 nonadapt nonadapt3 2.217     3   old        0
+89   9 0.028751980 0.013085552 nonadapt nonadapt3 2.217     3   old        0
+90  10 0.028039578 0.015834578 nonadapt nonadapt3 2.217     3   old        0
+91  11 0.017750806 0.014705561 nonadapt nonadapt3 2.217     3   old        0
+92  12 0.020340697 0.011295293 nonadapt nonadapt3 2.217     3   old        0
+93  13 0.009157291 0.009139503 nonadapt nonadapt3 2.217     3   old        0
+94  14 0.007430754 0.011807475 nonadapt nonadapt3 2.217     3   old        0
+95  15 0.009176185 0.009031050 nonadapt nonadapt3 2.217     3   old        0
+96  16 0.008477195 0.009231944 nonadapt nonadapt3 2.217     3   old        0
+97  17 0.005925881 0.009134738 nonadapt nonadapt3 2.217     3   old        0
+98  18 0.006172355 0.009875022 nonadapt nonadapt3 2.217     3   old        0
+99  19 0.004996734 0.009063608 nonadapt nonadapt3 2.217     3   old        0
+100 20 0.004503862 0.008093176 nonadapt nonadapt3 2.217     3   old        0
+101  1 0.027061905 0.038172172     grad     grad3 8.837     3   old        0
+102  2 0.022039412 0.033444383     grad     grad3 8.837     3   old        0
+103  3 0.016515439 0.055648152     grad     grad3 8.837     3   old        0
+104  4 0.023634211 0.045686450     grad     grad3 8.837     3   old        0
+105  5 0.015502743 0.040231368     grad     grad3 8.837     3   old        0
+106  6 0.016800544 0.041916569     grad     grad3 8.837     3   old        0
+107  7 0.008506566 0.046227888     grad     grad3 8.837     3   old        0
+108  8 0.007255947 0.039271209     grad     grad3 8.837     3   old        0
+109  9 0.008592028 0.032780142     grad     grad3 8.837     3   old        0
+110 10 0.005999680 0.034748213     grad     grad3 8.837     3   old        0
+111 11 0.006674711 0.031502373     grad     grad3 8.837     3   old        0
+112 12 0.004516305 0.028755789     grad     grad3 8.837     3   old        0
+113 13 0.006884667 0.032843311     grad     grad3 8.837     3   old        0
+114 14 0.004833115 0.031605567     grad     grad3 8.837     3   old        0
+115 15 0.005117553 0.030477612     grad     grad3 8.837     3   old        0
+116 16 0.002945018 0.031203628     grad     grad3 8.837     3   old        0
+117 17 0.002902348 0.028352059     grad     grad3 8.837     3   old        0
+118 18 0.002904682 0.025339268     grad     grad3 8.837     3   old        0
+119 19 0.002660063 0.025064409     grad     grad3 8.837     3   old        0
+120 20 0.003130276 0.021285873     grad     grad3 8.837     3   old        0
+121  1 0.023881905 0.036613270 nonadapt nonadapt4 2.093     4   old        0
+122  2 0.022168790 0.044827404 nonadapt nonadapt4 2.093     4   old        0
+123  3 0.025311334 0.031327336 nonadapt nonadapt4 2.093     4   old        0
+124  4 0.020308284 0.036464933 nonadapt nonadapt4 2.093     4   old        0
+125  5 0.021998942 0.027273560 nonadapt nonadapt4 2.093     4   old        0
+126  6 0.026919220 0.021471361 nonadapt nonadapt4 2.093     4   old        0
+127  7 0.021227559 0.014977785 nonadapt nonadapt4 2.093     4   old        0
+128  8 0.031182522 0.010018321 nonadapt nonadapt4 2.093     4   old        0
+129  9 0.033036580 0.007963686 nonadapt nonadapt4 2.093     4   old        0
+130 10 0.012130144 0.012321743 nonadapt nonadapt4 2.093     4   old        0
+131 11 0.009394615 0.010111526 nonadapt nonadapt4 2.093     4   old        0
+132 12 0.008754650 0.008523207 nonadapt nonadapt4 2.093     4   old        0
+133 13 0.011496353 0.009341107 nonadapt nonadapt4 2.093     4   old        0
+134 14 0.007707535 0.006647011 nonadapt nonadapt4 2.093     4   old        0
+135 15 0.011062233 0.007270716 nonadapt nonadapt4 2.093     4   old        0
+136 16 0.006353712 0.006296664 nonadapt nonadapt4 2.093     4   old        0
+137 17 0.006795207 0.006911041 nonadapt nonadapt4 2.093     4   old        0
+138 18 0.007523665 0.006536126 nonadapt nonadapt4 2.093     4   old        0
+139 19 0.006067136 0.006107797 nonadapt nonadapt4 2.093     4   old        0
+140 20 0.007181572 0.006195729 nonadapt nonadapt4 2.093     4   old        0
+141  1 0.045403525 0.062163942     grad     grad4 8.908     4   old        0
+142  2 0.045399342 0.057684694     grad     grad4 8.908     4   old        0
+143  3 0.013816115 0.064707421     grad     grad4 8.908     4   old        0
+144  4 0.010231134 0.064199705     grad     grad4 8.908     4   old        0
+145  5 0.009164457 0.049634567     grad     grad4 8.908     4   old        0
+146  6 0.009041524 0.044985702     grad     grad4 8.908     4   old        0
+147  7 0.009476551 0.039004473     grad     grad4 8.908     4   old        0
+148  8 0.007115865 0.033584647     grad     grad4 8.908     4   old        0
+149  9 0.007716193 0.031664519     grad     grad4 8.908     4   old        0
+150 10 0.005994361 0.028807677     grad     grad4 8.908     4   old        0
+151 11 0.005009784 0.031596463     grad     grad4 8.908     4   old        0
+152 12 0.003924467 0.031700213     grad     grad4 8.908     4   old        0
+153 13 0.004229976 0.028544636     grad     grad4 8.908     4   old        0
+154 14 0.003569875 0.026658020     grad     grad4 8.908     4   old        0
+155 15 0.003957536 0.025250526     grad     grad4 8.908     4   old        0
+156 16 0.003380621 0.027118064     grad     grad4 8.908     4   old        0
+157 17 0.003045665 0.026298582     grad     grad4 8.908     4   old        0
+158 18 0.002256343 0.026584361     grad     grad4 8.908     4   old        0
+159 19 0.003546212 0.022036589     grad     grad4 8.908     4   old        0
+160 20 0.003502990 0.023344531     grad     grad4 8.908     4   old        0
+161  1 0.027003192 0.027759576 nonadapt nonadapt5 2.077     5   old        0
+162  2 0.035339261 0.010928811 nonadapt nonadapt5 2.077     5   old        0
+163  3 0.034485047 0.009034073 nonadapt nonadapt5 2.077     5   old        0
+164  4 0.040876172 0.008147724 nonadapt nonadapt5 2.077     5   old        0
+165  5 0.027700068 0.009987642 nonadapt nonadapt5 2.077     5   old        0
+166  6 0.018302753 0.014145910 nonadapt nonadapt5 2.077     5   old        0
+167  7 0.029446673 0.013760677 nonadapt nonadapt5 2.077     5   old        0
+168  8 0.017111640 0.017434299 nonadapt nonadapt5 2.077     5   old        0
+169  9 0.019596626 0.012237850 nonadapt nonadapt5 2.077     5   old        0
+170 10 0.009563731 0.013768607 nonadapt nonadapt5 2.077     5   old        0
+171 11 0.010496734 0.011173544 nonadapt nonadapt5 2.077     5   old        0
+172 12 0.009360483 0.014332692 nonadapt nonadapt5 2.077     5   old        0
+173 13 0.012530057 0.011278567 nonadapt nonadapt5 2.077     5   old        0
+174 14 0.009715842 0.010103588 nonadapt nonadapt5 2.077     5   old        0
+175 15 0.007426603 0.008771449 nonadapt nonadapt5 2.077     5   old        0
+176 16 0.007572265 0.009870210 nonadapt nonadapt5 2.077     5   old        0
+177 17 0.006353203 0.010655000 nonadapt nonadapt5 2.077     5   old        0
+178 18 0.006865982 0.008488619 nonadapt nonadapt5 2.077     5   old        0
+179 19 0.005813584 0.007175140 nonadapt nonadapt5 2.077     5   old        0
+180 20 0.006486173 0.006951875 nonadapt nonadapt5 2.077     5   old        0
+181  1 0.038108654 0.028841337     grad     grad5 8.933     5   old        0
+182  2 0.021097252 0.026021147     grad     grad5 8.933     5   old        0
+183  3 0.018171641 0.038495960     grad     grad5 8.933     5   old        0
+184  4 0.016738907 0.030374324     grad     grad5 8.933     5   old        0
+185  5 0.013908789 0.043349379     grad     grad5 8.933     5   old        0
+186  6 0.009441920 0.037784302     grad     grad5 8.933     5   old        0
+187  7 0.009678677 0.039149361     grad     grad5 8.933     5   old        0
+188  8 0.007242576 0.037378527     grad     grad5 8.933     5   old        0
+189  9 0.006679814 0.033843949     grad     grad5 8.933     5   old        0
+190 10 0.004515397 0.037963257     grad     grad5 8.933     5   old        0
+191 11 0.004398092 0.030867899     grad     grad5 8.933     5   old        0
+192 12 0.004629048 0.028914399     grad     grad5 8.933     5   old        0
+193 13 0.005130946 0.026953929     grad     grad5 8.933     5   old        0
+194 14 0.003903627 0.025214846     grad     grad5 8.933     5   old        0
+195 15 0.003325786 0.023726661     grad     grad5 8.933     5   old        0
+196 16 0.003984675 0.022140340     grad     grad5 8.933     5   old        0
+197 17 0.002919586 0.022090358     grad     grad5 8.933     5   old        0
+198 18 0.003134267 0.018696211     grad     grad5 8.933     5   old        0
+199 19 0.003509120 0.019410087     grad     grad5 8.933     5   old        0
+200 20 0.003303369 0.018379449     grad     grad5 8.933     5   old        0
     force2
 1    old_0
 2    old_0
@@ -253,7 +353,108 @@ The following object is masked from ‘package:base’:
 98   old_0
 99   old_0
 100  old_0
+101  old_0
+102  old_0
+103  old_0
+104  old_0
+105  old_0
+106  old_0
+107  old_0
+108  old_0
+109  old_0
+110  old_0
+111  old_0
+112  old_0
+113  old_0
+114  old_0
+115  old_0
+116  old_0
+117  old_0
+118  old_0
+119  old_0
+120  old_0
+121  old_0
+122  old_0
+123  old_0
+124  old_0
+125  old_0
+126  old_0
+127  old_0
+128  old_0
+129  old_0
+130  old_0
+131  old_0
+132  old_0
+133  old_0
+134  old_0
+135  old_0
+136  old_0
+137  old_0
+138  old_0
+139  old_0
+140  old_0
+141  old_0
+142  old_0
+143  old_0
+144  old_0
+145  old_0
+146  old_0
+147  old_0
+148  old_0
+149  old_0
+150  old_0
+151  old_0
+152  old_0
+153  old_0
+154  old_0
+155  old_0
+156  old_0
+157  old_0
+158  old_0
+159  old_0
+160  old_0
+161  old_0
+162  old_0
+163  old_0
+164  old_0
+165  old_0
+166  old_0
+167  old_0
+168  old_0
+169  old_0
+170  old_0
+171  old_0
+172  old_0
+173  old_0
+174  old_0
+175  old_0
+176  old_0
+177  old_0
+178  old_0
+179  old_0
+180  old_0
+181  old_0
+182  old_0
+183  old_0
+184  old_0
+185  old_0
+186  old_0
+187  old_0
+188  old_0
+189  old_0
+190  old_0
+191  old_0
+192  old_0
+193  old_0
+194  old_0
+195  old_0
+196  old_0
+197  old_0
+198  old_0
+199  old_0
+200  old_0
+> #compare.adapt(func=banana, D=2, L=4, n0=8, batches=15, reps = 3, plot.after=c(5,10), objs=c("nonadapt", "pvar", "grad"),forces=c("old","pvar"),force.vals = c(.2,.2))
 > 
 > proc.time()
    user  system elapsed 
- 18.813   0.168  22.135 
+ 57.592   0.339  61.489 

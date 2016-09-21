@@ -1,8 +1,8 @@
 source("adaptconcept2_sFFLHD_RC.R")
 library(ggplot2)
-compare.adapt <- function(func, D, L, g, batches=10, reps=5, 
+compare.adapt <- function(func, D, L, batches=10, reps=5, 
                           objs=c("nonadapt", "grad"), 
-                          plot.after=c(), 
+                          plot_after=c(), plot_every=c(),
                           forces=c("old"),force.vals=c(0),
                           n0=0,
                           saveOutput=F, funcString = NULL,
@@ -22,9 +22,16 @@ compare.adapt <- function(func, D, L, g, batches=10, reps=5,
     folderPath <- paste0("./compare_adaptconcept_output/",folderName)
     dir.create(path = folderPath)
   }
+  
   outdf <- data.frame()
   plotdf <- data.frame()
-  plot.after <- c(plot.after[plot.after < batches], batches)
+  
+  #plot.after <- c(plot.after[plot.after < batches], batches)
+  rows_to_plot <- c(plot_after[plot_after < batches], batches)
+  if (length(plot_every) == 1) {
+    rows_to_plot <- c(rows_to_plot, (1:(batches / plot_every)) * plot_every)
+    rows_to_plot <- sort(rows_to_plot)
+  }
   
   for (i in 1:reps) {
     if (!is.null(seed.start)) {
@@ -36,7 +43,7 @@ compare.adapt <- function(func, D, L, g, batches=10, reps=5,
     
     for (obj in objs) {
       for (iforce in 1:length(forces)) {
-        u <- adapt.concept2.sFFLHD.RC(func=funci, D=D, L=L, #g=g,
+        u <- adapt.concept2.sFFLHD.RC(func=funci, D=D, L=L,
                       obj=obj, 
                       force_old=if(forces[iforce]=="old") {force.vals[iforce]} else {0},
                       force_pvar=if(forces[iforce]=="pvar") {force.vals[iforce]} else {0},
@@ -56,15 +63,15 @@ compare.adapt <- function(func, D, L, g, batches=10, reps=5,
   }  
   #browser()
   
-  plotdf <- outdf[which(outdf$i %in% plot.after),]
+  plotdf <- outdf[which(outdf$i %in% rows_to_plot),]
   plotply <- plyr::dlply(plotdf, c("method", "i"))
   plotply2 <- plyr::dlply(plotdf, c("method", "force2", "i"))
-  cols <- 1:length(plot.after)
-  names(cols) <- plot.after
+  cols <- 1:length(rows_to_plot)
+  names(cols) <- rows_to_plot
   pchs <- 20 + 1:length(unique(plotdf$method))
   names(pchs) <- unique(plotdf$method)
-  pchs2 <- 14 + 1:length(plot.after)
-  names(pchs2) <- plot.after
+  pchs2 <- 14 + 1:length(rows_to_plot)
+  names(pchs2) <- rows_to_plot
   cols2 <- 1:length(unique(plotdf$method))
   names(cols2) <- unique(plotdf$method)
   
@@ -153,21 +160,21 @@ if (F) {
   library(TestFunctions)
   
   compare.adapt(func=gaussian1, D=2, L=4, g=3)
-  compare.adapt(func=RFF_get(), D=2, L=4, g=3, batches=5, reps = 5, plot.after=3)
-  compare.adapt(func=RFF_get(), D=2, L=4, g=3, batches=25, reps = 10, plot.after=c(5,15))
+  compare.adapt(func=RFF_get(), D=2, L=4, g=3, batches=5, reps = 5, plot_after=3)
+  compare.adapt(func=RFF_get(), D=2, L=4, g=3, batches=25, reps = 10, plot_after=c(5,15))
   system.time(compare.adapt(func=RFF_get(), D=2, L=4, g=3, batches=5, reps = 3, n0=3))
   system.time(compare.adapt(func=RFF_get(D=3), D=3, L=4, g=3, batches=5, reps = 3, n0=12))
   
-  compare.adapt(func=banana, D=2, L=4, g=3, n0=8, batches=5, reps = 5)
-  compare.adapt(func=banana, D=2, L=4, g=3, n0=8, batches=15, reps = 3, plot.after=c(5,10), objs=c("nonadapt", "pvar", "grad"),forces=c("old","pvar"),force.vals = c(.2,.2))
-  compare.adapt(func=banana, D=2, L=4, g=3, n0=8, batches=5, reps = 3, plot.after=c(3), objs=c("nonadapt", "pvar", "grad"),forces=c("old"),force.vals = c(.2))
-  compare.adapt(func=function(xx)banana(xx[1:2]), D=3, L=4, g=3, n0=8, batches=15, reps = 3, plot.after=c(5,10), objs=c("nonadapt", "pvar", "grad"),forces=c("old"),force.vals = c(.2))
-  compare.adapt(func=sinumoid, D=2, L=4, g=3, n0=8, batches=15, reps = 3, plot.after=c(5,10), objs=c("nonadapt", "pvar", "grad"),forces=c("old","pvar"),force.vals = c(.2,.2))
-  compare.adapt(func=RFF_get(), D=2, L=4, g=3, batches=5, reps = 5, plot.after=3, objs=c("nonadapt", "pvar", "grad"),forces=c("old","pvar"),force.vals = c(.2,.2))
+  compare.adapt(func=banana, D=2, L=4, n0=8, batches=5, reps = 5)
+  compare.adapt(func=banana, D=2, L=4, n0=8, batches=15, reps = 3, plot_after=c(5,10), objs=c("nonadapt", "pvar", "grad"),forces=c("old","pvar"),force.vals = c(.2,.2))
+  compare.adapt(func=banana, D=2, L=4, n0=8, batches=5, reps = 3, plot_after=c(3), objs=c("nonadapt", "pvar", "grad"),forces=c("old"),force.vals = c(.2))
+  compare.adapt(func=function(xx)banana(xx[1:2]), D=3, L=4, n0=8, batches=15, reps = 3, plot_after=c(5,10), objs=c("nonadapt", "pvar", "grad"),forces=c("old"),force.vals = c(.2))
+  compare.adapt(func=sinumoid, D=2, L=4, n0=8, batches=15, reps = 3, plot_after=c(5,10), objs=c("nonadapt", "pvar", "grad"),forces=c("old","pvar"),force.vals = c(.2,.2))
+  compare.adapt(func=RFF_get(), D=2, L=4, batches=5, reps = 5, plot_after=3, objs=c("nonadapt", "pvar", "grad"),forces=c("old","pvar"),force.vals = c(.2,.2))
   
   # check run time
   library(lineprof)
-  l <- lineprof(compare.adapt(func=banana, D=2, L=4, g=3, n0=8, batches=5, reps = 3, plot.after=c(3), objs=c("nonadapt", "pvar", "grad"),forces=c("old"),force.vals = c(.2)))
+  l <- lineprof(compare.adapt(func=banana, D=2, L=4, n0=8, batches=5, reps = 3, plot_after=c(3), objs=c("nonadapt", "pvar", "grad"),forces=c("old"),force.vals = c(.2)))
   shine(l)
-  system.time(compare.adapt(func=banana, D=2, L=4, g=3, n0=8, batches=30, reps = 3, plot.after=c(10,20), objs=c("nonadapt", "pvar", "grad"),forces=c("old"),force.vals = c(.2)))
+  system.time(compare.adapt(func=banana, D=2, L=4, n0=8, batches=30, reps = 3, plot_after=c(10,20), objs=c("nonadapt", "pvar", "grad"),forces=c("old"),force.vals = c(.2)))
 }
