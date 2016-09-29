@@ -33,9 +33,9 @@ compare.adapt <- function(func, D, L, batches=10, reps=5,
     rows_to_plot <- sort(rows_to_plot)
   }
   
-  for (i in 1:reps) {
+  for (repl in 1:reps) {
     if (!is.null(seed.start)) {
-      set.seed(seed.start + i - 1)
+      set.seed(seed.start + repl - 1)
     }
     if (is.function(func)) {funci <- func}
     else if (func == "RFF") {funci <- RFF_get(D=D)}
@@ -51,21 +51,31 @@ compare.adapt <- function(func, D, L, batches=10, reps=5,
                       ...=...
         )
         systime <- system.time(u$run(batches,noplot=T))
-        newdf1 <- data.frame(i=u$stats$iteration, mse=u$stats$mse, 
-                            pvar=u$stats$pvar, method=obj, num=paste0(obj,i),
-                            time = systime[3], row.names=NULL, batch=i,
+        newdf1 <- data.frame(batch=u$stats$iteration, mse=u$stats$mse, 
+                            pvar=u$stats$pvar, pamv=u$stats$pamv,
+                            method=obj, num=paste0(obj,repl),
+                            time = systime[3], row.names=NULL, rep=repl,
                             force=forces[iforce], force.to=force.vals[iforce],
                             force2=paste0(forces[iforce], '_', force.vals[iforce]))
         outdf <- rbind(outdf, newdf1)
+        if (saveOutput) {
+          if (file.exists(paste0(folderPath,"/data_cat.csv"))) { # append new row
+            write.table(x=newdf1, file=paste0(folderPath,"/data_cat.csv"),append=T, sep=",", col.names=F)
+          } else { #create file
+            write.table(x=newdf1, file=paste0(folderPath,"/data_cat.csv"),append=F, sep=",", col.names=T)
+          }
+        }  
         u$delete()
       }
     }
   }  
   #browser()
   
-  plotdf <- outdf[which(outdf$i %in% rows_to_plot),]
-  plotply <- plyr::dlply(plotdf, c("method", "i"))
-  plotply2 <- plyr::dlply(plotdf, c("method", "force2", "i"))
+  plotdf <- outdf[which(outdf$batch %in% rows_to_plot),]
+  enddf <- outdf[outdf$batch == batches,]
+  meandf <- plyr::ddply(outdf, c("method", "batch", "force2"), function(tdf){colMeans(tdf[,c("mse","pvar","pamv")])})
+  plotply <- plyr::dlply(plotdf, c("method", "batch"))
+  plotply2 <- plyr::dlply(plotdf, c("method", "force2", "batch"))
   cols <- 1:length(rows_to_plot)
   names(cols) <- rows_to_plot
   pchs <- 20 + 1:length(unique(plotdf$method))
@@ -100,15 +110,15 @@ compare.adapt <- function(func, D, L, batches=10, reps=5,
     }
     stripchart(plotply2[[j]]$mse, 
                las=2, 
-               col=cols[as.character(plotply2[[j]]$i[1])],
-               bg= cols[as.character(plotply2[[j]]$i[1])],
+               col=cols[as.character(plotply2[[j]]$batch[1])],
+               bg= cols[as.character(plotply2[[j]]$batch[1])],
                pch=pchs[as.character(plotply2[[j]]$method[1])],
                vertical = T, log='y', add=T, at=j
                #,glab=gsub("\\.","\n",names(plotply2))
     )
     stripchart(plotply2[[j]]$pvar, 
                las=2, 
-               col=cols[as.character(plotply2[[j]]$i[1])],
+               col=cols[as.character(plotply2[[j]]$batch[1])],
                bg="gray51",
                pch=pchs[as.character(plotply2[[j]]$method[1])],
                vertical = T, log='y', add=T,at = j-.3
@@ -118,30 +128,57 @@ compare.adapt <- function(func, D, L, batches=10, reps=5,
   par(mar=oparmar)
   if (saveOutput) {dev.off()}
   
-  #plot(u$stats$iteration, u$stats$mse, type='b', col=1, log='y')
-  #points(v$stats$iteration, v$stats$mse, type='b', col=2)
-  #legend(x='topright', legend=c('Adapt', 'No adapt'), fill=1:2)
+  #browser()
   
-  #print(
-  #  ggplot(data=outdf, aes(x=i, y=mse, group = num, colour = method)) +
-  #  geom_line() +
-  #  geom_point( size=1, shape=21, fill="white") + 
-  #    scale_y_log10()
-  #  + xlab("Iteration") + ylab("MSE")
-  #)
+  if (T) {
+    if (saveOutput) {
+      png(filename = paste0(folderPath,"/plotMSE.png"),
+          width = 480, height = 480)
+    }
+    print(
+      ggplot(data=outdf, aes(x=batch, y=mse, group = num, colour = method)) +
+      geom_line() +
+      geom_line(inherit.aes = F, data=meandf, aes(x=batch, y=mse, colour = method, size=3, alpha=.5)) +
+      geom_point() + 
+      scale_y_log10() + 
+      xlab("Batch") + ylab("MSE")
+    )
+    if (saveOutput) {dev.off()}
+  }
   
-  #print(
-  #  ggplot(data=outdf[outdf$i==batches,], aes(x=method, y=mse, group = num, colour = method)) +
-  #    geom_point()
-  #)
-  #print(
-  #  ggplot(data=plotdf, aes(x=method, y=mse, group = num, colour = method)) +
-  #    geom_point()
-  #)
+  if (T) {
+    if (saveOutput) {
+      png(filename = paste0(folderPath,"/plotMSEPVar.png"),
+          width = 480, height = 480)
+    }
+    print(
+      ggplot(data=outdf, aes(x=mse, y=pvar, group = num, colour = method)) +
+      geom_line() + # Line for each rep
+      geom_line(inherit.aes=F, data=meandf, aes(x=mse, y=pvar, size=4, colour=method), alpha=.5) +# Line for mean
+      geom_point() + # Points for each rep
+      geom_point(inherit.aes=F, data=enddf, aes(x=mse, y=pvar, size=4, colour=method)) + # Big points at end
+      geom_abline(intercept = 0, slope = 1) + # y=x line, expected for good model
+      xlab("MSE") + ylab("PVar")
+    )
+    if (saveOutput) {dev.off()}
+  }
   
-  #stripchart(plotdf$mse ~ plotdf$method + plotdf$i, las=T, pch=19)
-  #with(plotdf, stripchart(mse ~ method + i, las=T, pch=19, col=batch))
+  if (F) { # Essentially the stripcharts
+    print(
+      ggplot(data=enddf, aes(x=method, y=mse, group = num, colour = method)) +
+        geom_point()
+    )
+    print(
+      ggplot(data=plotdf, aes(x=method, y=mse, group = num, colour = method)) +
+        geom_point()
+    )
+  }
 
+  if (F) { # stripchart of mse at plot points  
+    #stripchart(plotdf$mse ~ plotdf$method + plotdf$i, las=T, pch=19)
+    with(plotdf, stripchart(mse ~ method + batch, las=T, pch=19, col=batch))
+  }
+  
   if (saveOutput) {write.csv(outdf, paste0(folderPath,"/data.csv"))}  
   outdf
 }

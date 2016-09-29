@@ -42,7 +42,7 @@ adapt.concept2.sFFLHD.RC <- setRefClass("adapt.concept2.sFFLHD.seq",
      #mod$initialize(package = "mlegp")
      if(length(package) == 0) {package <<- "laGP"}
      mod <<- UGP$new(package = package)
-     stats <<- list(iteration=c(),pvar=c(),mse=c(), ppu=c(), minbatch=c())
+     stats <<- list(iteration=c(),pvar=c(),mse=c(), ppu=c(), minbatch=c(), pamv=c())
      iteration <<- 1
      
      # set objective function to minimize or pick dive area by max
@@ -147,8 +147,8 @@ adapt.concept2.sFFLHD.RC <- setRefClass("adapt.concept2.sFFLHD.seq",
         }
       } 
       # if nothing forced, run SMED_select
-      if (is.null(newL)) {
-        bestL <- SMED_selectC(f=obj_func, n=L, X0=X, Xopt=Xnotrun)
+      if (is.null(newL)) { #browser()
+        bestL <- SMED_selectC(f=obj_func, n=L, X0=X, Xopt=Xnotrun, theta=mod$theta())
         newL <- bestL
       }
       
@@ -190,6 +190,7 @@ adapt.concept2.sFFLHD.RC <- setRefClass("adapt.concept2.sFFLHD.seq",
      stats$mse <<- c(stats$mse, msecalc(func,mod$predict,cbind(rep(0,D),rep(1,D))))
      stats$ppu <<- c(stats$ppu, nrow(X) / (nrow(X) + nrow(Xnotrun)))
      stats$minbatch <<- c(stats$minbatch, if (length(batch.tracker>0)) min(batch.tracker) else 0)
+     stats$pamv <<- c(stats$pamv, mod$prop.at.max.var())
     },
     plot1 = function() {#browser()
      if (D == 2) {
