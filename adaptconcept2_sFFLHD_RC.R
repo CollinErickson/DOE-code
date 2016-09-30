@@ -6,6 +6,7 @@ library(cf, lib.loc = lib.loc)
 library(SMED, lib.loc = lib.loc)
 library(sFFLHD, lib.loc = lib.loc)
 library(UGP, lib.loc = lib.loc)
+library(magrittr)
 setOldClass("UGP")
 
 adapt.concept2.sFFLHD.RC <- setRefClass("adapt.concept2.sFFLHD.seq",
@@ -22,7 +23,8 @@ adapt.concept2.sFFLHD.RC <- setRefClass("adapt.concept2.sFFLHD.seq",
    n0 = "numeric",#, never_dive = "logical"
    package = "character",
    batch.tracker = "numeric",
-   force_old = "numeric", force_pvar = "numeric"
+   force_old = "numeric", force_pvar = "numeric",
+   useSMEDtheta = "logical"
   ),
   methods = list(
    initialize = function(...) {
@@ -85,6 +87,7 @@ adapt.concept2.sFFLHD.RC <- setRefClass("adapt.concept2.sFFLHD.seq",
      #if (length(never_dive)==0) {never_dive <<- FALSE}
      if (length(force_old) == 0) {force_old <<- 0}
      if (length(force_pvar) == 0) {force_pvar <<- 0}
+     useSMEDtheta <<- if (length(useSMEDtheta)==0) {FALSE} else {useSMEDtheta}
     },
     run = function(maxit, plotlastonly=F, noplot=F) {
      i <- 1
@@ -148,7 +151,7 @@ adapt.concept2.sFFLHD.RC <- setRefClass("adapt.concept2.sFFLHD.seq",
       } 
       # if nothing forced, run SMED_select
       if (is.null(newL)) { #browser()
-        bestL <- SMED_selectC(f=obj_func, n=L, X0=X, Xopt=Xnotrun, theta=mod$theta())
+        bestL <- SMED_selectC(f=obj_func, n=L, X0=X, Xopt=Xnotrun, theta=if (useSMEDtheta) {mod$theta()} else {rep(1,2)})
         newL <- bestL
       }
       
@@ -203,9 +206,11 @@ adapt.concept2.sFFLHD.RC <- setRefClass("adapt.concept2.sFFLHD.seq",
        screen(1)
        #xlim <- lims[1,]
        #ylim <- lims[2,]
-       cf_func(mod$predict,batchmax=500, pretitle="Predicted Surface ")
-       points(X,pch=19)
-       points(X[(nrow(X)-L+1):nrow(X),],col='yellow',pch=19, cex=.5) # plot last L separately
+       cf_func(mod$predict,batchmax=500, pretitle="Predicted Surface ", #pts=X)
+              afterplotfunc=function(){points(X,pch=19)
+                                       points(X[(nrow(X)-L+1):nrow(X),],col='yellow',pch=19, cex=.5) # plot last L separately
+              }
+       )
        ###points(Xnotrun, col=2)
        #rect(xlim[1],ylim[1],xlim[2],ylim[2],lwd=5)
        #abline(v=xlim[1] + 1:(g-1)/g * (xlim[2]-xlim[1]),h=ylim[1] + 1:(g-1)/g * (ylim[2]-ylim[1]))
@@ -223,9 +228,11 @@ adapt.concept2.sFFLHD.RC <- setRefClass("adapt.concept2.sFFLHD.seq",
       # }
        # Plot s2 predictions
        screen(2)
-       cf_func(mod$predict.var, batchmax=500, pretitle="Predictive Variance ")
-       points(X,pch=19)
-       points(X[(nrow(X)-L+1):nrow(X),],col='yellow',pch=19, cex=.5) # plot last L separately
+       cf_func(mod$predict.var,batchmax=500, pretitle="Predicted Surface ", #pts=X)
+               afterplotfunc=function(){points(X,pch=19)
+                 points(X[(nrow(X)-L+1):nrow(X),],col='yellow',pch=19, cex=.5) # plot last L separately
+               }
+       )
        ###points(Xnotrun, col=2)
        #rect(xlim[1],ylim[1],xlim[2],ylim[2],lwd=5)
        #abline(v=xlim[1] + 1:(g-1)/g * (xlim[2]-xlim[1]),h=ylim[1] + 1:(g-1)/g * (ylim[2]-ylim[1]))
@@ -332,8 +339,8 @@ if (F) {
   
   
   #sinumoid <- function(xx){sum(sin(2*pi*xx*3)) + 20/(1+exp(-80*(xx[[1]]-.5)))}; cf_func(sinumoid)
-  a <- adapt.concept2.sFFLHD.RC(D=2,L=3,g=3,func=sinumoid,  obj="grad")
-  a$run(4, plotlastonly = T)
+  a <- adapt.concept2.sFFLHD.RC(D=2,L=4,g=3,func=sinumoid,  obj="grad")
+  a$run(10, plotlastonly = T)
   
   a <- adapt.concept2.sFFLHD.RC(D=2,L=3,g=3,func=RFF_get(), obj="grad")
   a$run(4, plotlastonly = T)
