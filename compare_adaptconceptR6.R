@@ -24,8 +24,10 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
     plotdf = data.frame(),
     enddf = data.frame(),
     meandf = data.frame(),
+    meanlogdf = data.frame(),
     rungrid = data.frame(),
     rungridlist = list(),
+    package = NULL,
     number_runs = NULL,
     completed_runs = NULL,
     initialize = function(func, D, L, batches=10, reps=5, 
@@ -35,7 +37,9 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
                           force_old=c(0), force_pvar=c(0),
                           n0=0,
                           save_output=F, func_string = NULL,
-                          seed_start=NULL,...) {
+                          seed_start=NULL,
+                          package="laGP",
+                          ...) {
       self$func <- func
       self$D <- D
       self$L <- L
@@ -49,10 +53,13 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
       self$n0 <- n0
       self$save_output <- save_output
       self$seed_start <- seed_start
-      
+      self$package <- package
+      #browser()
       if (is.null(func_string)) {
         if (is.character(func)) {func_string <- func}
-        else {func_string <- deparse(substitute(func))}
+        else if (length(func) == 1){func_string <- deparse(substitute(func))}
+        else if (length(func) > 1) {func_string <- paste0('func',1:length(func))}
+        else {stop("Function error 325932850")}
       }
       self$func_string <- func_string
       
@@ -71,9 +78,24 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
                    data.frame(batches),data.frame(obj, stringsAsFactors = F),
                    #data.frame(forces=forces,force_vals=force_vals),
                    data.frame(force_old,force_pvar),
-                   data.frame(n0)
+                   data.frame(n0),
+                   data.frame(package, stringsAsFactors = FALSE)
                 )
-      self$rungridlist <- as.list(self$rungrid[, !(colnames(self$rungrid) %in% c("func_string", "func_num", "repl","reps","batches","seed"))])
+      #self$multiple_option_columns <- c()
+      #self$rungrid$Group <- ""
+      group_names <- c()
+      
+      #browser()
+      for (i_input in c('func_string', 'D', 'L', 'reps', 'batches', 'obj', 'force_old', 'force_pvar', 'n0','package')) {
+        if (length(eval(parse(text=i_input))) > 1) {
+          #self$rungrid$Group <- paste(self$rungrid$Group, self$rungrid[,i_input])
+          group_names <- c(group_names, i_input)
+        }
+      }
+      #browser()
+      group_cols <- sapply(group_names, function(gg){paste0(gg,'=',self$rungrid[,gg])})
+      self$rungrid$Group <- apply(group_cols, 1, function(rr){paste(rr, collapse=',')})
+      self$rungridlist <- as.list(self$rungrid[, !(colnames(self$rungrid) %in% c("func_string", "func_num", "repl","reps","batches","seed","Group"))])
       self$rungridlist$func <- c(func)[self$rungrid$func_num]
       self$number_runs <- nrow(self$rungrid)
       self$completed_runs <- rep(FALSE, self$number_runs)
@@ -161,8 +183,14 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
       } else if (self$completed_runs[irow] == TRUE) {
         warning("irow already run, will run again anyways")
       }
+      
       row_grid <- self$rungrid[irow, ] #rungrid row for current run
       if (!is.na(row_grid$seed)) {set.seed(seed)}
+      #browser()
+      #if (is.function(row_grid$func)) {}#funci <- self$func}
+      #else if (row_grid$func == "RFF") {row_grid$func <- RFF_get(D=self$D)}
+      #else {stop("No function given")}
+      
       u <- do.call(adapt.concept2.sFFLHD.RC, lapply(self$rungridlist, function(x)x[[irow]]))
       
       systime <- system.time(u$run(row_grid$batches,noplot=T))
@@ -199,7 +227,7 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
       splitColNames <- c("func","func_string","func_num","D","L",
                          "reps","batches",
                          "force_old","force_pvar","force2",
-                         "n0","obj", "batch")
+                         "n0","obj", "batch", "Group","package")
       self$meandf <- plyr::ddply(
                        self$outdf, 
                        splitColNames, 
@@ -207,6 +235,13 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
                          colMeans(tdf[,meanColNames])
                        }
                      )
+      self$meanlogdf <- plyr::ddply(
+                      self$outdf, 
+                      splitColNames, 
+                      function(tdf){
+                        exp(colMeans(log(tdf[,meanColNames])))
+                      }
+      )
       invisible(self)
     },
     plot_over_batch = function(save_output = self$save_output) {
@@ -215,9 +250,9 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
             width = 480, height = 480)
       }
       print(
-        ggplot(data=self$outdf, aes(x=batch, y=mse, group = num, colour = obj)) +
+        ggplot(data=self$outdf, aes(x=batch, y=mse, group = interaction(num,Group), colour = Group)) +
           geom_line() +
-          geom_line(inherit.aes = F, data=self$meandf, aes(x=batch, y=mse, colour = obj, size=3, alpha=.5)) +
+          geom_line(inherit.aes = F, data=self$meandf, aes(x=batch, y=mse, colour = Group, size=3, alpha=.5)) +
           geom_point() + 
           scale_y_log10() + 
           xlab("Batch") + ylab("MSE") + guides(size=FALSE, alpha=FALSE)
@@ -231,11 +266,11 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
             width = 480, height = 480)
       }
       print(
-        ggplot(data=self$outdf, aes(x=mse, y=pvar, group = num, colour = obj)) +
+        ggplot(data=self$outdf, aes(x=mse, y=pvar, group = interaction(num,Group), colour = Group)) +
           geom_line() + # Line for each rep
-          geom_line(inherit.aes=F, data=self$meandf, aes(x=mse, y=pvar, size=4, colour=obj), alpha=.5) +# Line for mean
+          geom_line(inherit.aes=F, data=self$meandf, aes(x=mse, y=pvar, size=4, colour=Group), alpha=.5) +# Line for mean
           geom_point() + # Points for each rep
-          geom_point(inherit.aes=F, data=self$enddf, aes(x=mse, y=pvar, size=4, colour=obj)) + # Big points at end
+          geom_point(inherit.aes=F, data=self$enddf, aes(x=mse, y=pvar, size=4, colour=Group)) + # Big points at end
           geom_abline(intercept = 0, slope = 1) + # y=x line, expected for good model
           xlab("MSE") + ylab("PVar") + guides(size=FALSE) + 
           scale_x_log10() + scale_y_log10()
@@ -249,11 +284,11 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
             width = 480, height = 480)
       }
       print(
-        ggplot(data=self$outdf, aes(x=rmse, y=prmse, group = num, colour = obj)) +
+        ggplot(data=self$outdf, aes(x=rmse, y=prmse, group = interaction(num,Group), colour = Group)) +
           geom_line() + # Line for each rep
-          geom_line(inherit.aes=F, data=self$meandf, aes(x=rmse, y=prmse, size=4, colour=obj), alpha=.5) +# Line for mean
+          geom_line(inherit.aes=F, data=self$meandf, aes(x=rmse, y=prmse, size=4, colour = Group), alpha=.5) +# Line for mean
           geom_point() + # Points for each rep
-          geom_point(inherit.aes=F, data=self$enddf, aes(x=rmse, y=prmse, size=4, colour=obj)) + # Big points at end
+          geom_point(inherit.aes=F, data=self$enddf, aes(x=rmse, y=prmse, size=4, colour = Group)) + # Big points at end
           geom_abline(intercept = 0, slope = 1) + # y=x line, expected for good model
           xlab("RMSE") + ylab("PRMSE") + guides(size=FALSE) + 
           scale_x_log10() + scale_y_log10()
