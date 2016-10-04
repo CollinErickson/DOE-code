@@ -19,13 +19,15 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
     save_output = NULL,#=F, 
     func_string = NULL,
     seed_start = NULL,
-    folderCreated = FALSE,
+    folder_created = FALSE,
     outdf = data.frame(),
     plotdf = data.frame(),
     enddf = data.frame(),
     meandf = data.frame(),
     rungrid = data.frame(),
     rungridlist = list(),
+    number_runs = NULL,
+    completed_runs = NULL,
     initialize = function(func, D, L, batches=10, reps=5, 
                           obj=c("nonadapt", "grad"), 
                           #plot_after=c(), plot_every=c(),
@@ -73,6 +75,8 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
                 )
       self$rungridlist <- as.list(self$rungrid[, !(colnames(self$rungrid) %in% c("func_string", "func_num", "repl","reps","batches","seed"))])
       self$rungridlist$func <- c(func)[self$rungrid$func_num]
+      self$number_runs <- nrow(self$rungrid)
+      self$completed_runs <- rep(FALSE, self$number_runs)
     },
     create_output_folder = function(timestamp = FALSE) {
       folderTime0 <- gsub(" ","_", Sys.time())
@@ -85,10 +89,10 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
       self$folderName <- if (timestamp) {paste0(c(t1,"_",folderTime), collapse = "")} else {t1}
       self$folder_path <- paste0("./compare_adaptconcept_output/",self$folderName)
       dir.create(path = self$folder_path)
-      self$folderCreated = TRUE
+      self$folder_created = TRUE
       
     },
-    run = function(save_output=self$save_output) {#browser()
+    run_OLD = function(save_output=self$save_output) {#browser()
       for (repl in 1:self$reps) {
         if (!is.null(self$seed_start)) {
           set.seed(self$seed_start + self$repl - 1)
@@ -134,10 +138,32 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
       
       invisible(self)        
     },
-    run_one = function(irow, save_output=self$save_output) {browser()
+    run_all = function(redo = FALSE) {
+      if (redo) {
+        to_run <- which(self$completed_runs == FALSE)
+      } else {
+        to_run <- 1:self$number_runs
+      }
+      sapply(to_run,function(ii){self$run_one(ii)})
+      self$postprocess_outdf()
+      invisible(self)
+    },
+    run_one = function(irow=NULL, save_output=self$save_output) {#browser()
+      if (is.null(irow)) { # If irow not given, set to next not run
+        if (any(self$completed_runs == FALSE)) {
+          irow <- which(self$completed_runs == 0)[1]
+        } else {
+          stop("irow not given and all runs completed")
+        }
+      } else if (length(irow) > 1) { # If more than one, run each separately
+        sapply(irow, function(ii){self$run_one(irow=ii, save_output=save_output)})
+        return(invisible(self))
+      } else if (self$completed_runs[irow] == TRUE) {
+        warning("irow already run, will run again anyways")
+      }
       row_grid <- self$rungrid[irow, ] #rungrid row for current run
       if (!is.na(row_grid$seed)) {set.seed(seed)}
-      u <- do.call(adapt.concept2.sFFLHD.RC, lapply(ca1$rungridlist, function(x)x[[irow]]))
+      u <- do.call(adapt.concept2.sFFLHD.RC, lapply(self$rungridlist, function(x)x[[irow]]))
       
       systime <- system.time(u$run(row_grid$batches,noplot=T))
       newdf0 <- data.frame(batch=u$stats$iteration, mse=u$stats$mse, 
@@ -160,13 +186,27 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
         }
       }  
       u$delete()
-      
+      self$completed_runs[irow] <- TRUE
+      invisible(self)
     },
     postprocess_outdf = function() {
       self$outdf$rmse <- sqrt(ifelse(self$outdf$mse>=0, self$outdf$mse, 0))
       self$outdf$prmse <- sqrt(ifelse(self$outdf$pvar>=0, self$outdf$pvar, 0))
       self$enddf <- self$outdf[self$outdf$batch == self$batches,]
-      self$meandf <- plyr::ddply(self$outdf, c("method", "batch", "force2"), function(tdf){colMeans(tdf[,c("mse","pvar","pamv","rmse","prmse")])})
+      # Want to get mean of these columns across replicates
+      meanColNames <- c("mse","pvar","pamv","rmse","prmse")
+      # Use these as ID, exclude repl, seed, and num and time
+      splitColNames <- c("func","func_string","func_num","D","L",
+                         "reps","batches",
+                         "force_old","force_pvar","force2",
+                         "n0","obj", "batch")
+      self$meandf <- plyr::ddply(
+                       self$outdf, 
+                       splitColNames, 
+                       function(tdf){
+                         colMeans(tdf[,meanColNames])
+                       }
+                     )
       invisible(self)
     },
     plot_over_batch = function(save_output = self$save_output) {
@@ -175,9 +215,9 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
             width = 480, height = 480)
       }
       print(
-        ggplot(data=self$outdf, aes(x=batch, y=mse, group = num, colour = method)) +
+        ggplot(data=self$outdf, aes(x=batch, y=mse, group = num, colour = obj)) +
           geom_line() +
-          geom_line(inherit.aes = F, data=self$meandf, aes(x=batch, y=mse, colour = method, size=3, alpha=.5)) +
+          geom_line(inherit.aes = F, data=self$meandf, aes(x=batch, y=mse, colour = obj, size=3, alpha=.5)) +
           geom_point() + 
           scale_y_log10() + 
           xlab("Batch") + ylab("MSE") + guides(size=FALSE, alpha=FALSE)
@@ -185,17 +225,17 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
       if (save_output) {dev.off()}
       invisible(self)
     },
-    plot_MSE_PVar = function(save_output = self$save_output) {
+    plot_MSE_PVar = function(save_output = self$save_output) {#browser()
       if (save_output) {
         png(filename = paste0(self$folder_path,"/plotMSEPVar.png"),
             width = 480, height = 480)
       }
       print(
-        ggplot(data=self$outdf, aes(x=mse, y=pvar, group = num, colour = method)) +
+        ggplot(data=self$outdf, aes(x=mse, y=pvar, group = num, colour = obj)) +
           geom_line() + # Line for each rep
-          geom_line(inherit.aes=F, data=self$meandf, aes(x=mse, y=pvar, size=4, colour=method), alpha=.5) +# Line for mean
+          geom_line(inherit.aes=F, data=self$meandf, aes(x=mse, y=pvar, size=4, colour=obj), alpha=.5) +# Line for mean
           geom_point() + # Points for each rep
-          geom_point(inherit.aes=F, data=self$enddf, aes(x=mse, y=pvar, size=4, colour=method)) + # Big points at end
+          geom_point(inherit.aes=F, data=self$enddf, aes(x=mse, y=pvar, size=4, colour=obj)) + # Big points at end
           geom_abline(intercept = 0, slope = 1) + # y=x line, expected for good model
           xlab("MSE") + ylab("PVar") + guides(size=FALSE) + 
           scale_x_log10() + scale_y_log10()
@@ -209,11 +249,11 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
             width = 480, height = 480)
       }
       print(
-        ggplot(data=self$outdf, aes(x=rmse, y=prmse, group = num, colour = method)) +
+        ggplot(data=self$outdf, aes(x=rmse, y=prmse, group = num, colour = obj)) +
           geom_line() + # Line for each rep
-          geom_line(inherit.aes=F, data=self$meandf, aes(x=rmse, y=prmse, size=4, colour=method), alpha=.5) +# Line for mean
+          geom_line(inherit.aes=F, data=self$meandf, aes(x=rmse, y=prmse, size=4, colour=obj), alpha=.5) +# Line for mean
           geom_point() + # Points for each rep
-          geom_point(inherit.aes=F, data=self$enddf, aes(x=rmse, y=prmse, size=4, colour=method)) + # Big points at end
+          geom_point(inherit.aes=F, data=self$enddf, aes(x=rmse, y=prmse, size=4, colour=obj)) + # Big points at end
           geom_abline(intercept = 0, slope = 1) + # y=x line, expected for good model
           xlab("RMSE") + ylab("PRMSE") + guides(size=FALSE) + 
           scale_x_log10() + scale_y_log10()
@@ -237,6 +277,6 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
 )
 
 if (F) {
-  ca1 <- compare.adaptR6$new(func=gaussian1, D=2, L=4)$run()$plot()
+  ca1 <- compare.adaptR6$new(func=gaussian1, D=2, L=4)$run_all()$plot()
   ca1$run()
 }
