@@ -279,8 +279,8 @@ adapt.concept2.sFFLHD.RC <- setRefClass("adapt.concept2.sFFLHD.seq",
                           n = 20, mainminmax_minmax = F, pretitle="SqErr ")
        
        close.screen(all = TRUE)
-     } else {
-       par(mfrow=c(3,1))
+     } else { # D != 2 
+       par(mfrow=c(2,2))
        par(mar=c(2,2,0,0.5)) # 5.1 4.1 4.1 2.1 BLTR
        statsdf <- as.data.frame(stats)
        #print(ggplot(statsdf, aes(x=iteration, y=mse, col=level)) + geom_line())
@@ -313,6 +313,11 @@ adapt.concept2.sFFLHD.RC <- setRefClass("adapt.concept2.sFFLHD.seq",
          plot(statsdf$iter, statsdf$ppu, type='o', pch=19,
               xlab="Iteration")#, ylab="Level")
          legend('bottomleft',legend="% pts",fill=1)
+         # 4 grad vs pvar
+         Xplot <- matrix(runif(D*100), ncol=D)
+         Xplot_grad <- mod$grad_norm(Xplot)#;browser()
+         Xplot_se <- mod$predict.se(Xplot)
+         plot(Xplot_se, Xplot_grad, pch=19, xlab='SE', ylab='Grad', log='xy')
        }
      }
     },
