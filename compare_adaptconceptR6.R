@@ -218,8 +218,8 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
       invisible(self)
     },
     postprocess_outdf = function() {
-      self$outdf$rmse <- sqrt(ifelse(self$outdf$mse>=0, self$outdf$mse, 0))
-      self$outdf$prmse <- sqrt(ifelse(self$outdf$pvar>=0, self$outdf$pvar, 0))
+      self$outdf$rmse <- sqrt(ifelse(self$outdf$mse>=0, self$outdf$mse, 1e-16))
+      self$outdf$prmse <- sqrt(ifelse(self$outdf$pvar>=0, self$outdf$pvar, 1e-16))
       self$enddf <- self$outdf[self$outdf$batch == self$batches,]
       # Want to get mean of these columns across replicates
       meanColNames <- c("mse","pvar","pamv","rmse","prmse")
@@ -252,7 +252,7 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
       print(
         ggplot(data=self$outdf, aes(x=batch, y=mse, group = interaction(num,Group), colour = Group)) +
           geom_line() +
-          geom_line(inherit.aes = F, data=self$meandf, aes(x=batch, y=mse, colour = Group, size=3, alpha=.5)) +
+          geom_line(inherit.aes = F, data=self$meanlogdf, aes(x=batch, y=mse, colour = Group, size=3, alpha=.5)) +
           geom_point() + 
           scale_y_log10() + 
           xlab("Batch") + ylab("MSE") + guides(size=FALSE, alpha=FALSE)
