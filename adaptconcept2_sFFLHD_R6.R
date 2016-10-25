@@ -9,13 +9,15 @@ library(UGP, lib.loc = lib.loc)
 library(magrittr)
 setOldClass("UGP")
 
-adapt.concept2.sFFLHD.RC <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
+adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
   public = list(
    func = NULL, # "function", 
    D = NULL, # "numeric", 
    L = NULL, # "numeric", 
    g = NULL, # "numeric", # g not used but I'll leave it for now
    X = NULL, # "matrix", Z = "numeric", Xnotrun = "matrix",
+   Xnotrun = NULL,
+   Z = NULL,
    s = NULL, # "sFFLHD", mod = "UGP",
    stats = NULL, # "list", 
    iteration = NULL, # "numeric",
@@ -27,13 +29,21 @@ adapt.concept2.sFFLHD.RC <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
    force_old = NULL, # "numeric", 
    force_pvar = NULL, # "numeric",
    useSMEDtheta = NULL, # "logical"
+   mod = NULL,
  
-   initialize = function(...) {
-     callSuper(...)
+   initialize = function(D,L,package=NULL, obj=NULL, n0=0, 
+                         force_old=0, force_pvar=0,
+                         useSMEDtheta=F, func,
+                         ...) {browser()
+     self$D <- D
+     self$L <- L
+     self$func <- func
+     self$force_old <- force_old
+     self$force_pvar <- force_pvar
      
      #if (any(length(D)==0, length(L)==0, length(g)==0)) {
      if (any(length(D)==0, length(L)==0)) {
-       message("D, L, and g must be specified")
+       message("D and L must be specified")
      }
      
      self$s <- sFFLHD::sFFLHD(D=D, L=L)
@@ -41,51 +51,54 @@ adapt.concept2.sFFLHD.RC <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
      self$Xnotrun <- matrix(NA,0,D)
      #if(length(lims)==0) {lims <<- matrix(c(0,1),D,2,byrow=T)}
      #mod$initialize(package = "mlegp")
-     if(length(package) == 0) {package <<- "laGP"}
-     self$mod <- UGP$new(package = package)
-     self$stats <<- list(iteration=c(),pvar=c(),mse=c(), ppu=c(), minbatch=c(), pamv=c())
-     self$iteration <<- 1
+     if(is.null(package)) {self$package <- "laGP"}
+     else {self$package <- package}
+     self$mod <- UGP$new(package = self$package)
+     self$stats <- list(iteration=c(),pvar=c(),mse=c(), ppu=c(), minbatch=c(), pamv=c())
+     self$iteration <- 1
      
      # set objective function to minimize or pick dive area by max
-     if (length(obj)==0 || obj == "mse") { # The default
-       self$obj <- "mse" # Don't want it to be character(0) when I have to check it later
+     self$obj <- obj
+     if (is.null(self$obj) || self$obj == "mse") { # The default
+       #self$obj <- "mse" # Don't want it to be character(0) when I have to check it later
        self$obj_func <- mod$predict.var #function(xx) {apply(xx, 1, mod$predict.var)}
        #function(lims) {
       #   msfunc(mod$predict.var, lims=lims, pow=1, batch=T)
       # }
-     } else if (obj == "maxerr") {
+     } else if (self$obj == "maxerr") {
        self$obj_func <- function(lims) {
-         maxgridfunc(mod$predict.var, lims=lims, batch=T)
+         maxgridfunc(self$mod$predict.var, lims=lims, batch=T)
        }
-     } else if (obj == "grad") {
-       self$obj_func <- mod$grad_norm#{apply(xx, 1, mod$grad_norm)}
-     } else if (obj == "func") {
-       self$obj_func <- function(xx) max(1e-16, mod$predict(xx))#{apply(xx, 1, mod$grad_norm)}
-       self$obj_func <- function(xx) {pv <- mod$predict(xx);ifelse(pv<0,1e-16, pv)}#{apply(xx, 1, mod$grad_norm)}
-     } else if (obj == "pvar") {
-       self$obj_func <- function(xx) max(1e-16, mod$predict(xx))#{apply(xx, 1, mod$grad_norm)}
-     } else if (obj == "nonadapt") {
+     } else if (self$obj == "grad") {
+       self$obj_func <- self$mod$grad_norm#{apply(xx, 1, mod$grad_norm)}
+     } else if (self$obj == "func") {
+       self$obj_func <- function(xx) max(1e-16, self$mod$predict(xx))#{apply(xx, 1, mod$grad_norm)}
+       self$obj_func <- function(xx) {pv <- self$mod$predict(xx);ifelse(pv<0,1e-16, pv)}#{apply(xx, 1, mod$grad_norm)}
+     } else if (self$obj == "pvar") {
+       self$obj_func <- function(xx) max(1e-16, self$mod$predict(xx))#{apply(xx, 1, mod$grad_norm)}
+     } else if (self$obj == "nonadapt") {
        # use next batch only #obj_func <<- NULL
      }
      
-     if (length(n0) != 0 && n0 > 0) {
-       Xnew <- matrix(NA, 0, D)
-       while (nrow(Xnew) < n0) {
-         Xnew <- rbind(Xnew, s$get.batch())
-         self$batch.tracker <- rep(s$b,L)
+     self$n0 <- n0
+     if (length(self$n0) != 0 && self$n0 > 0) {
+       self$Xnew <- matrix(NA, 0, self$D)
+       while (nrow(self$Xnew) < self$n0) {
+         self$Xnew <- rbind(self$Xnew, self$s$get.batch())
+         self$batch.tracker <- rep(self$s$b,self$L)
        }
-       self$X <- rbind(X, Xnew[1:n0, , drop=F])
-       self$Z <- c(Z, apply(X,1,func))
-       self$batch.tracker <- self$batch.tracker[-(1:n0)]
-       if (nrow(Xnew) > n0) {
-         self$Xnotrun <- rbind(Xnotrun, Xnew[(n0+1):nrow(Xnew), , drop=F])
+       self$X <- rbind(self$X, self$Xnew[1:self$n0, , drop=F])
+       self$Z <- c(self$Z, apply(self$X,1,self$func))
+       self$batch.tracker <- self$batch.tracker[-(1:self$n0)]
+       if (nrow(self$Xnew) > self$n0) {
+         self$Xnotrun <- rbind(self$Xnotrun, self$Xnew[(self$n0+1):nrow(self$Xnew), , drop=F])
        }
-       self$mod$update(Xall=X, Zall=Z)
+       self$mod$update(Xall=self$X, Zall=self$Z)
      }
      
      #if (length(never_dive)==0) {never_dive <<- FALSE}
-     if (length(force_old) == 0) {self$force_old <- 0}
-     if (length(force_pvar) == 0) {self$force_pvar <- 0}
+     #if (length(force_old) == 0) {self$force_old <- 0}
+     #if (length(force_pvar) == 0) {self$force_pvar <- 0}
      self$useSMEDtheta <- if (length(useSMEDtheta)==0) {FALSE} else {useSMEDtheta}
     },
     run = function(maxit, plotlastonly=F, noplot=F) {
@@ -93,64 +106,65 @@ adapt.concept2.sFFLHD.RC <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
      while(i <= maxit) {
        #print(paste('Starting iteration', iteration))
        iplotit <- ((i == maxit) | !plotlastonly) & !noplot
-       run1(plotit=iplotit)
+       self$run1(plotit=iplotit)
        i <- i + 1
      }
     },
     run1 = function(plotit=TRUE) {#browser()#if(iteration>24)browser()
-     add_data()
-     update_mod()
-     #get_mses()
-     #should_dive()
-     update_stats()
-     if (plotit) {
-       plot1()
-     }
-     #set_params()
-     iteration <<- iteration + 1
+      self$add_data()
+      self$update_mod()
+      #get_mses()
+      #should_dive()
+      self$update_stats()
+      if (plotit) {
+        self$plot1()
+      }
+      #set_params()
+      self$iteration <- self$iteration + 1
     },
     add_data = function() {
-      if (nrow(X) == 0 ) {
-       X <<- rbind(X, s$get.batch())
-       Z <<- c(Z,apply(X, 1, func))
-       return()
+      if (nrow(self$X) == 0 ) {
+        self$X <- rbind(self$X, self$s$get.batch())
+        self$Z <- c(self$Z,apply(self$X, 1, self$func))
+        return()
       }
-      if (obj %in% c("nonadapt", "noadapt")) {
-        Xnew <- s$get.batch()
-        X <<- rbind(X, Xnew)
-        Z <<- c(Z,apply(Xnew, 1, func))
+      if (self$obj %in% c("nonadapt", "noadapt")) {
+        Xnew <- self$s$get.batch()
+        self$X <- rbind(self$X, Xnew)
+        self$Z <- c(self$Z,apply(Xnew, 1, self$func))
         return()
       }
       
       # Add new points
       for (iii in 1:3) {
-        Xnotrun <<- rbind(Xnotrun, s$get.batch())
-        batch.tracker <<- c(batch.tracker, rep(s$b, L))
+        self$Xnotrun <- rbind(self$Xnotrun, self$s$get.batch())
+        self$batch.tracker <- c(self$batch.tracker, rep(self$s$b, self$L))
       }
       newL <- NULL
       #browser()
       # Check if forcing old or pvar
-      if (force_old > 0 & force_pvar > 0) {
+      if (self$force_old > 0 & self$force_pvar > 0) {
         stop("No can force_old and force_pvar")
-      } else if (force_old > 0 & force_old <= 1) {
+      } else if (self$force_old > 0 & self$force_old <= 1) {
         rand1 <- runif(1)
-        if (rand1 < force_old) {newL <- 1:L} 
-      } else if (force_old > 1) {
-        if ((iteration %% as.integer(force_old)) == 0) {
-          newL <- 1:L
+        if (rand1 < self$force_old) {newL <- 1:self$L} 
+      } else if (self$force_old > 1) {
+        if ((iteration %% as.integer(self$force_old)) == 0) {
+          newL <- 1:self$L
         }
-      } else if (force_pvar > 0 & force_pvar <= 1) {
+      } else if (self$force_pvar > 0 & self$force_pvar <= 1) {
         rand1 <- runif(1)
-        if (rand1 < force_pvar) {newL <- order(mod$predict.var(Xnotrun), decreasing=T)[1:L]} 
-      } else if (force_pvar > 1) {
-        if ((iteration %% as.integer(force_pvar)) == 0) {
-          newL <- order(mod$predict.var(Xnotrun), decreasing=T)[1:L]
+        if (rand1 < self$force_pvar) {newL <- order(self$mod$predict.var(self$Xnotrun), decreasing=T)[1:self$L]} 
+      } else if (self$force_pvar > 1) {
+        if ((iteration %% as.integer(self$force_pvar)) == 0) {
+          newL <- order(self$mod$predict.var(self$Xnotrun), decreasing=T)[1:self$L]
           #newL <- SMED_selectC(f=mod$predict.var, n=L, X0=X, Xopt=Xnotrun)
         }
       } 
       # if nothing forced, run SMED_select
       if (is.null(newL)) { #browser()
-        bestL <- SMED_selectC(f=obj_func, n=L, X0=X, Xopt=Xnotrun, theta=if (useSMEDtheta) {mod$theta()} else {rep(1,2)})
+        bestL <- SMED_selectC(f=self$obj_func, n=self$L, X0=self$X, Xopt=self$Xnotrun, 
+                              theta=if (self$useSMEDtheta) {self$mod$theta()} else {rep(1,2)})
         newL <- bestL
       }
       
@@ -170,32 +184,32 @@ adapt.concept2.sFFLHD.RC <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       #newL <- if (rand1 < force_old) {1:L} 
       #        else if (rand1 < force_old + force_pvar) {order(mod$predict.var(Xnotrun), decreasing=T)[1:L]}
       #        else {bestL}#{print(paste('first L',iteration));1:L}
-      Xnew <- Xnotrun[newL,]
-      Xnotrun <<- Xnotrun[-newL, , drop=FALSE]
-      batch.tracker <<- batch.tracker[-newL]
-      Znew <- apply(Xnew,1,func) 
+      Xnew <- self$Xnotrun[newL,]
+      self$Xnotrun <- self$Xnotrun[-newL, , drop=FALSE]
+      self$batch.tracker <- self$batch.tracker[-newL]
+      Znew <- apply(Xnew,1,self$func) 
        
-      X <<- rbind(X,Xnew)
-      Z <<- c(Z,Znew)
+      self$X <- rbind(self$X,Xnew)
+      self$Z <- c(self$Z,Znew)
     },
     update_mod = function() {#browser()
-     mod$update(Xall=X, Zall=Z)
+      self$mod$update(Xall=self$X, Zall=self$Z)
     },
     # REMOVED get_mses AND should_dive
     set_params = function() {
     },
     update_stats = function() {
-     # stats$ <<- c(stats$, )
-     stats$iteration <<- c(stats$iteration, iteration)
+     # self$stats$ <- c(self$stats$, )
+     self$stats$iteration <- c(self$stats$iteration, self$iteration)
      #stats$level <<- c(stats$level, level)
-     stats$pvar <<- c(stats$pvar, msfunc(mod$predict.var,cbind(rep(0,D),rep(1,D))))
-     stats$mse <<- c(stats$mse, msecalc(func,mod$predict,cbind(rep(0,D),rep(1,D))))
-     stats$ppu <<- c(stats$ppu, nrow(X) / (nrow(X) + nrow(Xnotrun)))
-     stats$minbatch <<- c(stats$minbatch, if (length(batch.tracker>0)) min(batch.tracker) else 0)
-     stats$pamv <<- c(stats$pamv, mod$prop.at.max.var())
+     self$stats$pvar <- c(self$stats$pvar, msfunc(self$mod$predict.var,cbind(rep(0,self$D),rep(1,self$D))))
+     self$stats$mse <- c(self$stats$mse, msecalc(self$func,self$mod$predict,cbind(rep(0,self$D),rep(1,self$D))))
+     self$stats$ppu <- c(self$stats$ppu, nrow(self$X) / (nrow(self$X) + nrow(self$Xnotrun)))
+     self$stats$minbatch <- c(self$stats$minbatch, if (length(self$batch.tracker>0)) min(self$batch.tracker) else 0)
+     self$stats$pamv <- c(self$stats$pamv, self$mod$prop.at.max.var())
     },
     plot1 = function() {#browser()
-     if (D == 2) {
+     if (self$D == 2) {
        #par(mfrow=c(2,1))
        ln <- 5 # number of lower plots
        split.screen(matrix(
@@ -205,9 +219,9 @@ adapt.concept2.sFFLHD.RC <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
        screen(1)
        #xlim <- lims[1,]
        #ylim <- lims[2,]
-       cf_func(mod$predict,batchmax=500, pretitle="Predicted Surface ", #pts=X)
-              afterplotfunc=function(){points(X,pch=19)
-                                       points(X[(nrow(X)-L+1):nrow(X),],col='yellow',pch=19, cex=.5) # plot last L separately
+       cf_func(self$mod$predict,batchmax=500, pretitle="Predicted Surface ", #pts=X)
+              afterplotfunc=function(){points(self$X,pch=19)
+                                       points(self$X[(nrow(self$X)-self$L+1):nrow(self$X),],col='yellow',pch=19, cex=.5) # plot last L separately
               }
        )
        ###points(Xnotrun, col=2)
@@ -227,9 +241,9 @@ adapt.concept2.sFFLHD.RC <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       # }
        # Plot s2 predictions
        screen(2)
-       cf_func(mod$predict.var,batchmax=500, pretitle="Predicted Surface ", #pts=X)
-               afterplotfunc=function(){points(X,pch=19)
-                 points(X[(nrow(X)-L+1):nrow(X),],col='yellow',pch=19, cex=.5) # plot last L separately
+       cf_func(self$mod$predict.var,batchmax=500, pretitle="Predicted Surface ", #pts=X)
+               afterplotfunc=function(){points(self$X,pch=19)
+                 points(self$X[(nrow(self$X)-self$L+1):nrow(self$X),],col='yellow',pch=19, cex=.5) # plot last L separately
                }
        )
        ###points(Xnotrun, col=2)
@@ -246,9 +260,9 @@ adapt.concept2.sFFLHD.RC <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
        #}
        screen(3) # actual squared error plot
        par(mar=c(2,2,0,0.5)) # 5.1 4.1 4.1 2.1 BLTR
-       cf_func(func, n = 20, mainminmax_minmax = F, pretitle="Actual ")
-       if (iteration >= 2) {
-         statsdf <- as.data.frame(stats)
+       cf_func(self$func, n = 20, mainminmax_minmax = F, pretitle="Actual ")
+       if (self$iteration >= 2) {
+         statsdf <- as.data.frame(self$stats)
          screen(4) # MSE plot
          par(mar=c(2,2,0,0.5)) # 5.1 4.1 4.1 2.1 BLTR
          plot(rep(statsdf$iter,2), c(statsdf$mse,statsdf$pvar), 
@@ -264,7 +278,7 @@ adapt.concept2.sFFLHD.RC <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
          #plot(statsdf$iter, statsdf$minbatch, type='o', pch=19,
          #     xlab="Iteration")#, ylab="Level")
          #legend('bottomright',legend="Batch not run",fill=1)
-         cf_func(mod$grad_norm, n=20, mainminmax_minmax = F, pretitle="Grad ")
+         cf_func(self$mod$grad_norm, n=20, mainminmax_minmax = F, pretitle="Grad ")
          
          screen(6) # % of pts used plot 
          par(mar=c(2,2,0,0.5)) # 5.1 4.1 4.1 2.1 BLTR
@@ -274,20 +288,20 @@ adapt.concept2.sFFLHD.RC <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
        }
        screen(7) # actual squared error plot
        par(mar=c(2,2,0,0.5)) # 5.1 4.1 4.1 2.1 BLTR
-       cf_func(function(xx){(mod$predict(xx) - func(xx))^2},
+       cf_func(function(xx){(self$mod$predict(xx) - self$func(xx))^2},
                           n = 20, mainminmax_minmax = F, pretitle="SqErr ")
        
        close.screen(all = TRUE)
      } else { # D != 2 
        par(mfrow=c(2,2))
        par(mar=c(2,2,0,0.5)) # 5.1 4.1 4.1 2.1 BLTR
-       statsdf <- as.data.frame(stats)
+       statsdf <- as.data.frame(self$stats)
        #print(ggplot(statsdf, aes(x=iteration, y=mse, col=level)) + geom_line())
        #print(ggplot() + 
        #        geom_line(data=statsdf, aes(x=iteration, y=mse, col="red")) + 
        #        geom_line(data=statsdf, aes(x=iteration, y=pvar, col="blue"))
        #)
-       if (iteration >= 2) {
+       if (self$iteration >= 2) {
          # 1 mse plot
          plot(rep(statsdf$iter,2), c(statsdf$mse,statsdf$pvar), 
               type='o', log="y", col="white",
@@ -299,29 +313,30 @@ adapt.concept2.sFFLHD.RC <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
          # 2 level plot
          #plot(statsdf$iter, statsdf$level, type='o', pch=19)
          #legend('topleft',legend="Level",fill=1)
-         Xplot <- matrix(runif(D*50), ncol=D)
-         Zplot.pred <- mod$predict(Xplot)
-         Zplot.act <- apply(Xplot,1, func)
-         Zplot.se <- mod$predict.se(Xplot)
-         Zused.pred <- mod$predict(X)
-         plot(NULL, xlim=c(min(Z, Zplot.act), max(Z, Zplot.act)), ylim=c(min(Zused.pred, Zplot.pred), max(Zused.pred, Zplot.pred)))
+         Xplot <- matrix(runif(self$D*50), ncol=self$D)
+         Zplot.pred <- self$mod$predict(Xplot)
+         Zplot.act <- apply(Xplot,1, self$func)
+         Zplot.se <- self$mod$predict.se(Xplot)
+         Zused.pred <- self$mod$predict(self$X)
+         plot(NULL, xlim=c(min(self$Z, Zplot.act), max(self$Z, Zplot.act)), 
+              ylim=c(min(Zused.pred, Zplot.pred), max(Zused.pred, Zplot.pred)))
          abline(a = 0, b = 1)
          points(Zplot.act, Zplot.pred, xlab="Z", ylab="Predicted")
-         points(Z, Zused.pred, col=2)
+         points(self$Z, Zused.pred, col=2)
          # 3 % pts used plot
          plot(statsdf$iter, statsdf$ppu, type='o', pch=19,
               xlab="Iteration")#, ylab="Level")
          legend('bottomleft',legend="% pts",fill=1)
          # 4 grad vs pvar
-         Xplot <- matrix(runif(D*100), ncol=D)
-         Xplot_grad <- mod$grad_norm(Xplot)#;browser()
-         Xplot_se <- mod$predict.se(Xplot)
+         Xplot <- matrix(runif(self$D*100), ncol=self$D)
+         Xplot_grad <- self$mod$grad_norm(Xplot)#;browser()
+         Xplot_se <- self$mod$predict.se(Xplot)
          plot(Xplot_se, Xplot_grad, pch=19, xlab='SE', ylab='Grad', log='xy')
        }
      }
     },
     delete = function() {
-     mod$delete()
+      self$mod$delete()
     }
   )
 )
@@ -338,22 +353,22 @@ if (F) {
   library(SMED)  
 
   #gaussian1 <- function(xx) exp(-sum((xx-.5)^2)/2/.01)
-  a <- adapt.concept2.sFFLHD.RC(D=2,L=3,func=gaussian1, obj="grad", n0=0)
+  a <- adapt.concept2.sFFLHD.R6(D=2,L=3,func=gaussian1, obj="grad", n0=0)
   a$run(2)
   
   
   #sinumoid <- function(xx){sum(sin(2*pi*xx*3)) + 20/(1+exp(-80*(xx[[1]]-.5)))}; cf_func(sinumoid)
-  a <- adapt.concept2.sFFLHD.RC(D=2,L=4,g=3,func=sinumoid,  obj="grad")
+  a <- adapt.concept2.sFFLHD.R6(D=2,L=4,g=3,func=sinumoid,  obj="grad")
   a$run(10, plotlastonly = T)
   
-  a <- adapt.concept2.sFFLHD.RC(D=2,L=3,g=3,func=RFF_get(), obj="grad")
+  a <- adapt.concept2.sFFLHD.R6(D=2,L=3,g=3,func=RFF_get(), obj="grad")
   a$run(4, plotlastonly = T)
   
   # higher dim
-  a <- adapt.concept2.sFFLHD.RC(D=3,L=8,g=3,func=gaussian1)
+  a <- adapt.concept2.sFFLHD.R6(D=3,L=8,g=3,func=gaussian1)
   a$run(3)
   
-  a <- adapt.concept2.sFFLHD.RC(D=2,L=4,n0=8,func=banana, obj="grad", force_pvar=.2)
+  a <- adapt.concept2.sFFLHD.R6(D=2,L=4,n0=8,func=banana, obj="grad", force_pvar=.2)
   a$run(1)
   a$run(20, plotl=T)
   
@@ -361,7 +376,7 @@ if (F) {
   cf::cf_func(a$mod$grad_norm)
   
   # test run times
-  a <- adapt.concept2.sFFLHD.RC(D=2,L=3,func=gaussian1, obj="grad", n0=0)
+  a <- adapt.concept2.sFFLHD.R6(D=2,L=3,func=gaussian1, obj="grad", n0=0)
   system.time(a$run(20,plotlastonly = T))
   l <- lineprof::lineprof(a$run(1))
   lineprof::shine(l)
