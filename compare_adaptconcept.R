@@ -1,4 +1,4 @@
-source("adaptconcept2_sFFLHD_RC.R")
+source("adaptconcept2_sFFLHD_R6.R")
 library(ggplot2)
 compare.adapt <- function(func, D, L, batches=10, reps=5, 
                           objs=c("nonadapt", "grad"), 
@@ -43,7 +43,7 @@ compare.adapt <- function(func, D, L, batches=10, reps=5,
     
     for (obj in objs) {
       for (iforce in 1:length(forces)) {
-        u <- adapt.concept2.sFFLHD.RC(func=funci, D=D, L=L,
+        u <- adapt.concept2.sFFLHD.R6(func=funci, D=D, L=L,
                       obj=obj, 
                       force_old=if(forces[iforce]=="old") {force.vals[iforce]} else {0},
                       force_pvar=if(forces[iforce]=="pvar") {force.vals[iforce]} else {0},
@@ -191,7 +191,7 @@ if (F) {
   require(cf)
   source('LHS.R')
   library(laGP)
-  source("adaptconcept2_sFFLHD_RC.R")
+  source("adaptconcept2_sFFLHD_R6.R")
   library(SMED)
   library(plyr)
   library(TestFunctions)

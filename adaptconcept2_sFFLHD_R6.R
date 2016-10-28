@@ -24,6 +24,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
    obj = NULL, # "character", 
    obj_func = NULL, # "function",
    n0 = NULL, # "numeric"
+   take_until_maxpvar_below = NULL, 
    package = NULL, # "character",
    batch.tracker = NULL, # "numeric",
    force_old = NULL, # "numeric", 
@@ -33,13 +34,14 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
  
    initialize = function(D,L,package=NULL, obj=NULL, n0=0, 
                          force_old=0, force_pvar=0,
-                         useSMEDtheta=F, func,
-                         ...) {browser()
+                         useSMEDtheta=F, func, take_until_maxpvar_below=NULL, 
+                         ...) {#browser()
      self$D <- D
      self$L <- L
      self$func <- func
      self$force_old <- force_old
      self$force_pvar <- force_pvar
+     self$take_until_maxpvar_below <- take_until_maxpvar_below
      
      #if (any(length(D)==0, length(L)==0, length(g)==0)) {
      if (any(length(D)==0, length(L)==0)) {
@@ -127,8 +129,16 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
         self$X <- rbind(self$X, self$s$get.batch())
         self$Z <- c(self$Z,apply(self$X, 1, self$func))
         return()
-      }
+      }#;browser()
       if (self$obj %in% c("nonadapt", "noadapt")) {
+        Xnew <- self$s$get.batch()
+        self$X <- rbind(self$X, Xnew)
+        self$Z <- c(self$Z,apply(Xnew, 1, self$func))
+        return()
+      }
+      if (!is.null(self$take_until_maxpvar_below) && 
+          self$mod$prop.at.max.var(val=self$take_until_maxpvar_below) > 0.1) {
+        print(paste("Taking until pvar lower: ", self$mod$prop.at.max.var(val=self$take_until_maxpvar_below)))
         Xnew <- self$s$get.batch()
         self$X <- rbind(self$X, Xnew)
         self$Z <- c(self$Z,apply(Xnew, 1, self$func))
@@ -353,7 +363,7 @@ if (F) {
   library(SMED)  
 
   #gaussian1 <- function(xx) exp(-sum((xx-.5)^2)/2/.01)
-  a <- adapt.concept2.sFFLHD.R6(D=2,L=3,func=gaussian1, obj="grad", n0=0)
+  a <- adapt.concept2.sFFLHD.R6$new(D=2,L=3,func=gaussian1, obj="grad", n0=0)
   a$run(2)
   
   

@@ -1,4 +1,4 @@
-source("adaptconcept2_sFFLHD_RC.R")
+source("adaptconcept2_sFFLHD_R6.R")
 library(ggplot2)
 
 compare.adaptR6 <- R6::R6Class("compare.adaptR6",
@@ -125,7 +125,7 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
         
         for (obj in self$obj) {
           for (iforce in 1:length(self$forces)) {
-            u <- adapt.concept2.sFFLHD.RC(func=funci, D=self$D, L=self$L,
+            u <- adapt.concept2.sFFLHD.R6(func=funci, D=self$D, L=self$L,
                                           obj=obj, 
                                           force_old=self$force_old,#if(self$forces[iforce]=="old") {self$force_vals[iforce]} else {0},
                                           force_pvar=self$force_pvar,#if(self$forces[iforce]=="pvar") {self$force_vals[iforce]} else {0},
@@ -191,7 +191,7 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
       #else if (row_grid$func == "RFF") {row_grid$func <- RFF_get(D=self$D)}
       #else {stop("No function given")}
       
-      u <- do.call(adapt.concept2.sFFLHD.RC, lapply(self$rungridlist, function(x)x[[irow]]))
+      u <- do.call(adapt.concept2.sFFLHD.R6, lapply(self$rungridlist, function(x)x[[irow]]))
       
       systime <- system.time(u$run(row_grid$batches,noplot=T))
       newdf0 <- data.frame(batch=u$stats$iteration, mse=u$stats$mse, 
