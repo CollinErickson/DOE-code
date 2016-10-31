@@ -23,6 +23,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
    iteration = NULL, # "numeric",
    obj = NULL, # "character", 
    obj_func = NULL, # "function",
+   obj_alpha = NULL,
    n0 = NULL, # "numeric"
    take_until_maxpvar_below = NULL, 
    package = NULL, # "character",
@@ -58,6 +59,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
      self$mod <- UGP$new(package = self$package)
      self$stats <- list(iteration=c(),pvar=c(),mse=c(), ppu=c(), minbatch=c(), pamv=c())
      self$iteration <- 1
+     self$obj_alpha <- 0.5
      
      # set objective function to minimize or pick dive area by max
      self$obj <- obj
@@ -74,26 +76,30 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
      } else if (self$obj == "grad") {
        self$obj_func <- self$mod$grad_norm#{apply(xx, 1, mod$grad_norm)}
      } else if (self$obj == "func") {
-       self$obj_func <- function(xx) max(1e-16, self$mod$predict(xx))#{apply(xx, 1, mod$grad_norm)}
-       self$obj_func <- function(xx) {pv <- self$mod$predict(xx);ifelse(pv<0,1e-16, pv)}#{apply(xx, 1, mod$grad_norm)}
+       #self$obj_func <- function(xx) max(1e-16, self$mod$predict(xx))#{apply(xx, 1, mod$grad_norm)}
+       #self$obj_func <- function(xx) {pv <- self$mod$predict(xx);ifelse(pv<0,1e-16, pv)}
+       self$obj_func <- function(xx) pmax(1e-16, self$mod$predict(xx))
      } else if (self$obj == "pvar") {
-       self$obj_func <- function(xx) max(1e-16, self$mod$predict(xx))#{apply(xx, 1, mod$grad_norm)}
+       self$obj_func <- function(xx) pmax(1e-16, self$mod$predict.var(xx))#{apply(xx, 1, mod$grad_norm)}
+     } else if (self$obj == "gradpvaralpha") {
+       self$obj_func <- function(xx) { 1              *      self$mod$grad_norm(xx) + 
+                                       self$obj_alpha *      max(1e-16, self$mod$predict.se(xx))}
      } else if (self$obj == "nonadapt") {
        # use next batch only #obj_func <<- NULL
      }
      
      self$n0 <- n0
      if (length(self$n0) != 0 && self$n0 > 0) {
-       self$Xnew <- matrix(NA, 0, self$D)
-       while (nrow(self$Xnew) < self$n0) {
-         self$Xnew <- rbind(self$Xnew, self$s$get.batch())
+       Xnew <- matrix(NA, 0, self$D)
+       while (nrow(Xnew) < self$n0) {
+         Xnew <- rbind(Xnew, self$s$get.batch())
          self$batch.tracker <- rep(self$s$b,self$L)
        }
-       self$X <- rbind(self$X, self$Xnew[1:self$n0, , drop=F])
+       self$X <- rbind(self$X, Xnew[1:self$n0, , drop=F])
        self$Z <- c(self$Z, apply(self$X,1,self$func))
        self$batch.tracker <- self$batch.tracker[-(1:self$n0)]
-       if (nrow(self$Xnew) > self$n0) {
-         self$Xnotrun <- rbind(self$Xnotrun, self$Xnew[(self$n0+1):nrow(self$Xnew), , drop=F])
+       if (nrow(Xnew) > self$n0) {
+         self$Xnotrun <- rbind(self$Xnotrun, Xnew[(self$n0+1):nrow(Xnew), , drop=F])
        }
        self$mod$update(Xall=self$X, Zall=self$Z)
      }
@@ -132,16 +138,18 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       }#;browser()
       if (self$obj %in% c("nonadapt", "noadapt")) {
         Xnew <- self$s$get.batch()
+        Znew <- apply(Xnew, 1, self$func)
         self$X <- rbind(self$X, Xnew)
-        self$Z <- c(self$Z,apply(Xnew, 1, self$func))
+        self$Z <- c(self$Z, self$Znew)
         return()
       }
       if (!is.null(self$take_until_maxpvar_below) && 
           self$mod$prop.at.max.var(val=self$take_until_maxpvar_below) > 0.1) {
         print(paste("Taking until pvar lower: ", self$mod$prop.at.max.var(val=self$take_until_maxpvar_below)))
         Xnew <- self$s$get.batch()
+        Znew <- apply(Xnew, 1, self$func)
         self$X <- rbind(self$X, Xnew)
-        self$Z <- c(self$Z,apply(Xnew, 1, self$func))
+        self$Z <- c(self$Z, Znew)
         return()
       }
       
@@ -201,6 +209,22 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
        
       self$X <- rbind(self$X,Xnew)
       self$Z <- c(self$Z,Znew)
+      self$update_obj_alpha(Xnew=Xnew, Znew=Znew)
+    },
+    update_obj_alpha = function(Xnew, Znew) {#browser()
+      if (is.null(self$obj_alpha)) return()
+      Zlist <- self$mod$predict(Xnew, se.fit=T)
+      Zmean <- Zlist$fit
+      Zse   <- Zlist$se
+      abs.scores <- abs(Znew - Zmean) / Zse
+      for (score in abs.scores) {
+        if (score < 2) {
+          self$obj_alpha <- .5 * self$obj_alpha
+        } else {
+          self$obj_alpha <- 2  * self$obj_alpha
+        }
+      }
+      print(paste('alpha changed to ', self$obj_alpha))
     },
     update_mod = function() {#browser()
       self$mod$update(Xall=self$X, Zall=self$Z)
