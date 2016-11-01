@@ -18,7 +18,8 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
    X = NULL, # "matrix", Z = "numeric", Xnotrun = "matrix",
    Xnotrun = NULL,
    Z = NULL,
-   s = NULL, # "sFFLHD", mod = "UGP",
+   s = NULL, # "sFFLHD" an object with $get.batch to get batch of points
+   design = NULL,
    stats = NULL, # "list", 
    iteration = NULL, # "numeric",
    obj = NULL, # "character", 
@@ -35,7 +36,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
  
    initialize = function(D,L,package=NULL, obj=NULL, n0=0, 
                          force_old=0, force_pvar=0,
-                         useSMEDtheta=F, func, take_until_maxpvar_below=NULL, 
+                         useSMEDtheta=F, func, take_until_maxpvar_below=NULL, design="sFFLHD",
                          ...) {#browser()
      self$D <- D
      self$L <- L
@@ -49,7 +50,14 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
        message("D and L must be specified")
      }
      
-     self$s <- sFFLHD::sFFLHD(D=D, L=L)
+     self$design <- design
+     if (self$design == "sFFLHD") {
+       self$s <- sFFLHD::sFFLHD(D=D, L=L)
+     } else if (self$design == "random") {
+       self$s <- random_design$new(D=D, L=L)
+     } else {
+       stop("No design 3285729")
+     }
      self$X <- matrix(NA,0,D)
      self$Xnotrun <- matrix(NA,0,D)
      #if(length(lims)==0) {lims <<- matrix(c(0,1),D,2,byrow=T)}
@@ -140,7 +148,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
         Xnew <- self$s$get.batch()
         Znew <- apply(Xnew, 1, self$func)
         self$X <- rbind(self$X, Xnew)
-        self$Z <- c(self$Z, self$Znew)
+        self$Z <- c(self$Z, Znew)
         return()
       }
       if (!is.null(self$take_until_maxpvar_below) && 
@@ -363,8 +371,10 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
          legend('bottomleft',legend="% pts",fill=1)
          # 4 grad vs pvar
          Xplot <- matrix(runif(self$D*100), ncol=self$D)
-         Xplot_grad <- self$mod$grad_norm(Xplot)#;browser()
-         Xplot_se <- self$mod$predict.se(Xplot)
+         Xplot_grad <- pmax(1e-8, self$mod$grad_norm(Xplot))#;browser()
+         Xplot_se <- pmax(1e-8, self$mod$predict.se(Xplot))
+         #if (any(Xplot_se <= 0)) {browser()}
+         #if (any(Xplot_grad < 0)) {browser()}
          plot(Xplot_se, Xplot_grad, pch=19, xlab='SE', ylab='Grad', log='xy')
        }
      }

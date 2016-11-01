@@ -1,9 +1,11 @@
 is.in.lims <- function(xx,lims) {
   all(xx >= lims[,1], xx <= lims[,2])
 }
-msfunc <- function(func1,lims,pow=1L,batch=F) {#browser()
+msfunc <- function(func1,lims,pow=1L,batch=F, n=1e3) {#browser()
   # Find mean square of function over limits using grid sample
-  X1 <- simple.grid(10,nrow(lims),scaledto=lims)
+  #X1 <- simple.grid(10,nrow(lims),scaledto=lims) # Too big in high dimensions, switching to just random points
+  d <- nrow(lims)
+  X1 <- simple.random(n=n, d=d, scaledto=lims)
   if(batch) {return(mean(func1(X1)^pow))}
   mean(apply(X1,1,func1)^pow)
 }

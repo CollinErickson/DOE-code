@@ -191,7 +191,7 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
       #else if (row_grid$func == "RFF") {row_grid$func <- RFF_get(D=self$D)}
       #else {stop("No function given")}
       
-      u <- do.call(adapt.concept2.sFFLHD.R6, lapply(self$rungridlist, function(x)x[[irow]]))
+      u <- do.call(adapt.concept2.sFFLHD.R6$new, lapply(self$rungridlist, function(x)x[[irow]]))
       
       systime <- system.time(u$run(row_grid$batches,noplot=T))
       newdf0 <- data.frame(batch=u$stats$iteration, mse=u$stats$mse, 
@@ -268,7 +268,7 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
       print(
         ggplot(data=self$outdf, aes(x=mse, y=pvar, group = interaction(num,Group), colour = Group)) +
           geom_line() + # Line for each rep
-          geom_line(inherit.aes=F, data=self$meandf, aes(x=mse, y=pvar, size=4, colour=Group), alpha=.5) +# Line for mean
+          geom_line(inherit.aes=F, data=self$meanlogdf, aes(x=mse, y=pvar, size=4, colour=Group), alpha=.5) +# Line for mean
           geom_point() + # Points for each rep
           geom_point(inherit.aes=F, data=self$enddf, aes(x=mse, y=pvar, size=4, colour=Group)) + # Big points at end
           geom_abline(intercept = 0, slope = 1) + # y=x line, expected for good model
@@ -286,7 +286,7 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
       print(
         ggplot(data=self$outdf, aes(x=rmse, y=prmse, group = interaction(num,Group), colour = Group)) +
           geom_line() + # Line for each rep
-          geom_line(inherit.aes=F, data=self$meandf, aes(x=rmse, y=prmse, size=4, colour = Group), alpha=.5) +# Line for mean
+          geom_line(inherit.aes=F, data=self$meanlogdf, aes(x=rmse, y=prmse, size=4, colour = Group), alpha=.5) +# Line for mean
           geom_point() + # Points for each rep
           geom_point(inherit.aes=F, data=self$enddf, aes(x=rmse, y=prmse, size=4, colour = Group)) + # Big points at end
           geom_abline(intercept = 0, slope = 1) + # y=x line, expected for good model

@@ -36,6 +36,13 @@ simple.grid <- function(n,d,scaled=TRUE,random=TRUE,centered=FALSE,scaledto=NULL
   if(centered) m <- m - ifelse(scaled,.5,n/2+.5)
   m
 }
+simple.random <- function(n,d,scaledto=NULL) {
+  m <- matrix(runif(n*d), ncol=d, nrow=n)
+  if(!is.null(scaledto)) {#browser()
+    m <- m * matrix(scaledto[,2]-scaledto[,1],nrow=nrow(m),ncol=ncol(m),byrow=T) + matrix(scaledto[,1],nrow=nrow(m),ncol=ncol(m),byrow=T)
+  } 
+  m
+}
 
 #m <- simple.LHS(10,2)
 #plot(m,xlim=0:1,ylim=0:1,pch=19)
