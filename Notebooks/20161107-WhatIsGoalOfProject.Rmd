@@ -1,0 +1,81 @@
+---
+title: "What is the goal of the project?"
+date: 11/7/2016
+output: html_notebook
+---
+
+
+We want to be able to run simulations that take a long time. 
+
+
+### Assumptions
+* Takes hours to get a single observation
+* Can get 2-10 observations at a time (cluster, assume synchronous for now)
+* Can be any number of inputs (2-100), assume for now it is about 10
+
+### Goals
+
+* Have understanding of entire surface (space-filling)
+* Be able to focus on interesting areas as defined by the user
+
+
+### Objective
+
+Can we write it as a single objective?
+
+If the goal were just to minimize prediction error
+
+$$ \min \int_X (y(x) - \hat{y}(x))^2 dx  $$
+
+We can't know the true response surface $y$. We will have to try to minimize the prediction error.
+
+$$ \min \int_X \hat{\sigma}^2(x)dx  $$
+
+This is already questionable, does minimizing $\hat{\sigma}$ makes just as much sense as $\hat{\sigma}^2$?
+
+Active Learning-Mackay selects the location which has the greatest standard deviation in predicted output. This approximates max expected information designs.
+
+Active Learning-Cohn selects $x$ to minimize the expected squared error averaged over the input space $\Delta \hat{\sigma}^2(x)$. This is computationally harder, not sure by how much.
+
+If you are trying to take multiple points at a time, you can do it greedily and add in the mean at the points already selected to space them out. Is minimum energy better?
+
+
+## Multiple objectives
+
+We want to understand the entire surface while also finding specific features. How about an objective with multiple terms? The first will be the same as before, the second will contain some sort of desirability for each point, $\delta(x)$. For example, $\delta(x) = 1$ when the gradient norm at $x$ is large, zero otherwise. This wouldn't have to be between 0 and 1. I added $\alpha$ so that there can be some scaling between the two. This is probably the hardest part. How do you determine how important each part is? This could be written as a single integral. In practice it would be a sum over points, not an integral.
+
+
+$$ \min \int_X \hat{\sigma}^2(x)dx + \alpha \int_X \delta(x)\hat{\sigma}^2(x)dx  $$
+
+Picking $\alpha$ and $\delta$ is hard enough.
+
+
+
+## Sample order
+
+We want our simulations to be run for a long time, maybe just left in the background for months. We should try to do as much space-filling in the beginning before focusing on interesting areas. So if we know we will have time for n runs, we should start with n/2 runs that space-fill. Then we can focus on areas while also mixing in some space-filling, since we don't know when it will stop.
+
+
+## Desirability function
+
+Would be very hard to create. What if I don't know the range of output values beforehand. Maybe just use quantiles of the points seen so far. E.g. quantile of gradient norm times function value quantile to get large values with large gradient. Or normalize them from 0 to 1? 
+
+How do you change $\alpha$? Watch how the values decrease over time. Focus more when it will do more. 
+But what if it turns out to be focusing on too small/big a region? How can you keep track of it without constantly watching it?
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
