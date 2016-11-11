@@ -74,10 +74,6 @@ When we pick points because of the old criterion, and not the interesting, we ca
 Problem 1: if $\hat{\sigma}$ is large, we might think we are doing well but really aren't. I.e. it is a good on a relative scale, but not an absolute scale. We could have a prediction many standard deviations from the actual value, but the prediction might be good but the pvar prediction too high.
 
 
-
-
-
-
 ## Future 
 
 1. Multiple response
@@ -87,5 +83,37 @@ Problem 1: if $\hat{\sigma}$ is large, we might think we are doing well but real
 
 
 
+11/10
+
+I am thinking of this as separate selections, eg with 50% probability select high pvar, 50% select high desirability * pvar. If they are combine then you can't determine which one caused its selection.
 
 
+## Not using energy
+
+We used minimum energy to make sure points were spaced out. If we select a single point based on high pvar (ALC or ALM) then we don't need minimum energy.
+
+But we still want to pick multiple points. I think this is usually done by selecting the first point, then adding that point to your model with its mean value as the response. This will be updated later when you get the actual value. But this will make the pvar near zero for that first point and points near it, so it should spread them out.
+
+The bigger problem with energy might be that for the points selected, they will all have energy of zero since they should have pvar near zero (=0 if no nugget). So the first point would be selected at a mode, then the rest would be spread out based on that.
+
+## Problem with space-filling
+
+We want to understand the whole area, so in some way we want space-filling.
+What if we don't have an obvious input range for an input. E.g. we think it should be within 3 to 8, but it could go from 0 to 10. If we decide to use the bigger range, the volume of space is doubled, and this is just a single dimension.
+
+Maybe this isn't a problem, but it seems like it could be a problem.
+
+
+## pvar at desirable points?
+
+This objective is very different than what we had before:
+$$ \min \int_X \hat{\sigma}^2(x)dx + \alpha \int_X \delta(x)\hat{\sigma}^2(x)dx  $$
+The first term essentially includes what we said about having a space-filling design. We want somewhat accurate designs over the entire space. 
+
+The second term says that we want to minimize the predicted error at desirable places. This is actually very different than what we were doing before with picking points using minimum energy with the gradient determining the energy. That one had nothing about prediction accuracy in how it selected points. We would have kept selecting points regardless of predicted error. It essentially did the same thing (probably), but it did it for different reasons. 
+
+## Advanced models
+
+Everything needs to work for any kind of model, we should only assume it gives predictions and prediction errors. 
+
+Right now I've been taking space-filling samples until less than 10% has greater than 90% pvar than the max pvar. I don't think that there is some maximum variance with different models. E.g. I don't think treed GP would make it easy but it probably could be done.
