@@ -20,3 +20,11 @@ get_desirability_func_quant <- function(func, D, n=1e4) {
   }
 } 
 cf::cf(get_desirability_func_quant(TestFunctions::banana, D=2))
+
+
+get_desirability_func_relval <- function(func, D, n=1e4) {
+  y <- replicate(n, func(runif(D)))
+  function(x) {
+    sum(func(x) > y) / n
+  }
+} 

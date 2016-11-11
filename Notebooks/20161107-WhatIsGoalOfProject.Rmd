@@ -4,7 +4,7 @@ date: 11/7/2016
 output: html_notebook
 ---
 
-
+# Goal
 We want to be able to run simulations that take a long time. 
 
 
@@ -69,7 +69,7 @@ But what if it turns out to be focusing on too small/big a region? How can you k
 ## Update $\alpha$ based on accuracy of predictions
 
 The main reason we want space filling or minimum variance over the entire surface is because we expect it will give better predictions over the entire surface, so we don't focus too much on interesting areas.
-When we pick points because of the old criterion, and not the interesting, we can use that to estimate how accurate the model is doing. If the actual value is within $\gamma * \hat{\sigma}$ (e.g. $\gamma = 2) then the model is doing well, otherwise it is not doing well. 
+When we pick points because of the old criterion, and not the interesting, we can use that to estimate how accurate the model is doing. If the actual value is within $\gamma * \hat{\sigma}$ (e.g. $\gamma = 2$) then the model is doing well, otherwise it is not doing well. 
 
 Problem 1: if $\hat{\sigma}$ is large, we might think we are doing well but really aren't. I.e. it is a good on a relative scale, but not an absolute scale. We could have a prediction many standard deviations from the actual value, but the prediction might be good but the pvar prediction too high.
 
@@ -117,3 +117,30 @@ The second term says that we want to minimize the predicted error at desirable p
 Everything needs to work for any kind of model, we should only assume it gives predictions and prediction errors. 
 
 Right now I've been taking space-filling samples until less than 10% has greater than 90% pvar than the max pvar. I don't think that there is some maximum variance with different models. E.g. I don't think treed GP would make it easy but it probably could be done.
+
+
+11/11
+
+## Before
+
+Before we just threw things together and hoped it work: minimum energy with some objective, taking old points. There was no theory behind it. We had no way to judge the value of the model since RMSE didn't account for "interesting" areas.
+
+
+## Judging model accuracy
+
+## Comparing our method with others
+
+If no one else has used the similar formulation then we will nothing else to compare to.
+That means we'll have the best result (and worst).
+
+## ~~pvar won't matter???~~
+
+If I pick the point that maximizes 
+$$\hat{\sigma}^2(x) + \alpha \delta(x)\hat{\sigma}^2(x)$$
+$$(1+\alpha \delta(x))\hat{\sigma}^2(x)$$
+is it the same as 
+$$\delta(x)\hat{\sigma}^2(x) ?$$
+
+**NO**. It will do what I was thinking since $\hat{\sigma}^2(x)$ and \delta(x) are both there.
+
+
