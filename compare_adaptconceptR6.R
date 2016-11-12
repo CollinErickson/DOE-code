@@ -314,4 +314,9 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
 if (F) {
   ca1 <- compare.adaptR6$new(func=gaussian1, D=2, L=4)$run_all()$plot()
   ca1$run()
+  
+  ca1 <- compare.adaptR6$new(func=add_null_dims(banana,2), D=4, L=4, obj=c("nonadapt", "grad","gradpvaralpha"), batches=10, reps=5, n0=10)$run_all()$plot()
+  
+  
+  ca1 <- compare.adaptR6$new(func=banana, D=2, L=4, obj=c("nonadapt", "grad","gradpvaralpha"), batches=20, reps=3, n0=10, package=c("laGP"))$run_all()$plot()
 }

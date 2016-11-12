@@ -1,6 +1,7 @@
 if (!exists('lib.loc')) {lib.loc <- NULL}
 source("adaptconcept_helpers.R")
 source('LHS.R')
+source("random_design.R")
 library(TestFunctions, lib.loc = lib.loc)
 library(cf, lib.loc = lib.loc)
 library(SMED, lib.loc = lib.loc)
@@ -52,7 +53,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
      
      self$design <- design
      if (self$design == "sFFLHD") {
-       self$s <- sFFLHD::sFFLHD(D=D, L=L)
+       self$s <- sFFLHD::sFFLHD(D=D, L=L, maximin=F)
      } else if (self$design == "random") {
        self$s <- random_design$new(D=D, L=L)
      } else {
@@ -424,4 +425,8 @@ if (F) {
   system.time(a$run(20,plotlastonly = T))
   l <- lineprof::lineprof(a$run(1))
   lineprof::shine(l)
+  
+  # banana with null
+  a <- adapt.concept2.sFFLHD.R6$new(D=4,L=5,func=add_null_dims(banana,2), obj="gradpvaralpha", n0=12, take_until_maxpvar_below=.9, package="GauPro", design='sFFLHD')
+  a$run(5)
 }

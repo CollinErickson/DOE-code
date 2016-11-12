@@ -4,6 +4,7 @@ random_design <- R6::R6Class("random_design",
     D = NULL,
     L = NULL,
     b = NULL,
+    use_lhs = TRUE,
     initialize = function(D, L) {
       self$D <- D
       self$L <- L
@@ -12,7 +13,11 @@ random_design <- R6::R6Class("random_design",
       self$b <- NA
     },
     get.batch = function(L=self$L) {
-      newX <- matrix(runif(self$D*L), ncol=self$D, nrow=L)
+      if (self$use_lhs) {
+        newX <- lhs::maximinLHS(n=L, k=self$D)
+      } else {
+        newX <- matrix(runif(self$D*L), ncol=self$D, nrow=L)
+      }
       self$X <- rbind(self$X, newX)
       newX
     }
