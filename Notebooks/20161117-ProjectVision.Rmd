@@ -1,0 +1,30 @@
+---
+title: "Project vision"
+date: 11/17/2016
+output: html_notebook
+---
+
+
+# Desirability function
+
+We assume the user will provide a desirability function $\delta$. We think that it will be nonzero everywhere so there is some focus on space-filling, maybe not necessary. This function guides our point selection.
+
+# How is this different from other work?
+
+Others have tried to minimize predictive variance over the surface, but this would be a weighted predictive variance. 
+
+Others have tried to optimize a single function but this is an integral over the surface and more importantly the function changes significantly each time you add a point.
+
+# Why is this difficult?
+
+The hardest part is that the function changes each time we update the function. The pvar goes down wherever we add a point, and the function values become more accurate over time.
+
+
+# Can we use minimum energy?
+
+Yes, we will also try using minimum energy to space points out over the surface.
+
+
+# How will this be useful?
+
+The math may not be hard, but we will create an implementation that can be used by anyone and show that it can work in practice.
