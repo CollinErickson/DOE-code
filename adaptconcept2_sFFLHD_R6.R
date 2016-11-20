@@ -34,6 +34,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
    force_pvar = NULL, # "numeric",
    useSMEDtheta = NULL, # "logical"
    mod = NULL,
+   desirability_func = NULL, # args are mod and XX
  
    initialize = function(D,L,package=NULL, obj=NULL, n0=0, 
                          force_old=0, force_pvar=0,
@@ -95,6 +96,9 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
                                        self$obj_alpha *      max(1e-16, self$mod$predict.se(xx))}
      } else if (self$obj == "nonadapt") {
        # use next batch only #obj_func <<- NULL
+     } else if (self$obj == "desirability") {#browser()
+       self$obj_func <- function(XX) {list(...)$desirability_func(mod=self$mod, XX=XX)}
+       self$desirability_func <- list(...)$desirability_func
      }
      
      self$n0 <- n0
@@ -163,7 +167,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       }
       
       # Add new points
-      for (iii in 1:3) {
+      for (iii in 1:5) {
         self$Xnotrun <- rbind(self$Xnotrun, self$s$get.batch())
         self$batch.tracker <- c(self$batch.tracker, rep(self$s$b, self$L))
       }
@@ -190,9 +194,35 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       } 
       # if nothing forced, run SMED_select
       if (is.null(newL)) { #browser()
-        bestL <- SMED_selectC(f=self$obj_func, n=self$L, X0=self$X, Xopt=self$Xnotrun, 
-                              theta=if (self$useSMEDtheta) {self$mod$theta()} else {rep(1,2)})
-        newL <- bestL
+        if (F) {# standard min energy
+          #bestL <- SMED_selectC(f=self$obj_func, n=self$L, X0=self$X, Xopt=self$Xnotrun, 
+          #                      theta=if (self$useSMEDtheta) {self$mod$theta()} else {rep(1,2)})
+          Yall <- self$obj_func(rbind(self$X, self$Xnotrun))
+          Y0 <- Yall[1:nrow(self$X)]
+          Yopt <- Yall[(nrow(self$X)+1):length(Yall)]
+          bestL <- SMED_selectYC(n=self$L, X0=self$X, Xopt=self$Xnotrun, Y0=Y0, Yopt=Yopt,
+                                theta=if (self$useSMEDtheta) {self$mod$theta()} else {rep(1,2)})
+          newL <- bestL
+        } else { # take maximum, update model, requires using se or pvar so adding a point goes to zero
+          #browser()
+          gpc <- self$mod$clone()
+          bestL <- c()
+          for (ell in 1:self$L) {
+            #objall <- self$obj_func(rbind(self$X, self$Xnotrun))
+            objall <- self$desirability_func(gpc, rbind(self$X, self$Xnotrun))
+            objopt <- objall[(nrow(self$X)+1):length(objall)]
+            bestopt <- which.max(objopt)
+            bestL <- c(bestL, bestopt)
+            if (ell < self$L) {
+              Xnewone <- self$Xnotrun[bestopt, , drop=FALSE]
+              Znewone = gpc$predict(Xnewone)
+              print(Xnewone);print(Znewone);#cf(function(xx) self$desirability_func(gpc, xx), batchmax=1e3, pts=self$Xnotrun)
+              gpc$update(Xnew=Xnewone, Znew=Znewone, restarts=0)
+            }
+          }
+          newL <- bestL
+          rm(gpc, objall, objopt, bestopt, bestL, Xnewone, Znewone)
+        }
       }
       
       #while(nrow(Xnotrun) < max(L^2, 20)) {
@@ -429,4 +459,28 @@ if (F) {
   # banana with null
   a <- adapt.concept2.sFFLHD.R6$new(D=4,L=5,func=add_null_dims(banana,2), obj="gradpvaralpha", n0=12, take_until_maxpvar_below=.9, package="GauPro", design='sFFLHD')
   a$run(5)
+  
+  # Test desirability function
+  des_func <- function(mod, XX) {
+    pred <- mod$predict(XX, se=F)
+    pred2 <- mod$predict(matrix(runif(1000*2), ncol=2), se=F)
+    predall <- c(pred, pred2)
+    maxpred <- max(predall)
+    minpred <- min(predall)
+    des <- (pred - minpred) / (maxpred - minpred)
+    des
+  }
+  des_funcse <- function(mod, XX) {
+    pred <- mod$predict(XX, se=T)
+    pred2 <- mod$predict(matrix(runif(1000*2), ncol=2), se=T)
+    predall <- c(pred$fit, pred2$fit)
+    maxpred <- max(predall)
+    minpred <- min(predall)
+    relfuncval <- (pred$fit - minpred) / (maxpred - minpred)
+    des <- 1 + 5 * relfuncval
+    des * pred$se
+  }
+  a <- adapt.concept2.sFFLHD.R6$new(D=2,L=5,func=banana, obj="desirability", desirability_func=des_funcse, n0=12, take_until_maxpvar_below=.9, package="laGP", design='sFFLHD')
+  a$run(5)
+  cf(function(x) des_func(a$mod, x), batchmax=1e3)
 }
