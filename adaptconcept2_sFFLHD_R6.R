@@ -220,8 +220,9 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
               gpc$update(Xnew=Xnewone, Znew=Znewone, restarts=0)
             }
           }
-          newL <- bestL
-          rm(gpc, objall, objopt, bestopt, bestL, Xnewone, Znewone)
+          newL <- bestL#;browser()
+          #gpc$delete() # This deletes the laGP C side part, don't do it
+          rm(gpc, objall, objopt, bestopt, bestL, Xnewone, Znewone)#;browser()
         }
       }
       
@@ -245,7 +246,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       self$Xnotrun <- self$Xnotrun[-newL, , drop=FALSE]
       self$batch.tracker <- self$batch.tracker[-newL]
       Znew <- apply(Xnew,1,self$func) 
-       
+      if (any(duplicated(rbind(self$X,Xnew)))) {browser()}
       self$X <- rbind(self$X,Xnew)
       self$Z <- c(self$Z,Znew)
       self$update_obj_alpha(Xnew=Xnew, Znew=Znew)
@@ -257,7 +258,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       Zse   <- Zlist$se
       abs.scores <- abs(Znew - Zmean) / Zse
       for (score in abs.scores) {
-        if (score < 2) {
+        if (score < 3) {
           self$obj_alpha <- .5 * self$obj_alpha
         } else {
           self$obj_alpha <- 2  * self$obj_alpha
@@ -317,6 +318,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
        cf_func(self$mod$predict.var,batchmax=500, pretitle="Predicted Surface ", #pts=X)
                afterplotfunc=function(){points(self$X,pch=19)
                  points(self$X[(nrow(self$X)-self$L+1):nrow(self$X),],col='yellow',pch=19, cex=.5) # plot last L separately
+                 points(self$Xnotrun, col=2); # add points not selected
                }
        )
        ###points(Xnotrun, col=2)
@@ -477,10 +479,10 @@ if (F) {
     maxpred <- max(predall)
     minpred <- min(predall)
     relfuncval <- (pred$fit - minpred) / (maxpred - minpred)
-    des <- 1 + 5 * relfuncval
+    des <- 1 + 100 * relfuncval
     des * pred$se
   }
   a <- adapt.concept2.sFFLHD.R6$new(D=2,L=5,func=banana, obj="desirability", desirability_func=des_funcse, n0=12, take_until_maxpvar_below=.9, package="laGP", design='sFFLHD')
   a$run(5)
-  cf(function(x) des_func(a$mod, x), batchmax=1e3)
+  cf(function(x) des_funcse(a$mod, x), batchmax=1e3, pts=a$X)
 }
