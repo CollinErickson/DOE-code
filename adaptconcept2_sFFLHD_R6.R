@@ -211,6 +211,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
             #objall <- self$obj_func(rbind(self$X, self$Xnotrun))
             objall <- self$desirability_func(gpc, rbind(self$X, self$Xnotrun))
             objopt <- objall[(nrow(self$X)+1):length(objall)]
+            objopt[bestL] <- -Inf # ignore the ones just selected
             bestopt <- which.max(objopt)
             bestL <- c(bestL, bestopt)
             if (ell < self$L) {
