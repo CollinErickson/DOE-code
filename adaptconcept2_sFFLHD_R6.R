@@ -17,6 +17,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
    L = NULL, # "numeric", 
    g = NULL, # "numeric", # g not used but I'll leave it for now
    X = NULL, # "matrix", Z = "numeric", Xnotrun = "matrix",
+   X0 = NULL,
    Xnotrun = NULL,
    Z = NULL,
    s = NULL, # "sFFLHD" an object with $get.batch to get batch of points
@@ -40,7 +41,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
    initialize = function(D,L,package=NULL, obj=NULL, n0=0, 
                          force_old=0, force_pvar=0,
                          useSMEDtheta=F, func, take_until_maxpvar_below=NULL, design="sFFLHD",
-                         selection_method,
+                         selection_method, X0=NULL,
                          ...) {#browser()
      self$D <- D
      self$L <- L
@@ -63,6 +64,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
      } else {
        stop("No design 3285729")
      }
+     self$X0 <- X0
      self$X <- matrix(NA,0,D)
      self$Xnotrun <- matrix(NA,0,D)
      #if(length(lims)==0) {lims <<- matrix(c(0,1),D,2,byrow=T)}
@@ -106,7 +108,8 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
      }
      
      self$n0 <- n0
-     if (length(self$n0) != 0 && self$n0 > 0) {
+     if (!is.null(self$X0)) {self$X <- self$X0}
+     if (length(self$n0) != 0 && self$n0 > 0 && is.null(self$X0)) {
        Xnew <- matrix(NA, 0, self$D)
        while (nrow(Xnew) < self$n0) {
          Xnew <- rbind(Xnew, self$s$get.batch())
@@ -147,9 +150,14 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       #set_params()
       self$iteration <- self$iteration + 1
     },
-    add_data = function() {
+    add_data = function() {browser()
       if (nrow(self$X) == 0 ) {
-        self$X <- rbind(self$X, self$s$get.batch())
+        stop("I don't think this is every used #2929444")
+        if (!is.null(self$X0)) {
+          self$X <- self$X0
+        } else {
+          self$X <- rbind(self$X, self$s$get.batch())
+        }
         self$Z <- c(self$Z,apply(self$X, 1, self$func))
         return()
       }#;browser()
@@ -229,9 +237,10 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
           #gpc$delete() # This deletes the laGP C side part, don't do it
           rm(gpc, objall, objopt, bestopt, bestL, Xnewone, Znewone)#;browser()
         } else if (self$selection_method %in% c("max_des_red", "max_des_red_all")) { # take maximum reduction, update model, requires using se or pvar so adding a point goes to zero
-          browser()
           gpc <- self$mod$clone(deep=TRUE)
-          cf(function(X)self$desirability_func(gpc, X), batchmax=5e3, afterplotfunc=function(){points(self$Xnotrun)})
+          cf(function(X)self$desirability_func(gpc, X), batchmax=5e3, afterplotfunc=function(){points(self$X, col=3, pch=2);points(self$Xnotrun);points(self$Xnotrun)})
+          #browser()
+          if (exists("browser_max_des")) {if (browser_max_des) {browser()}}
           
           # Can start with none and select one at time, or start with random and replace
           if (self$selection_method == "max_des_red") {
@@ -284,14 +293,25 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
               bestL[ell] <- r_star
             }
             #bestL <- c(bestL, r_star)
-            if (ell < self$L) {
+            if (ell < self$L || TRUE) { # REMOVE THIS FOR SPEED
               Xnewone <- self$Xnotrun[r_star, , drop=FALSE]
-              Znewone <- Znotrun_preds[r] #gpc$predict(Xnewone)
+              Znewone <- Znotrun_preds[r_star] #gpc$predict(Xnewone)
               if (self$selection_method == "max_des_red") {
+                if (F) {
+                  cbind(self$Xnotrun, int_des_weights)
+                  i1 <- 1
+                  gpc$update(Xall=rbind(X_with_bestL,self$Xnotrun[i1,,drop=F]), Zall=c(Z_with_bestL,Znotrun_preds[]), restarts=0, no_update=TRUE)
+                  cf(function(X)self$desirability_func(gpc, X), batchmax=5e3, afterplotfunc=function(){points(self$X, col=3, pch=2);points(self$Xnotrun);points(self$Xnotrun);points(self$Xnotrun[bestL,], col=1,pch=19, cex=2);text(self$Xnotrun[bestL,], col=2,pch=19, cex=2)})
+                  gpc$update(Xall=rbind(X_with_bestL,self$Xnotrun[r_star,,drop=F]), Zall=c(Z_with_bestL,Znotrun_preds[]), restarts=0, no_update=TRUE)
+                  cf(function(X)self$desirability_func(gpc, X), batchmax=5e3, afterplotfunc=function(){points(self$X, col=3, pch=2);points(self$Xnotrun);points(self$Xnotrun);points(self$Xnotrun[bestL,], col=1,pch=19, cex=2);text(self$Xnotrun[bestL,], col=2,pch=19, cex=2)})
+                }
                 X_with_bestL <- rbind(X_with_bestL, Xnewone)
                 Z_with_bestL <- c(Z_with_bestL, Znewone)
+                if (T) { # REMOVE THIS FOR SPEED
+                  gpc$update(Xall=X_with_bestL, Zall=Z_with_bestL, restarts=0, no_update=TRUE)
+                }
               } else {
-                X_with_bestL[nrow(self$X) + ell,] <- self$Xnotrun[r_star]
+                X_with_bestL[nrow(self$X) + ell,] <- self$Xnotrun[r_star, ]
                 Z_with_bestL[nrow(self$X) + ell] <- Znotrun_preds[r_star]
                 gpc$update(Xall=X_with_bestL, Zall=Z_with_bestL, restarts=0, no_update=TRUE)
               }
@@ -299,8 +319,10 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
               #gpc$update(Xall=X_with_bestL, Zall=Z_with_bestL, restarts=0)
             }
           }
-          cf(function(X)self$desirability_func(gpc, X), batchmax=5e3, afterplotfunc=function(){points(self$Xnotrun);points(self$Xnotrun[bestL,], col=1,pch=19, cex=2);text(self$Xnotrun[bestL,], col=2,pch=19, cex=2)})
-          browser()
+          cf(function(X)self$desirability_func(gpc, X), batchmax=5e3, afterplotfunc=function(){points(self$X, col=3, pch=2);points(self$Xnotrun);points(self$Xnotrun);points(self$Xnotrun[bestL,], col=1,pch=19, cex=2);text(self$Xnotrun[bestL,], col=2,pch=19, cex=2)})
+          # browser()
+          if (exists("browser_max_des")) {if (browser_max_des) {browser()}}
+          
           newL <- bestL#;browser()
           #gpc$delete() # This deletes the laGP C side part, don't do it
           rm(gpc, bestL, Xnewone, Znewone)#;browser()
