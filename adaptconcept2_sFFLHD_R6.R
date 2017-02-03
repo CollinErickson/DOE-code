@@ -108,7 +108,12 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
      }
      
      self$n0 <- n0
-     if (!is.null(self$X0)) {self$X <- self$X0}
+     if (!is.null(self$X0)) {
+       self$X <- self$X0
+       self$Z <- c(self$Z, apply(self$X,1,self$func))
+       self$mod$update(Xall=self$X, Zall=self$Z)
+     }
+     #HERE add Z if X0 not null, should enter loop below
      if (length(self$n0) != 0 && self$n0 > 0 && is.null(self$X0)) {
        Xnew <- matrix(NA, 0, self$D)
        while (nrow(Xnew) < self$n0) {
@@ -150,7 +155,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       #set_params()
       self$iteration <- self$iteration + 1
     },
-    add_data = function() {browser()
+    add_data = function() {#browser()
       if (nrow(self$X) == 0 ) {
         stop("I don't think this is every used #2929444")
         if (!is.null(self$X0)) {
@@ -604,8 +609,17 @@ if (F) {
     des <- 1 + 1000 * relfuncval
     des * pred$se
   }
-  des_func14 <- function(mod, XX) {
-    pred <- mod$predict(XX, se=T)
+  des_func14 <- function(mod, XX, split_speed=T) {#browser()
+    # split_speed gives ?? speedup
+    if (!is.matrix(XX) || nrow(XX) <= 200 || !split_speed) {
+      pred <- mod$predict(XX, se=T)
+    } else { # Fastest to predict 100 to 150 at a time, maybe go bigger so fewer to recombine
+      # Factor of 10x for n=3000, 25 for n=10,000
+      XX.split <- split_matrix(XX, rowspergroup=150, shuffle=FALSE)
+      #sapply(XX.split, function(XXX) {mod$predict(XXX, se=T)})
+      pred <- data.table::rbindlist(lapply(XX.split, function(XXX) {as.data.frame(mod$predict(XXX, se=T))}))
+    }
+    #pred <- mod$predict(XX, se=T)
     des <- apply(XX, 1, function(yy) {if (yy[1] < .5) 4 else 1})
     des * pred$se
   }
