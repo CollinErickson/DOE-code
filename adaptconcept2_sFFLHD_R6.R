@@ -10,6 +10,40 @@ library(UGP, lib.loc = lib.loc)
 library(magrittr)
 #setOldClass("UGP")
 
+
+#' Class providing object with methods for adapt.concept2
+#'
+#' @docType class
+#' @importFrom R6 R6Class
+#' @export
+#' @importFrom stats optim
+#' @keywords data, experiments, adaptive, sequential, simulation, Gaussian process, regression
+#' @return Object of \code{\link{R6Class}} with methods for running an adaptive experiment.
+#' @format \code{\link{R6Class}} object.
+#' @examples
+#' a <- adapt.concept2.sFFLHD.R6$new(D=2,L=3,func=gaussian1, obj="desirability", desirability_func=des_func14, n0=12, take_until_maxpvar_below=.9, package="GauPro", design='sFFLHD', selection_method="max_des_red")
+#' a$run(5)
+#' @field X Design matrix
+#' @field Z Responses
+#' @field b batch size
+#' @field nb Number of batches
+#' @field D Dimension of data
+#' @field Xopts Available points
+#' @field X0 Initial design
+#' @field package Which GP package to use in IGP
+#' @field stats List of tracked stats
+#' @field iteration Which iteration
+#' @field mod The GP model from IGP
+#' @section Methods:
+#' \describe{
+#'   \item{Documentation}{For full documentation of each method go to https://github.com/CollinErickson/bSMED}
+#'   \item{\code{new(X, Z, corr="Gauss", verbose=0, separable=T, useC=F,useGrad=T,
+#'          parallel=T, nug.est=T, ...)}}{This method is used to create object of this class with \code{X} and \code{Z} as the data.}
+#'
+#'   \item{\code{update(Xnew=NULL, Znew=NULL, Xall=NULL, Zall=NULL,
+#' restarts = 5,
+#' param_update = T, nug.update = self$nug.est)}}{This method updates the model, adding new data if given, then running optimization again.}
+#'   }
 adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
   public = list(
    func = NULL, # "function", 
