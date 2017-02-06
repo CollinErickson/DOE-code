@@ -276,9 +276,15 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
           #gpc$delete() # This deletes the laGP C side part, don't do it
           rm(gpc, objall, objopt, bestopt, bestL, Xnewone, Znewone)#;browser()
         } else if (self$selection_method %in% c("max_des_red", "max_des_red_all")) { # take maximum reduction, update model, requires using se or pvar so adding a point goes to zero
-          gpc <- self$mod$clone(deep=TRUE)
-          cf(function(X)self$desirability_func(gpc, X), batchmax=5e3, afterplotfunc=function(){points(self$X, col=3, pch=2);points(self$Xnotrun);points(self$Xnotrun)})
-          #browser()
+          if (self$package == 'laGP') {
+            gpc <- UGP::IGP(X = self$X, Z=self$Z, package='laGP', d=self$mod$theta(), g=self$mod$nugget(), estimate_params=FALSE)
+          } else {
+            gpc <- self$mod$clone(deep=TRUE)
+          }
+          if (self$D == 2) {
+            cf(function(X)self$desirability_func(gpc, X), batchmax=5e3, afterplotfunc=function(){points(self$X, col=3, pch=2);points(self$Xnotrun);points(self$Xnotrun)})
+            #browser()
+          }
           if (exists("browser_max_des")) {if (browser_max_des) {browser()}}
           
           # Can start with none and select one at time, or start with random and replace
@@ -303,7 +309,12 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
               if (ell == 1) { # First time need to calculate current integrated des
                 X_with_bestL <- rbind(X_with_bestL, self$Xnotrun[bestL, , drop=F])
                 Z_with_bestL <- c(Z_with_bestL, Znotrun_preds[bestL])
-                gpc$update(Xall=X_with_bestL, Zall=Z_with_bestL, restarts=0, no_update=TRUE)
+                if (self$package == 'laGP') {
+                  gpc$delete()
+                  gpc <- UGP::IGP(X=X_with_bestL, Z=Z_with_bestL, theta=self$mod$theta(), nugget=self$mod$nugget(), package="laGP", estimate_params=FALSE)
+                } else {
+                  gpc$update(Xall=X_with_bestL, Zall=Z_with_bestL, restarts=0, no_update=TRUE)
+                }
                 int_des_weight_star <- int_des_weight_func()
               } else { # After that it just stays as star value
                 # essentially int_des_weight_star <- int_des_weight_star
@@ -311,7 +322,14 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
               int_des_weights[bestL[ell]] <- int_des_weight_star # Store current selection in IDWs, but not actually using it for anything
             }
             for ( r in setdiff(1:nrow(self$Xnotrun), bestL)) {
-              gpc$update(Xall <- rbind(X_with_bestL, self$Xnotrun[r, ,drop=F]), Zall=c(Z_with_bestL, Znotrun_preds[r]), restarts=0, no_update=TRUE)
+              if (self$package == 'laGP') {
+                gpc$delete()
+                gpc <- UGP::IGP(X=rbind(X_with_bestL, self$Xnotrun[r, ,drop=F]), 
+                                Z=c(Z_with_bestL, Znotrun_preds[r]), 
+                                theta=self$mod$theta(), nugget=self$mod$nugget(), package="laGP", estimate_params=FALSE)
+              } else {
+                gpc$update(Xall = rbind(X_with_bestL, self$Xnotrun[r, ,drop=F]), Zall=c(Z_with_bestL, Znotrun_preds[r]), restarts=0, no_update=TRUE)
+              }
               int_des_weight_r <- int_des_weight_func()
               if (int_des_weight_r < int_des_weight_star) {
                 int_des_weight_star <- int_des_weight_r
@@ -339,6 +357,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
                 if (F) {
                   cbind(self$Xnotrun, int_des_weights)
                   i1 <- 1
+                  # No good for laGP
                   gpc$update(Xall=rbind(X_with_bestL,self$Xnotrun[i1,,drop=F]), Zall=c(Z_with_bestL,Znotrun_preds[]), restarts=0, no_update=TRUE)
                   cf(function(X)self$desirability_func(gpc, X), batchmax=5e3, afterplotfunc=function(){points(self$X, col=3, pch=2);points(self$Xnotrun);points(self$Xnotrun);points(self$Xnotrun[bestL,], col=1,pch=19, cex=2);text(self$Xnotrun[bestL,], col=2,pch=19, cex=2)})
                   gpc$update(Xall=rbind(X_with_bestL,self$Xnotrun[r_star,,drop=F]), Zall=c(Z_with_bestL,Znotrun_preds[]), restarts=0, no_update=TRUE)
@@ -347,19 +366,31 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
                 X_with_bestL <- rbind(X_with_bestL, Xnewone)
                 Z_with_bestL <- c(Z_with_bestL, Znewone)
                 if (T) { # REMOVE THIS FOR SPEED
-                  gpc$update(Xall=X_with_bestL, Zall=Z_with_bestL, restarts=0, no_update=TRUE)
+                  if (self$package =='laGP') {
+                    gpc$delete()
+                    gpc <- UGP::IGP(X=X_with_bestL, Z=Z_with_bestL, package='laGP', theta=self$mod$theta(), nugget=self$mod$nugget(), estimate_params=FALSE)
+                  } else {
+                    gpc$update(Xall=X_with_bestL, Zall=Z_with_bestL, restarts=0, no_update=TRUE)
+                  }
                 }
               } else {
                 X_with_bestL[nrow(self$X) + ell,] <- self$Xnotrun[r_star, ]
                 Z_with_bestL[nrow(self$X) + ell] <- Znotrun_preds[r_star]
-                gpc$update(Xall=X_with_bestL, Zall=Z_with_bestL, restarts=0, no_update=TRUE)
+                if (self$package == 'laGP') {
+                  gpc$delete()
+                  gpc <- UGP::IGP(X=X_with_bestL, Z=Z_with_bestL, theta=self$mod$theta(), nugget=self$mod$nugget(), estimate_parameters=FALSE)
+                } else {
+                  gpc$update(Xall=X_with_bestL, Zall=Z_with_bestL, restarts=0, no_update=TRUE)
+                }
               }
               print(Xnewone);print(Znewone);#cf(function(xx) self$desirability_func(gpc, xx), batchmax=1e3, pts=self$Xnotrun)
               #gpc$update(Xall=X_with_bestL, Zall=Z_with_bestL, restarts=0)
             }
           }
-          cf(function(X)self$desirability_func(gpc, X), batchmax=5e3, afterplotfunc=function(){points(self$X, col=3, pch=2);points(self$Xnotrun);points(self$Xnotrun);points(self$Xnotrun[bestL,], col=1,pch=19, cex=2);text(self$Xnotrun[bestL,], col=2,pch=19, cex=2)})
-          # browser()
+          if (self$D == 2) {
+            cf(function(X)self$desirability_func(gpc, X), batchmax=5e3, afterplotfunc=function(){points(self$X, col=3, pch=2);points(self$Xnotrun);points(self$Xnotrun);points(self$Xnotrun[bestL,], col=1,pch=19, cex=2);text(self$Xnotrun[bestL,], col=2,pch=19, cex=2)})
+            # browser()
+          }
           if (exists("browser_max_des")) {if (browser_max_des) {browser()}}
           
           newL <- bestL#;browser()
@@ -615,6 +646,7 @@ if (F) {
     des
   }
   des_funcse <- function(mod, XX, split_speed=T) {#browser()
+    D <- ncol(mod$X)
     # split_speed gives 3x speedup for 300 pts, 14x for 3000 pts
     if (!is.matrix(XX) || nrow(XX) <= 200 || !split_speed) {
       pred <- mod$predict(XX, se=T)
@@ -625,11 +657,20 @@ if (F) {
       pred <- data.table::rbindlist(lapply(XX.split, function(XXX) {as.data.frame(mod$predict(XXX, se=T))}))
     }
     if (!split_speed) {
-      pred2 <- mod$predict(matrix(runif(1000*2), ncol=2), se=F)
+      pred2 <- mod$predict(matrix(runif(1000*D), ncol=D), se=F)
     } else { # 3x faster on 1000 points (.1 vs .3 sec)
       #pred2 <- mod$predict(matrix(runif(1000*2), ncol=2), se=F)
       #pred2 <- sapply(split_matrix(matrix(runif(1000*2), ncol=2), rowspergroup=200), function(XXX) {(mod$predict(XXX, se=F))})
-      pred2 <- sapply(1:5, function(iii) {(mod$predict(matrix(runif(200*2), ncol=2), se=F))})
+      pred2 <- sapply(1:5, function(iii) {(mod$predict(matrix(runif(200*D), ncol=D), se=F))})
+      if (any(is.nan(pred2))) {
+        n_nan <- sum(is.nan(pred2))
+        if (n_nan < 20) {
+          warning("Less than 20 pred2 in des_funcse is.naan, just removing #4387349")
+          pred2[is.nan(pred2)] <- pred2[1]
+        } else { browser()
+          stop("More than 20 pred2 in des_funcse is.naan, stopping #02357")
+        }
+      }
     }
     if (F) {
       predall <- c(pred$fit, pred2)
@@ -641,6 +682,7 @@ if (F) {
     }
     relfuncval <- (pred$fit - minpred) / (maxpred - minpred)
     des <- 1 + 1000 * relfuncval
+    if(any(is.nan(des * pred$se))) {browser()}
     des * pred$se
   }
   des_func14 <- function(mod, XX, split_speed=T) {#browser()
@@ -657,7 +699,7 @@ if (F) {
     des <- apply(XX, 1, function(yy) {if (yy[1] < .5) 4 else 1})
     des * pred$se
   }
-  a <- adapt.concept2.sFFLHD.R6$new(D=2,L=5,func=banana, obj="desirability", desirability_func=des_funcse, n0=12, take_until_maxpvar_below=.9, package="laGP", design='sFFLHD', selection_method="max_des_red")
+  a <- adapt.concept2.sFFLHD.R6$new(D=2,L=5,func=banana, obj="desirability", desirability_func=des_funcse, n0=12, take_until_maxpvar_below=.9, package="GauPro", design='sFFLHD', selection_method="max_des_red")
   a$run(5)
   cf(function(x) des_funcse(a$mod, x), batchmax=1e3, pts=a$X)
 }
