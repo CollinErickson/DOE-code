@@ -281,8 +281,9 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
           } else {
             gpc <- self$mod$clone(deep=TRUE)
           }
+          Xnotrun_to_consider <- 1:nrow(self$Xnotrun) #sample(1:nrow(self$Xnotrun),min(10,nrow(self$Xnotrun)),F)
           if (self$D == 2) {
-            cf(function(X)self$desirability_func(gpc, X), batchmax=5e3, afterplotfunc=function(){points(self$X, col=3, pch=2);points(self$Xnotrun);points(self$Xnotrun)})
+            cf(function(X)self$desirability_func(gpc, X), batchmax=5e3, afterplotfunc=function(){points(self$X, col=3, pch=2);points(self$Xnotrun[-Xnotrun_to_consider,], col=4,pch=3);points(self$Xnotrun[Xnotrun_to_consider,])})
             #browser()
           }
           if (exists("browser_max_des")) {if (browser_max_des) {browser()}}
@@ -291,7 +292,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
           if (self$selection_method == "max_des_red") {
             bestL <- c() # Start with none
           } else { # Start with L and replace
-            bestL <- sample(1:nrow(self$Xnotrun), size = self$L, replace = FALSE)
+            bestL <- sample(Xnotrun_to_consider, size = self$L, replace = FALSE)
           }
           #int_points <- lapply(1:10, function(iii) {simple.LHS(1e3, self$D)})
           int_points <- simple.LHS(1e4, self$D)
@@ -299,6 +300,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
           X_with_bestL <- self$X#, self$Xnotrun[bestL, ,drop=F])
           Z_with_bestL <- self$Z
           for (ell in 1:self$L) {
+            print(paste('starting iter', ell, 'considering', length(Xnotrun_to_consider)))
             Znotrun_preds <- gpc$predict(self$Xnotrun) # Need to use the predictions before each is added
             int_des_weights <- rep(Inf, nrow(self$Xnotrun))
             if (self$selection_method == "max_des_red") { # Don't have current value, so don't start with anything
@@ -321,7 +323,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
               }
               int_des_weights[bestL[ell]] <- int_des_weight_star # Store current selection in IDWs, but not actually using it for anything
             }
-            for ( r in setdiff(1:nrow(self$Xnotrun), bestL)) {
+            for ( r in setdiff(Xnotrun_to_consider, bestL)) {
               if (self$package == 'laGP') {
                 gpc$delete()
                 gpc <- UGP::IGP(X=rbind(X_with_bestL, self$Xnotrun[r, ,drop=F]), 
@@ -336,6 +338,17 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
                 r_star <- r
               }
               int_des_weights[r] <- int_des_weight_r
+            }
+            
+            # Reduce the number to consider if large
+            if (ell < self$L) {
+              numtokeep <- if (ell==1) 30 else if (ell==2) 20 else if (ell==3) 10 else if (ell>=4) {5} else NA
+              Xnotrun_to_consider <- order(int_des_weights,decreasing = F)[1:min(length(int_des_weights), numtokeep)]
+            }
+            
+            # Add back in some random ones
+            if (length(setdiff(1:nrow(self$Xnotrun), Xnotrun_to_consider)) > 5) {
+              Xnotrun_to_consider <- c(Xnotrun_to_consider, sample(setdiff(1:nrow(self$Xnotrun), Xnotrun_to_consider), 5, F))
             }
             #objall <- self$obj_func(rbind(self$X, self$Xnotrun))
             #objall <- self$desirability_func(gpc, rbind(self$X, self$Xnotrun))
@@ -388,7 +401,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
             }
           }
           if (self$D == 2) {
-            cf(function(X)self$desirability_func(gpc, X), batchmax=5e3, afterplotfunc=function(){points(self$X, col=3, pch=2);points(self$Xnotrun);points(self$Xnotrun);points(self$Xnotrun[bestL,], col=1,pch=19, cex=2);text(self$Xnotrun[bestL,], col=2,pch=19, cex=2)})
+            cf(function(X)self$desirability_func(gpc, X), batchmax=5e3, afterplotfunc=function(){points(self$X, col=3, pch=2);points(self$Xnotrun[-Xnotrun_to_consider,], col=4,pch=3);points(self$Xnotrun[Xnotrun_to_consider,]);points(self$Xnotrun[bestL,], col=1,pch=19, cex=2);text(self$Xnotrun[bestL,], col=2,pch=19, cex=2)})
             # browser()
           }
           if (exists("browser_max_des")) {if (browser_max_des) {browser()}}
@@ -645,7 +658,17 @@ if (F) {
     des <- (pred - minpred) / (maxpred - minpred)
     des
   }
-  des_funcse <- function(mod, XX, split_speed=T) {#browser()
+  actual_des_funcse <- function(mod, alpha, f, fmin, fmax) {browser()
+    D <- ncol(mod$X)
+    N <- 1e4
+    XX <- matrix(runif(D*N),ncol=D)
+    ZZ <- mod$predict(XX)
+    ZZ.actual <- apply(XX, 1, f)
+    abserr <- abs(ZZ - ZZ.actual)
+    des <- (ZZ.actual - fmin) / (fmax - fmin)
+    mean(des*abserr)
+  }
+  des_funcse <- function(mod, XX, alpha=1000, split_speed=T) {#browser()
     D <- ncol(mod$X)
     # split_speed gives 3x speedup for 300 pts, 14x for 3000 pts
     if (!is.matrix(XX) || nrow(XX) <= 200 || !split_speed) {
@@ -681,7 +704,7 @@ if (F) {
       minpred <- min(min(pred$fit), min(pred2))
     }
     relfuncval <- (pred$fit - minpred) / (maxpred - minpred)
-    des <- 1 + 1000 * relfuncval
+    des <- 1 + alpha * relfuncval
     if(any(is.nan(des * pred$se))) {browser()}
     des * pred$se
   }
