@@ -70,6 +70,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
    useSMEDtheta = NULL, # "logical"
    mod = NULL,
    desirability_func = NULL, # args are mod and XX
+   actual_desirability_func = NULL, # 
    selection_method = NULL, # string
  
    initialize = function(D,L,package=NULL, obj=NULL, n0=0, 
@@ -107,7 +108,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
      else {self$package <- package}
      #self$mod <- UGP$new(package = self$package)
      self$mod <- IGP(package = self$package, estimate.nugget=FALSE, set.nugget=1e-8)
-     self$stats <- list(iteration=c(),pvar=c(),mse=c(), ppu=c(), minbatch=c(), pamv=c())
+     self$stats <- list(iteration=c(),pvar=c(),mse=c(), ppu=c(), minbatch=c(), pamv=c(), actual_weighted_error=c())
      self$iteration <- 1
      self$obj_alpha <- 0.5
      
@@ -139,6 +140,9 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
      } else if (self$obj == "desirability") {#browser()
        self$obj_func <- function(XX) {list(...)$desirability_func(mod=self$mod, XX=XX)}
        self$desirability_func <- list(...)$desirability_func
+       if ('actual_des_func' %in% names(list(...))) { #browser()
+         self$actual_desirability_func <- list(...)$actual_des_func
+       }
      }
      
      self$n0 <- n0
@@ -467,6 +471,9 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
      self$stats$ppu <- c(self$stats$ppu, nrow(self$X) / (nrow(self$X) + nrow(self$Xnotrun)))
      self$stats$minbatch <- c(self$stats$minbatch, if (length(self$batch.tracker>0)) min(self$batch.tracker) else 0)
      self$stats$pamv <- c(self$stats$pamv, self$mod$prop.at.max.var())
+     if (!is.null(self$actual_desirability_func)) {
+       self$stats$actual_weighted_error <- c(self$stats$actual_weighted_error, self$actual_desirability_func(self$mod))
+     }
     },
     plot1 = function() {#browser()
      if (self$D == 2) {
@@ -658,15 +665,20 @@ if (F) {
     des <- (pred - minpred) / (maxpred - minpred)
     des
   }
-  actual_des_funcse <- function(mod, alpha, f, fmin, fmax) {browser()
+  actual_des_funcse <- function(mod, alpha, f, fmin, fmax) {#browser()
     D <- ncol(mod$X)
-    N <- 1e4
+    N <- 1e5
     XX <- matrix(runif(D*N),ncol=D)
     ZZ <- mod$predict(XX)
     ZZ.actual <- apply(XX, 1, f)
     abserr <- abs(ZZ - ZZ.actual)
     des <- (ZZ.actual - fmin) / (fmax - fmin)
     mean(des*abserr)
+  }
+  get_actual_des_funcse <- function (alpha, f, fmin, fmax) {
+    function(mod) {
+      actual_des_funcse(mod, alpha=alpha, f=f, fmin=fmin, fmax=fmax)
+    }
   }
   des_funcse <- function(mod, XX, alpha=1000, split_speed=T) {#browser()
     D <- ncol(mod$X)
@@ -725,4 +737,6 @@ if (F) {
   a <- adapt.concept2.sFFLHD.R6$new(D=2,L=5,func=banana, obj="desirability", desirability_func=des_funcse, n0=12, take_until_maxpvar_below=.9, package="GauPro", design='sFFLHD', selection_method="max_des_red")
   a$run(5)
   cf(function(x) des_funcse(a$mod, x), batchmax=1e3, pts=a$X)
+  a <- adapt.concept2.sFFLHD.R6$new(D=2,L=5,func=banana, obj="desirability", desirability_func=des_funcse, n0=12, take_until_maxpvar_below=.9, package="GauPro", design='sFFLHD', selection_method="max_des_red", actual_des_func=get_actual_des_funcse(alpha=1e3, f=banana, fmin=0, fmax=1))
+  
 }
