@@ -222,63 +222,21 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       }
       
       # Add new points
-      for (iii in 1:5) {
-        self$Xnotrun <- rbind(self$Xnotrun, self$s$get.batch())
-        self$batch.tracker <- c(self$batch.tracker, rep(self$s$b, self$L))
-      }
+      self$add_new_batches_to_Xnotrun()
+      
       newL <- NULL
-      #browser()
+      
+      
       # Check if forcing old or pvar
-      if (self$force_old > 0 & self$force_pvar > 0) {
-        stop("No can force_old and force_pvar")
-      } else if (self$force_old > 0 & self$force_old <= 1) {
-        rand1 <- runif(1)
-        if (rand1 < self$force_old) {newL <- 1:self$L} 
-      } else if (self$force_old > 1) {
-        if ((iteration %% as.integer(self$force_old)) == 0) {
-          newL <- 1:self$L
-        }
-      } else if (self$force_pvar > 0 & self$force_pvar <= 1) {
-        rand1 <- runif(1)
-        if (rand1 < self$force_pvar) {newL <- order(self$mod$predict.var(self$Xnotrun), decreasing=T)[1:self$L]} 
-      } else if (self$force_pvar > 1) {
-        if ((iteration %% as.integer(self$force_pvar)) == 0) {
-          newL <- order(self$mod$predict.var(self$Xnotrun), decreasing=T)[1:self$L]
-          #newL <- SMED_selectC(f=mod$predict.var, n=L, X0=X, Xopt=Xnotrun)
-        }
-      } 
+      # Returns NULL if not selecting, otherwise the L indices
+      newL <- self$select_new_points_from_old_or_pvar()
+      
       # if nothing forced, run SMED_select
       if (is.null(newL)) { #browser()
         if (self$selection_method == "SMED") {# standard min energy
-          #bestL <- SMED_selectC(f=self$obj_func, n=self$L, X0=self$X, Xopt=self$Xnotrun, 
-          #                      theta=if (self$useSMEDtheta) {self$mod$theta()} else {rep(1,2)})
-          Yall <- self$obj_func(rbind(self$X, self$Xnotrun))
-          Y0 <- Yall[1:nrow(self$X)]
-          Yopt <- Yall[(nrow(self$X)+1):length(Yall)]
-          bestL <- SMED_selectYC(n=self$L, X0=self$X, Xopt=self$Xnotrun, Y0=Y0, Yopt=Yopt,
-                                theta=if (self$useSMEDtheta) {self$mod$theta()} else {rep(1,2)})
-          newL <- bestL
-        } else if (self$selection_method == "max_des") { # take maximum, update model, requires using se or pvar so adding a point goes to zero
-          #browser()
-          gpc <- self$mod$clone()
-          bestL <- c()
-          for (ell in 1:self$L) {
-            #objall <- self$obj_func(rbind(self$X, self$Xnotrun))
-            objall <- self$desirability_func(gpc, rbind(self$X, self$Xnotrun))
-            objopt <- objall[(nrow(self$X)+1):length(objall)]
-            objopt[bestL] <- -Inf # ignore the ones just selected
-            bestopt <- which.max(objopt)
-            bestL <- c(bestL, bestopt)
-            if (ell < self$L) {
-              Xnewone <- self$Xnotrun[bestopt, , drop=FALSE]
-              Znewone = gpc$predict(Xnewone)
-              print(Xnewone);print(Znewone);#cf(function(xx) self$desirability_func(gpc, xx), batchmax=1e3, pts=self$Xnotrun)
-              gpc$update(Xnew=Xnewone, Znew=Znewone, restarts=0)
-            }
-          }
-          newL <- bestL#;browser()
-          #gpc$delete() # This deletes the laGP C side part, don't do it
-          rm(gpc, objall, objopt, bestopt, bestL, Xnewone, Znewone)#;browser()
+          newL <- self$select_new_points_from_SMED()
+        } else if (self$selection_method == "max_des") { # take point with max desirability, update model, requires using se or pvar so adding a point goes to zero
+          newL <- self$select_new_points_from_max_des()
         } else if (self$selection_method %in% c("max_des_red", "max_des_red_all")) { # take maximum reduction, update model, requires using se or pvar so adding a point goes to zero
           if (self$package == 'laGP') {
             gpc <- UGP::IGP(X = self$X, Z=self$Z, package='laGP', d=self$mod$theta(), g=self$mod$nugget(), estimate_params=FALSE)
@@ -432,6 +390,9 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       #newL <- if (rand1 < force_old) {1:L} 
       #        else if (rand1 < force_old + force_pvar) {order(mod$predict.var(Xnotrun), decreasing=T)[1:L]}
       #        else {bestL}#{print(paste('first L',iteration));1:L}
+      if (length(newL) != self$L) { browser()
+        stop("Selected newL not of length L #84274")
+      }
       Xnew <- self$Xnotrun[newL,]
       self$Xnotrun <- self$Xnotrun[-newL, , drop=FALSE]
       self$batch.tracker <- self$batch.tracker[-newL]
@@ -605,6 +566,69 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
        }
      }
     },
+    add_new_batches_to_Xnotrun = function(num_batches_to_take=5) {
+     for (iii in 1:num_batches_to_take) {
+       self$Xnotrun <- rbind(self$Xnotrun, self$s$get.batch())
+       self$batch.tracker <- c(self$batch.tracker, rep(self$s$b, self$L))
+     }
+    },
+    select_new_points_from_old_or_pvar = function() {
+     newL <- NULL
+     # Check if forcing old or pvar
+     if (self$force_old > 0 & self$force_pvar > 0) {
+       stop("No can force_old and force_pvar")
+     } else if (self$force_old > 0 & self$force_old <= 1) {
+       rand1 <- runif(1)
+       if (rand1 < self$force_old) {newL <- 1:self$L} 
+     } else if (self$force_old > 1) {
+       if ((iteration %% as.integer(self$force_old)) == 0) {
+         newL <- 1:self$L
+       }
+     } else if (self$force_pvar > 0 & self$force_pvar <= 1) {
+       rand1 <- runif(1)
+       if (rand1 < self$force_pvar) {newL <- order(self$mod$predict.var(self$Xnotrun), decreasing=T)[1:self$L]} 
+     } else if (self$force_pvar > 1) {
+       if ((iteration %% as.integer(self$force_pvar)) == 0) {
+         newL <- order(self$mod$predict.var(self$Xnotrun), decreasing=T)[1:self$L]
+         #newL <- SMED_selectC(f=mod$predict.var, n=L, X0=X, Xopt=Xnotrun)
+       }
+     }
+     newL
+    },
+    select_new_points_from_SMED = function() {
+      #bestL <- SMED_selectC(f=self$obj_func, n=self$L, X0=self$X, Xopt=self$Xnotrun, 
+      #                      theta=if (self$useSMEDtheta) {self$mod$theta()} else {rep(1,2)})
+      Yall <- self$obj_func(rbind(self$X, self$Xnotrun))
+      Y0 <- Yall[1:nrow(self$X)]
+      Yopt <- Yall[(nrow(self$X)+1):length(Yall)]
+      bestL <- SMED_selectYC(n=self$L, X0=self$X, Xopt=self$Xnotrun, Y0=Y0, Yopt=Yopt,
+                             theta=if (self$useSMEDtheta) {self$mod$theta()} else {rep(1,2)})
+      newL <- bestL
+      newL
+    },
+   select_new_points_from_max_des = function() {
+     # take point with max desirability, update model, requires using se or pvar so adding a point goes to zero
+     gpc <- self$mod$clone()
+     bestL <- c()
+     for (ell in 1:self$L) {
+       #objall <- self$obj_func(rbind(self$X, self$Xnotrun))
+       objall <- self$desirability_func(gpc, rbind(self$X, self$Xnotrun))
+       objopt <- objall[(nrow(self$X)+1):length(objall)]
+       objopt[bestL] <- -Inf # ignore the ones just selected
+       bestopt <- which.max(objopt)
+       bestL <- c(bestL, bestopt)
+       if (ell < self$L) {
+         Xnewone <- self$Xnotrun[bestopt, , drop=FALSE]
+         Znewone = gpc$predict(Xnewone)
+         print(Xnewone);print(Znewone);#cf(function(xx) self$desirability_func(gpc, xx), batchmax=1e3, pts=self$Xnotrun)
+         gpc$update(Xnew=Xnewone, Znew=Znewone, restarts=0)
+       }
+     }
+     newL <- bestL#;browser()
+     #gpc$delete() # This deletes the laGP C side part, don't do it
+     rm(gpc, objall, objopt, bestopt, bestL, Xnewone, Znewone)#;browser()
+     newL
+   },
     delete = function() {
       self$mod$delete()
     }
@@ -655,85 +679,6 @@ if (F) {
   a <- adapt.concept2.sFFLHD.R6$new(D=4,L=5,func=add_null_dims(banana,2), obj="gradpvaralpha", n0=12, take_until_maxpvar_below=.9, package="GauPro", design='sFFLHD')
   a$run(5)
   
-  # Test desirability function
-  des_func <- function(mod, XX) {
-    pred <- mod$predict(XX, se=F)
-    pred2 <- mod$predict(matrix(runif(1000*2), ncol=2), se=F)
-    predall <- c(pred, pred2)
-    maxpred <- max(predall)
-    minpred <- min(predall)
-    des <- (pred - minpred) / (maxpred - minpred)
-    des
-  }
-  actual_des_funcse <- function(mod, alpha, f, fmin, fmax) {#browser()
-    D <- ncol(mod$X)
-    N <- 1e5
-    XX <- matrix(runif(D*N),ncol=D)
-    ZZ <- mod$predict(XX)
-    ZZ.actual <- apply(XX, 1, f)
-    abserr <- abs(ZZ - ZZ.actual)
-    des <- (ZZ.actual - fmin) / (fmax - fmin)
-    mean(des*abserr)
-  }
-  get_actual_des_funcse <- function (alpha, f, fmin, fmax) {
-    function(mod) {
-      actual_des_funcse(mod, alpha=alpha, f=f, fmin=fmin, fmax=fmax)
-    }
-  }
-  des_funcse <- function(mod, XX, alpha=1000, split_speed=T) {#browser()
-    D <- ncol(mod$X)
-    # split_speed gives 3x speedup for 300 pts, 14x for 3000 pts
-    if (!is.matrix(XX) || nrow(XX) <= 200 || !split_speed) {
-      pred <- mod$predict(XX, se=T)
-    } else { # Fastest to predict 100 to 150 at a time, maybe go bigger so fewer to recombine
-      # Factor of 10x for n=3000, 25 for n=10,000
-      XX.split <- split_matrix(XX, rowspergroup=150, shuffle=FALSE)
-      #sapply(XX.split, function(XXX) {mod$predict(XXX, se=T)})
-      pred <- data.table::rbindlist(lapply(XX.split, function(XXX) {as.data.frame(mod$predict(XXX, se=T))}))
-    }
-    if (!split_speed) {
-      pred2 <- mod$predict(matrix(runif(1000*D), ncol=D), se=F)
-    } else { # 3x faster on 1000 points (.1 vs .3 sec)
-      #pred2 <- mod$predict(matrix(runif(1000*2), ncol=2), se=F)
-      #pred2 <- sapply(split_matrix(matrix(runif(1000*2), ncol=2), rowspergroup=200), function(XXX) {(mod$predict(XXX, se=F))})
-      pred2 <- sapply(1:5, function(iii) {(mod$predict(matrix(runif(200*D), ncol=D), se=F))})
-      if (any(is.nan(pred2))) {
-        n_nan <- sum(is.nan(pred2))
-        if (n_nan < 20) {
-          warning("Less than 20 pred2 in des_funcse is.naan, just removing #4387349")
-          pred2[is.nan(pred2)] <- pred2[1]
-        } else { browser()
-          stop("More than 20 pred2 in des_funcse is.naan, stopping #02357")
-        }
-      }
-    }
-    if (F) {
-      predall <- c(pred$fit, pred2)
-      maxpred <- max(predall)
-      minpred <- min(predall)
-    } else {
-      maxpred <- max(max(pred$fit), max(pred2))
-      minpred <- min(min(pred$fit), min(pred2))
-    }
-    relfuncval <- (pred$fit - minpred) / (maxpred - minpred)
-    des <- 1 + alpha * relfuncval
-    if(any(is.nan(des * pred$se))) {browser()}
-    des * pred$se
-  }
-  des_func14 <- function(mod, XX, split_speed=T) {#browser()
-    # split_speed gives ?? speedup
-    if (!is.matrix(XX) || nrow(XX) <= 200 || !split_speed) {
-      pred <- mod$predict(XX, se=T)
-    } else { # Fastest to predict 100 to 150 at a time, maybe go bigger so fewer to recombine
-      # Factor of 10x for n=3000, 25 for n=10,000
-      XX.split <- split_matrix(XX, rowspergroup=150, shuffle=FALSE)
-      #sapply(XX.split, function(XXX) {mod$predict(XXX, se=T)})
-      pred <- data.table::rbindlist(lapply(XX.split, function(XXX) {as.data.frame(mod$predict(XXX, se=T))}))
-    }
-    #pred <- mod$predict(XX, se=T)
-    des <- apply(XX, 1, function(yy) {if (yy[1] < .5) 4 else 1})
-    des * pred$se
-  }
   a <- adapt.concept2.sFFLHD.R6$new(D=2,L=5,func=banana, obj="desirability", desirability_func=des_funcse, n0=12, take_until_maxpvar_below=.9, package="GauPro", design='sFFLHD', selection_method="max_des_red")
   a$run(5)
   cf(function(x) des_funcse(a$mod, x), batchmax=1e3, pts=a$X)
