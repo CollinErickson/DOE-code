@@ -2,6 +2,7 @@ if (!exists('lib.loc')) {lib.loc <- NULL}
 source("adaptconcept_helpers.R")
 source('LHS.R')
 source("random_design.R")
+source('adaptconcept2_sFFLHD_R6_desfuncs.R')
 library(TestFunctions, lib.loc = lib.loc)
 library(cf, lib.loc = lib.loc)
 library(SMED, lib.loc = lib.loc)
@@ -222,7 +223,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
           self$Z <- c(self$Z, Znew)
           return()
         } else { # Instead of taking old trying to take space filling
-          browser()
+          #browser()
           self$add_new_batches_to_Xnotrun(1)
           Xdesign <- self$X
           newL <- c()
