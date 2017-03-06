@@ -28,6 +28,8 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
     rungrid = data.frame(),
     rungridlist = list(),
     package = NULL,
+    selection_method=NULL,
+    desirability_func=NULL,
     number_runs = NULL,
     completed_runs = NULL,
     initialize = function(func, D, L, batches=10, reps=5, 
@@ -39,6 +41,8 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
                           save_output=F, func_string = NULL,
                           seed_start=NULL,
                           package="laGP",
+                          selection_method='SMED',
+                          desirability_func=NA,
                           ...) {
       self$func <- func
       self$D <- D
@@ -54,6 +58,8 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
       self$save_output <- save_output
       self$seed_start <- seed_start
       self$package <- package
+      self$selection_method <- selection_method
+      self$desirability_func <- desirability_func
       #browser()
       if (is.null(func_string)) {
         if (is.character(func)) {func_string <- func}
@@ -75,18 +81,20 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
                    data.frame(D),data.frame(L),
                    data.frame(repl=1:reps, seed=if(!is.null(seed_start)) seed_start+1:reps-1 else NA),
                    data.frame(reps),
-                   data.frame(batches),data.frame(obj, stringsAsFactors = F),
+                   data.frame(batches),
+                   data.frame(obj, selection_method, desirability_func, stringsAsFactors = F),
                    #data.frame(forces=forces,force_vals=force_vals),
                    data.frame(force_old,force_pvar),
                    data.frame(n0),
                    data.frame(package, stringsAsFactors = FALSE)
+                   #data.frame(selection_method, desirability_func, stringsAsFactors = FALSE)
                 )
       #self$multiple_option_columns <- c()
       #self$rungrid$Group <- ""
       group_names <- c()
       
       #browser()
-      for (i_input in c('func_string', 'D', 'L', 'reps', 'batches', 'obj', 'force_old', 'force_pvar', 'n0','package')) {
+      for (i_input in c('func_string', 'D', 'L', 'reps', 'batches', 'obj', 'force_old', 'force_pvar', 'n0','package', 'selection_method')) {
         if (length(eval(parse(text=i_input))) > 1) {
           #self$rungrid$Group <- paste(self$rungrid$Group, self$rungrid[,i_input])
           group_names <- c(group_names, i_input)
@@ -192,7 +200,7 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
       #else {stop("No function given")}
       
       u <- do.call(adapt.concept2.sFFLHD.R6$new, lapply(self$rungridlist, function(x)x[[irow]]))
-      
+      #browser()
       systime <- system.time(u$run(row_grid$batches,noplot=T))
       newdf0 <- data.frame(batch=u$stats$iteration, mse=u$stats$mse, 
                            pvar=u$stats$pvar, pamv=u$stats$pamv,
@@ -312,11 +320,15 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
 )
 
 if (F) {
-  ca1 <- compare.adaptR6$new(func=gaussian1, D=2, L=4)$run_all()$plot()
+  ca1 <- compare.adaptR6$new(func=gaussian1, D=2, L=3, n0=6)$run_all()$plot()
   ca1$run()
   
   ca1 <- compare.adaptR6$new(func=add_null_dims(banana,2), D=4, L=4, obj=c("nonadapt", "grad","gradpvaralpha"), batches=10, reps=5, n0=10)$run_all()$plot()
   
   
   ca1 <- compare.adaptR6$new(func=banana, D=2, L=4, obj=c("nonadapt", "grad","gradpvaralpha"), batches=20, reps=3, n0=10, package=c("laGP"))$run_all()$plot()
+  
+  
+  # For desirability
+  ca1 <- compare.adaptR6$new(func=gaussian1, D=2, L=3, n0=6, obj="desirability", selection_method=c('max_des', 'SMED'), desirability_func=c('des_funcse', NA))$run_all()$plot()
 }

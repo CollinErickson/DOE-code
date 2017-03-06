@@ -141,6 +141,9 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
      } else if (self$obj == "desirability") {#browser()
        self$obj_func <- function(XX) {list(...)$desirability_func(mod=self$mod, XX=XX)}
        self$desirability_func <- list(...)$desirability_func
+       if (self$desirability_func == "des_funcse") {#browser()
+         self$desirability_func <- des_funcse
+       }
        if ('actual_des_func' %in% names(list(...))) { #browser()
          self$actual_desirability_func <- list(...)$actual_des_func
        }
@@ -196,7 +199,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
     },
     add_data = function() {#browser()
       if (nrow(self$X) == 0 ) {
-        stop("I don't think this is every used #2929444")
+        stop("I don't think this is every used #2929444, it will if n0=0, need to fix this")
         if (!is.null(self$X0)) {
           self$X <- self$X0
         } else {
@@ -253,6 +256,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
         if (self$selection_method == "SMED") {# standard min energy
           newL <- self$select_new_points_from_SMED()
         } else if (self$selection_method == "max_des") { # take point with max desirability, update model, requires using se or pvar so adding a point goes to zero
+          #browser()
           newL <- self$select_new_points_from_max_des()
         } else if (self$selection_method %in% c("max_des_red", "max_des_red_all")) { # take maximum reduction, update model, requires using se or pvar so adding a point goes to zero
           newL <- self$select_new_points_from_max_des_red()
@@ -291,6 +295,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
           self$obj_alpha <- 2  * self$obj_alpha
         }
       }
+      #browser()
       print(paste('alpha changed to ', self$obj_alpha))
     },
     update_mod = function() {#browser()
@@ -310,6 +315,8 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
      self$stats$pamv <- c(self$stats$pamv, self$mod$prop.at.max.var())
      if (!is.null(self$actual_desirability_func)) {
        self$stats$actual_weighted_error <- c(self$stats$actual_weighted_error, self$actual_desirability_func(self$mod))
+     } else {
+       self$stats$actual_weighted_error <- c(self$stats$actual_weighted_error, NA)
      }
     },
     plot1 = function() {#browser()
@@ -366,7 +373,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
        screen(3) # actual squared error plot
        par(mar=c(2,2,0,0.5)) # 5.1 4.1 4.1 2.1 BLTR
        cf_func(self$func, n = 20, mainminmax_minmax = F, pretitle="Actual ")
-       if (self$iteration >= 2) {
+       if (self$iteration >= 2) {#browser()
          statsdf <- as.data.frame(self$stats)
          screen(4) # MSE plot
          par(mar=c(2,2,0,0.5)) # 5.1 4.1 4.1 2.1 BLTR
@@ -474,7 +481,12 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
     select_new_points_from_SMED = function() {
       #bestL <- SMED_selectC(f=self$obj_func, n=self$L, X0=self$X, Xopt=self$Xnotrun, 
       #                      theta=if (self$useSMEDtheta) {self$mod$theta()} else {rep(1,2)})
-      Yall <- self$obj_func(rbind(self$X, self$Xnotrun))
+      #browser()
+      Yall.try <- try(Yall <- self$obj_func(rbind(self$X, self$Xnotrun)))
+      if (inherits(Yall.try, "try-error")) {
+        browser()
+        Yall <- self$obj_func(rbind(self$X, self$Xnotrun))
+      }
       Y0 <- Yall[1:nrow(self$X)]
       Yopt <- Yall[(nrow(self$X)+1):length(Yall)]
       bestL <- SMED_selectYC(n=self$L, X0=self$X, Xopt=self$Xnotrun, Y0=Y0, Yopt=Yopt,
@@ -482,7 +494,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       newL <- bestL
       newL
     },
-   select_new_points_from_max_des = function() {
+   select_new_points_from_max_des = function() {#browser()
      # take point with max desirability, update model, requires using se or pvar so adding a point goes to zero
      gpc <- self$mod$clone()
      bestL <- c()
@@ -562,6 +574,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
        } else {
          gpc$update(Xall = rbind(X_with_bestL, self$Xnotrun[r, ,drop=F]), Zall=c(Z_with_bestL, Znotrun_preds[r]), restarts=0, no_update=TRUE)
        }
+       #browser()
        int_des_weight_r <- int_des_weight_func()
        if (int_des_weight_r < int_des_weight_star) {
          int_des_weight_star <- int_des_weight_r
@@ -708,5 +721,13 @@ if (F) {
   a$run(5)
   cf(function(x) des_funcse(a$mod, x), batchmax=1e3, pts=a$X)
   a <- adapt.concept2.sFFLHD.R6$new(D=2,L=5,func=banana, obj="desirability", desirability_func=des_funcse, n0=12, take_until_maxpvar_below=.9, package="GauPro", design='sFFLHD', selection_method="max_des_red", actual_des_func=get_actual_des_funcse(alpha=1e3, f=banana, fmin=0, fmax=1))
+
+  a <- adapt.concept2.sFFLHD.R6$new(D=2,L=5,func=add_linear_terms(banana, c(.01,-.01)), 
+                                    obj="desirability", desirability_func=des_funcse, n0=12, take_until_maxpvar_below=.9, package="GauPro", design='sFFLHD', selection_method="max_des_red", actual_des_func=get_actual_des_funcse(alpha=1e3, f=add_linear_terms(banana, c(.01,-.01)), fmin=-.01, fmax=1.005))  
+  a <- adapt.concept2.sFFLHD.R6$new(D=2,L=5,func=add_zoom(banana, c(.2,.5), c(.8,1)), 
+                                    obj="desirability", desirability_func=des_funcse, n0=12, take_until_maxpvar_below=.9, package="GauPro", design='sFFLHD', selection_method="max_des_red")  
   
+  # banana with null
+  a <- adapt.concept2.sFFLHD.R6$new(D=4,L=5,func=add_null_dims(banana,2), obj="desirability", desirability_func=des_funcse, n0=12, take_until_maxpvar_below=.9, package="GauPro", design='sFFLHD', selection_method="max_des_red")
+  a$run(5)
 }
