@@ -331,4 +331,6 @@ if (F) {
   
   # For desirability
   ca1 <- compare.adaptR6$new(func=gaussian1, D=2, L=3, n0=6, obj="desirability", selection_method=c('max_des', 'SMED'), desirability_func=c('des_funcse', NA))$run_all()$plot()
+  ca1 <- compare.adaptR6$new(func=gaussian1, D=2, L=3, n0=20, obj=c("func","desirability"), selection_method=c('SMED', 'max_des_red'), desirability_func=c('NA', 'des_funcse'), package="GauPro")$run_all()$plot()
+  
 }
