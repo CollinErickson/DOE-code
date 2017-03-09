@@ -110,7 +110,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
      else {self$package <- package}
      #self$mod <- UGP$new(package = self$package)
      self$mod <- IGP(package = self$package, estimate.nugget=FALSE, set.nugget=1e-8)
-     self$stats <- list(iteration=c(),pvar=c(),mse=c(), ppu=c(), minbatch=c(), pamv=c(), actual_weighted_error=c())
+     self$stats <- list(iteration=c(),n=c(),pvar=c(),mse=c(), ppu=c(), minbatch=c(), pamv=c(), actual_weighted_error=c())
      self$iteration <- 1
      self$obj_alpha <- 0.5
      
@@ -153,13 +153,13 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
      }
      
      self$n0 <- n0
-     if (!is.null(self$X0)) {
+     if (F && !is.null(self$X0)) {
        self$X <- self$X0
        self$Z <- c(self$Z, apply(self$X,1,self$func))
        self$mod$update(Xall=self$X, Zall=self$Z)
      }
      #HERE add Z if X0 not null, should enter loop below
-     if (length(self$n0) != 0 && self$n0 > 0 && is.null(self$X0)) {
+     if (F && length(self$n0) != 0 && self$n0 > 0 && is.null(self$X0)) {
        Xnew <- matrix(NA, 0, self$D)
        self$batch.tracker <- c()
        while (nrow(Xnew) < self$n0) {
@@ -202,24 +202,51 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       self$iteration <- self$iteration + 1
     },
     add_data = function() {#browser()
+      # newL will be the L points selected from Xnotrun
+      #   to add to the design
+      newL <- NULL
+      
+      # First check to see if X hasn't been initialized yet
       if (nrow(self$X) == 0 ) {
-        stop("I don't think this is every used #2929444, it will if n0=0, need to fix this")
-        if (!is.null(self$X0)) {
-          self$X <- self$X0
-        } else {
-          self$X <- rbind(self$X, self$s$get.batch())
+        # stop("I don't think this is every used #2929444, it will if n0=0, need to fix this")
+        # if (!is.null(self$X0)) {
+          # self$X <- self$X0
+        # } else {
+          # self$X <- rbind(self$X, self$s$get.batch())
+        # }
+        # self$Z <- c(self$Z,apply(self$X, 1, self$func))
+        # return()
+        
+        # 3/9/17 Trying to move this above out
+        if (!is.null(self$X0)) { # If X0, use it
+          add_newL_points_to_design(newL=NULL, use_X0=TRUE)
+          return()
+        } else if (!is.null(self$n0) && self$n0 > 0) { # Take first batches up to n0 and use it
+          
+          self$add_new_batches_to_Xnotrun(num_batches_to_take = ceiling(self$n0/self$L))
+          newL <- 1:self$n0
+        } else { # no X0 or n0, so take first L
+          self$add_new_batches_to_Xnotrun(num_batches_to_take = 1)
+          newL <- 1:self$L
         }
-        self$Z <- c(self$Z,apply(self$X, 1, self$func))
-        return()
+        #return()
       }#;browser()
-      if (self$obj %in% c("nonadapt", "noadapt")) {
-        Xnew <- self$s$get.batch()
-        Znew <- apply(Xnew, 1, self$func)
-        self$X <- rbind(self$X, Xnew)
-        self$Z <- c(self$Z, Znew)
-        return()
-      }
-      if (!is.null(self$take_until_maxpvar_below) && 
+      
+      # If nonadaptive, just take first L from design
+      else if (self$obj %in% c("nonadapt", "noadapt")) {
+        # Xnew <- self$s$get.batch()
+        # Znew <- apply(Xnew, 1, self$func)
+        # self$X <- rbind(self$X, Xnew)
+        # self$Z <- c(self$Z, Znew)
+        # return()
+        
+        self$add_new_batches_to_Xnotrun(num_batches_to_take = 1)
+        newL <- 1:self$L
+        
+        
+        
+        # If variance is too high across surface, take points
+      } else if (!is.null(self$take_until_maxpvar_below) && 
           self$mod$prop.at.max.var(val=self$take_until_maxpvar_below) > 0.1) {
         print(paste("Taking until pvar lower: ", 
                     self$mod$prop.at.max.var(val=self$take_until_maxpvar_below)))
@@ -240,20 +267,26 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
             newL <- c(newL, whichmaxmin)
             Xdesign <- rbind(Xdesign, self$Xnotrun[whichmaxmin,])
           }
-          self$add_newL_points_to_design(newL = newL)
-          return()
+          # self$add_newL_points_to_design(newL = newL)
+          # return()
         }
       }
       
       # Add new points
-      self$add_new_batches_to_Xnotrun()
       
-      newL <- NULL
+      # Add new batches if newL haven't already been selected
+      if (is.null(newL)) {
+        self$add_new_batches_to_Xnotrun()
+      }
+      
+      #newL <- NULL
       
       
       # Check if forcing old or pvar
       # Returns NULL if not selecting, otherwise the L indices
-      newL <- self$select_new_points_from_old_or_pvar()
+      if (is.null(newL)) {
+        newL <- self$select_new_points_from_old_or_pvar()
+      }
       
       # if nothing forced, run SMED_select
       if (is.null(newL)) { #browser()
@@ -287,6 +320,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       self$add_newL_points_to_design(newL = newL)
     },
     update_obj_alpha = function(Xnew, Znew) {#browser()
+      if (is.null(self$mod$X)) {return(rep(NA, nrow(Xnew)))}
       if (is.null(self$obj_alpha)) return()
       Zlist <- self$mod$predict(Xnew, se.fit=T)
       Zmean <- Zlist$fit
@@ -311,6 +345,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
     update_stats = function() {
      # self$stats$ <- c(self$stats$, )
      self$stats$iteration <- c(self$stats$iteration, self$iteration)
+     self$stats$n <- c(self$stats$n, nrow(self$X))
      #stats$level <<- c(stats$level, level)
      self$stats$pvar <- c(self$stats$pvar, msfunc(self$mod$predict.var,cbind(rep(0,self$D),rep(1,self$D))))
      self$stats$mse <- c(self$stats$mse, msecalc(self$func,self$mod$predict,cbind(rep(0,self$D),rep(1,self$D))))
@@ -462,9 +497,19 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
      }
     },
     Xnotrun_tracker_add = function(Xnew) {
-      Xnewdf <- data.frame()
+      n <- nrow(Xnew)
+      Xnewdf <- data.frame(iteration_added=rep(self$iteration, n),
+                           time_added = rep(Sys.time(), n))
+      if (self$obj == "desirability") {
+        if (self$selection_method == "max_des_red") {
+          
+        }
+      }
       self$Xnotrun_tracker <- rbind(self$Xnotrun_tracker, Xnewdf)
-    }
+    },
+    Xnotrun_tracker_remove = function(newL) {
+      self$Xnotrun_tracker <- self$Xnotrun_tracker[-newL,, drop=FALSE]
+    },
     select_new_points_from_old_or_pvar = function() {
      newL <- NULL
      # Check if forcing old or pvar
@@ -664,10 +709,14 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
     rm(gpc, bestL, Xnewone, Znewone)#;browser()
     newL
     },
-    add_newL_points_to_design = function(newL) {
-      if (length(newL) != self$L) { browser()
-        stop("Selected newL not of length L #84274")
+    add_newL_points_to_design = function(newL=NULL, use_X0=FALSE) {
+      if (length(newL) != self$L) { 
+        if (length(newL) != self$n0  || nrow(self$X)!=0) {
+          browser()
+          stop("Selected newL not of length L #84274")
+        }
       }
+      self$Xnotrun_tracker_remove(newL=newL)
       Xnew <- self$Xnotrun[newL,]
       self$Xnotrun <- self$Xnotrun[-newL, , drop=FALSE]
       self$batch.tracker <- self$batch.tracker[-newL]
