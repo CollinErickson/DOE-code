@@ -54,6 +54,8 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
    X = NULL, # "matrix", Z = "numeric", Xnotrun = "matrix",
    X0 = NULL,
    Xnotrun = NULL,
+   Xnotrun_tracker = NULL, # Keep track of data about candidate points
+   batch.tracker = NULL, # tracks when Xnotruns were added
    Z = NULL,
    s = NULL, # "sFFLHD" an object with $get.batch to get batch of points
    design = NULL,
@@ -65,7 +67,6 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
    n0 = NULL, # "numeric"
    take_until_maxpvar_below = NULL, 
    package = NULL, # "character",
-   batch.tracker = NULL, # "numeric",
    force_old = NULL, # "numeric", 
    force_pvar = NULL, # "numeric",
    useSMEDtheta = NULL, # "logical"
@@ -141,8 +142,10 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
      } else if (self$obj == "desirability") {#browser()
        self$obj_func <- function(XX) {list(...)$desirability_func(mod=self$mod, XX=XX)}
        self$desirability_func <- list(...)$desirability_func
-       if (self$desirability_func == "des_funcse") {#browser()
-         self$desirability_func <- des_funcse
+       if (is.character(self$desirability_func)) {
+         if (self$desirability_func == "des_funcse") {#browser()
+           self$desirability_func <- des_funcse
+         }
        }
        if ('actual_des_func' %in% names(list(...))) { #browser()
          self$actual_desirability_func <- list(...)$actual_des_func
@@ -158,9 +161,10 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
      #HERE add Z if X0 not null, should enter loop below
      if (length(self$n0) != 0 && self$n0 > 0 && is.null(self$X0)) {
        Xnew <- matrix(NA, 0, self$D)
+       self$batch.tracker <- c()
        while (nrow(Xnew) < self$n0) {
          Xnew <- rbind(Xnew, self$s$get.batch())
-         self$batch.tracker <- rep(self$s$b,self$L)
+         self$batch.tracker <- c(self$batch.tracker, rep(self$s$b,self$L))
        }
        self$X <- rbind(self$X, Xnew[1:self$n0, , drop=F])
        self$Z <- c(self$Z, apply(self$X,1,self$func))
@@ -451,10 +455,16 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
     },
     add_new_batches_to_Xnotrun = function(num_batches_to_take=5) {
      for (iii in 1:num_batches_to_take) {
-       self$Xnotrun <- rbind(self$Xnotrun, self$s$get.batch())
+       Xnew <- self$s$get.batch()
+       self$Xnotrun <- rbind(self$Xnotrun, Xnew)
        self$batch.tracker <- c(self$batch.tracker, rep(self$s$b, self$L))
+       self$Xnotrun_tracker_add(Xnew) #self$Xnotrun_tracker <- rbind(self$Xnotrun_tracker, self$Xnotrun_tracker_add(Xnew))
      }
     },
+    Xnotrun_tracker_add = function(Xnew) {
+      Xnewdf <- data.frame()
+      self$Xnotrun_tracker <- rbind(self$Xnotrun_tracker, Xnewdf)
+    }
     select_new_points_from_old_or_pvar = function() {
      newL <- NULL
      # Check if forcing old or pvar
