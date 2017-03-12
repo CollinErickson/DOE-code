@@ -95,7 +95,9 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
      
      self$design <- design
      if (self$design == "sFFLHD") {
-       self$s <- sFFLHD::sFFLHD(D=D, L=L, maximin=F)
+       #self$s <- sFFLHD::sFFLHDmm(D=D, L=L, maximin=F)
+       # Try maximin 
+       self$s <- sFFLHD::sFFLHD(D=D, L=L, maximin=T)
      } else if (self$design == "random") {
        self$s <- random_design$new(D=D, L=L)
      } else {
@@ -574,14 +576,14 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
    },
   select_new_points_from_max_des_red = function() {
     if (self$package == 'laGP') {
-     gpc <- UGP::IGP(X = self$X, Z=self$Z, package='laGP', d=self$mod$theta(), g=self$mod$nugget(), estimate_params=FALSE)
+     gpc <- UGP::IGP(X = self$X, Z=self$Z, package='laGP', d=1/self$mod$theta(), g=self$mod$nugget(), estimate_params=FALSE)
     } else {
      gpc <- self$mod$clone(deep=TRUE)
     }
     Xnotrun_to_consider <- 1:nrow(self$Xnotrun) #sample(1:nrow(self$Xnotrun),min(10,nrow(self$Xnotrun)),F)
     if (self$D == 2) {
      cf(function(X)self$desirability_func(gpc, X), batchmax=5e3, afterplotfunc=function(){points(self$X, col=3, pch=2);points(self$Xnotrun[-Xnotrun_to_consider,], col=4,pch=3);points(self$Xnotrun[Xnotrun_to_consider,])})
-     #browser()
+     browser()
     }
     if (exists("browser_max_des")) {if (browser_max_des) {browser()}}
     
@@ -780,7 +782,7 @@ if (F) {
   a$run(5)
   cf(function(x) des_funcse(a$mod, x), batchmax=1e3, pts=a$X)
   a <- adapt.concept2.sFFLHD.R6$new(D=2,L=5,func=banana, obj="desirability", desirability_func=des_funcse, n0=12, take_until_maxpvar_below=.9, package="GauPro", design='sFFLHD', selection_method="max_des_red", actual_des_func=get_actual_des_funcse(alpha=1e3, f=banana, fmin=0, fmax=1))
-
+  a$run(5)
   a <- adapt.concept2.sFFLHD.R6$new(D=2,L=5,func=add_linear_terms(banana, c(.01,-.01)), 
                                     obj="desirability", desirability_func=des_funcse, n0=12, take_until_maxpvar_below=.9, package="GauPro", design='sFFLHD', selection_method="max_des_red", actual_des_func=get_actual_des_funcse(alpha=1e3, f=add_linear_terms(banana, c(.01,-.01)), fmin=-.01, fmax=1.005))  
   a <- adapt.concept2.sFFLHD.R6$new(D=2,L=5,func=add_zoom(banana, c(.2,.5), c(.8,1)), 
@@ -789,4 +791,10 @@ if (F) {
   # banana with null
   a <- adapt.concept2.sFFLHD.R6$new(D=4,L=5,func=add_null_dims(banana,2), obj="desirability", desirability_func=des_funcse, n0=12, take_until_maxpvar_below=.9, package="GauPro", design='sFFLHD', selection_method="max_des_red")
   a$run(5)
+  
+  a <- adapt.concept2.sFFLHD.R6$new(D=2,L=5,func=banana, obj="desirability", desirability_func=des_funcse, n0=12, take_until_maxpvar_below=.9, package="laGP", design='sFFLHD', selection_method="max_des_red")
+  a$run(5)
+  a <- adapt.concept2.sFFLHD.R6$new(D=2,L=5,func=banana, obj="func", n0=12, take_until_maxpvar_below=.9, package="laGP", design='sFFLHD', selection_method="SMED")
+  a$run(5)
+  
 }
