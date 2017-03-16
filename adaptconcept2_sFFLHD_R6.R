@@ -50,6 +50,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
    func = NULL, # "function", 
    D = NULL, # "numeric", 
    L = NULL, # "numeric", 
+   new_batches_per_batch = NULL,
    g = NULL, # "numeric", # g not used but I'll leave it for now
    X = NULL, # "matrix", Z = "numeric", Xnotrun = "matrix",
    X0 = NULL,
@@ -74,19 +75,23 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
    desirability_func = NULL, # args are mod and XX
    actual_desirability_func = NULL, # 
    selection_method = NULL, # string
+   plot_grad = NULL,
  
    initialize = function(D,L,package=NULL, obj=NULL, n0=0, 
                          force_old=0, force_pvar=0,
                          useSMEDtheta=F, func, take_until_maxpvar_below=NULL, design="sFFLHD",
-                         selection_method, X0=NULL,
+                         selection_method, X0=NULL, plot_grad=TRUE, new_batches_per_batch=5,
                          ...) {#browser()
      self$D <- D
      self$L <- L
+     self$new_batches_per_batch <- new_batches_per_batch
      self$func <- func
      self$force_old <- force_old
      self$force_pvar <- force_pvar
      self$take_until_maxpvar_below <- take_until_maxpvar_below
      self$selection_method <- selection_method
+     self$plot_grad <- plot_grad
+     
      
      #if (any(length(D)==0, length(L)==0, length(g)==0)) {
      if (any(length(D)==0, length(L)==0)) {
@@ -149,9 +154,11 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
            self$desirability_func <- des_funcse
          }
        }
-       if ('actual_des_func' %in% names(list(...))) { #browser()
-         self$actual_desirability_func <- list(...)$actual_des_func
-       }
+     }
+     
+     # This can be used even when not using desirability in order to make comparisons
+     if ('actual_des_func' %in% names(list(...))) { #browser()
+       self$actual_desirability_func <- list(...)$actual_des_func
      }
      
      self$n0 <- n0
@@ -344,7 +351,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
     # REMOVED get_mses AND should_dive
     set_params = function() {
     },
-    update_stats = function() {
+    update_stats = function() {#browser()
      # self$stats$ <- c(self$stats$, )
      self$stats$iteration <- c(self$stats$iteration, self$iteration)
      self$stats$n <- c(self$stats$n, nrow(self$X))
@@ -357,7 +364,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
      if (!is.null(self$actual_desirability_func)) {
        self$stats$actual_weighted_error <- c(self$stats$actual_weighted_error, self$actual_desirability_func(self$mod))
      } else {
-       self$stats$actual_weighted_error <- c(self$stats$actual_weighted_error, NA)
+       self$stats$actual_weighted_error <- c(self$stats$actual_weighted_error, NaN)
      }
     },
     plot1 = function() {#browser()
@@ -431,7 +438,9 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
          #plot(statsdf$iter, statsdf$minbatch, type='o', pch=19,
          #     xlab="Iteration")#, ylab="Level")
          #legend('bottomright',legend="Batch not run",fill=1)
-         cf_func(self$mod$grad_norm, n=20, mainminmax_minmax = F, pretitle="Grad ")
+         if (self$plot_grad) { # Option to not plot if it is slow
+           cf_func(self$mod$grad_norm, n=20, mainminmax_minmax = F, pretitle="Grad ")
+         }
          
          screen(6) # % of pts used plot 
          par(mar=c(2,2,0,0.5)) # 5.1 4.1 4.1 2.1 BLTR
@@ -490,7 +499,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
        }
      }
     },
-    add_new_batches_to_Xnotrun = function(num_batches_to_take=5) {
+    add_new_batches_to_Xnotrun = function(num_batches_to_take=self$new_batches_per_batch) {
      for (iii in 1:num_batches_to_take) {
        Xnew <- self$s$get.batch()
        self$Xnotrun <- rbind(self$Xnotrun, Xnew)
@@ -582,8 +591,15 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
     }
     Xnotrun_to_consider <- 1:nrow(self$Xnotrun) #sample(1:nrow(self$Xnotrun),min(10,nrow(self$Xnotrun)),F)
     if (self$D == 2) {
-     cf(function(X)self$desirability_func(gpc, X), batchmax=5e3, afterplotfunc=function(){points(self$X, col=3, pch=2);points(self$Xnotrun[-Xnotrun_to_consider,], col=4,pch=3);points(self$Xnotrun[Xnotrun_to_consider,])})
-     browser()
+      split.screen(matrix(
+        #c(0,.5,.25,1,  .5,1,.25,1,  0,1/3,0,.25, 1/3,2/3,0,.25, 2/3,1,0,.25),
+        c(0,1/3,0,1, 1/3,2/3,0,1, 2/3,1,0,1),#  .5,1,.25,1,  0,1/ln,0,.25, 1/ln,2/ln,0,.25, 2/ln,3/ln,0,.25, 3/ln,4/ln,0,.25, 4/ln,1,0,.25),
+        ncol=4,byrow=T))
+      screen(1)
+      cf::cf(self$mod$predict, batchmax=Inf, pts=self$X)
+      screen(2)
+      cf(function(X)self$desirability_func(gpc, X), batchmax=5e3, afterplotfunc=function(){points(self$X, col=3, pch=2);points(self$Xnotrun[-Xnotrun_to_consider,], col=4,pch=3);points(self$Xnotrun[Xnotrun_to_consider,])})
+      #browser()
     }
     if (exists("browser_max_des")) {if (browser_max_des) {browser()}}
     
@@ -632,6 +648,21 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
          gpc$update(Xall = rbind(X_with_bestL, self$Xnotrun[r, ,drop=F]), Zall=c(Z_with_bestL, Znotrun_preds[r]), restarts=0, no_update=TRUE)
        }
        #browser()
+       
+       # This false chunk shows the distribution of change in desirability of points
+       if (F) {
+         close.screen(all=T) # This messes up the plotting, probably will have to restart after
+         xxx <- matrix(runif(1000*self$D), ncol=self$D) # Create random points
+         plot(self$desirability_func(gpc, xxx), self$desirability_func(self$mod, xxx))
+         pdiff <- -self$desirability_func(gpc, xxx) + self$desirability_func(self$mod, xxx)
+         pda <- pdiff #abs(pdiff)
+         summary(pda)
+         which.max(pda)
+         rbind(xxx[which.max(pda),], self$Xnotrun[r, ])
+         xxxdists <- sqrt(rowSums(sweep(xxx,2,self$Xnotrun[r,])^2))
+         plot(xxxdists, pda)
+       }
+       
        int_des_weight_r <- int_des_weight_func()
        if (int_des_weight_r < int_des_weight_star) {
          int_des_weight_star <- int_des_weight_r
@@ -701,8 +732,10 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
      }
     }
     if (self$D == 2) {
+       screen(3)
      cf(function(X)self$desirability_func(gpc, X), batchmax=5e3, afterplotfunc=function(){points(self$X, col=3, pch=2);points(self$Xnotrun[-Xnotrun_to_consider,], col=4,pch=3);points(self$Xnotrun[Xnotrun_to_consider,]);points(self$Xnotrun[bestL,], col=1,pch=19, cex=2);text(self$Xnotrun[bestL,], col=2,pch=19, cex=2)})
      # browser()
+     close.screen(all=TRUE)
     }
     if (exists("browser_max_des")) {if (browser_max_des) {browser()}}
     
