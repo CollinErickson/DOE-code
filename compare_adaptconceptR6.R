@@ -30,6 +30,7 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
     package = NULL,
     selection_method=NULL,
     desirability_func=NULL,
+    actual_des_func=NULL,
     number_runs = NULL,
     completed_runs = NULL,
     initialize = function(func, D, L, batches=10, reps=5, 
@@ -43,6 +44,7 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
                           package="laGP",
                           selection_method='SMED',
                           desirability_func=NA,
+                          actual_des_func=NULL,
                           ...) {
       self$func <- func
       self$D <- D
@@ -60,6 +62,7 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
       self$package <- package
       self$selection_method <- selection_method
       self$desirability_func <- desirability_func
+      self$actual_des_func <- actual_des_func
       #browser()
       if (is.null(func_string)) {
         if (is.character(func)) {func_string <- func}
@@ -82,7 +85,9 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
                    data.frame(repl=1:reps, seed=if(!is.null(seed_start)) seed_start+1:reps-1 else NA),
                    data.frame(reps),
                    data.frame(batches),
-                   data.frame(obj, selection_method, desirability_func, stringsAsFactors = F),
+                   data.frame(obj, selection_method, desirability_func,
+                              actual_des_func=deparse(substitute(actual_des_func)), actual_des_func_num=1:length(actual_des_func),
+                              stringsAsFactors = F),
                    #data.frame(forces=forces,force_vals=force_vals),
                    data.frame(force_old,force_pvar),
                    data.frame(n0),
@@ -103,8 +108,9 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
       #browser()
       group_cols <- sapply(group_names, function(gg){paste0(gg,'=',self$rungrid[,gg])})
       self$rungrid$Group <- apply(group_cols, 1, function(rr){paste(rr, collapse=',')})
-      self$rungridlist <- as.list(self$rungrid[, !(colnames(self$rungrid) %in% c("func_string", "func_num", "repl","reps","batches","seed","Group"))])
+      self$rungridlist <- as.list(self$rungrid[, !(colnames(self$rungrid) %in% c("func_string", "func_num", "repl","reps","batches","seed","Group", "actual_des_func_num"))])
       self$rungridlist$func <- c(func)[self$rungrid$func_num]
+      self$rungridlist$actual_des_func <- c(actual_des_func)[self$rungrid$actual_des_func_num]
       self$number_runs <- nrow(self$rungrid)
       self$completed_runs <- rep(FALSE, self$number_runs)
     },
@@ -198,12 +204,14 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
       #if (is.function(row_grid$func)) {}#funci <- self$func}
       #else if (row_grid$func == "RFF") {row_grid$func <- RFF_get(D=self$D)}
       #else {stop("No function given")}
-      
+      #browser()
       u <- do.call(adapt.concept2.sFFLHD.R6$new, lapply(self$rungridlist, function(x)x[[irow]]))
       #browser()
-      systime <- system.time(u$run(row_grid$batches,noplot=T))
+      systime <- system.time(u$run(row_grid$batches,noplot=F))
+      #browser()
       newdf0 <- data.frame(batch=u$stats$iteration, mse=u$stats$mse, 
                            pvar=u$stats$pvar, pamv=u$stats$pamv,
+                           actual_weighted_error=u$stats$actual_weighted_error,
                            #obj=row_grid$obj, 
                            num=paste0(row_grid$obj,row_grid$repl),
                            time = systime[3], #repl=row_grid$repl,
@@ -225,17 +233,17 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
       self$completed_runs[irow] <- TRUE
       invisible(self)
     },
-    postprocess_outdf = function() {
+    postprocess_outdf = function() {#browser()
       self$outdf$rmse <- sqrt(ifelse(self$outdf$mse>=0, self$outdf$mse, 1e-16))
       self$outdf$prmse <- sqrt(ifelse(self$outdf$pvar>=0, self$outdf$pvar, 1e-16))
       self$enddf <- self$outdf[self$outdf$batch == self$batches,]
       # Want to get mean of these columns across replicates
-      meanColNames <- c("mse","pvar","pamv","rmse","prmse")
+      meanColNames <- c("mse","pvar","pamv","rmse","prmse","actual_weighted_error")
       # Use these as ID, exclude repl, seed, and num and time
       splitColNames <- c("func","func_string","func_num","D","L",
                          "reps","batches",
                          "force_old","force_pvar","force2",
-                         "n0","obj", "batch", "Group","package")
+                         "n0","obj", "batch", "Group","package", "actual_des_func_num")
       self$meandf <- plyr::ddply(
                        self$outdf, 
                        splitColNames, 
@@ -268,6 +276,23 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
       if (save_output) {dev.off()}
       invisible(self)
     },
+    plot_awe_over_batch = function(save_output = self$save_output) {
+      if (save_output) {
+        png(filename = paste0(self$folder_path,"/plot_actual_weighted_error.png"),
+            width = 480, height = 480)
+      }
+      print(
+        ggplot(data=self$outdf, aes(x=batch, y=actual_weighted_error, group = interaction(num,Group), colour = Group)) +
+          geom_line() +
+          geom_line(inherit.aes = F, data=self$meanlogdf, aes(x=batch, y=actual_weighted_error, colour = Group, size=3, alpha=.5)) +
+          geom_point() + 
+          scale_y_log10() + 
+          xlab("Batch") + ylab("actual_weighted_error") + guides(size=FALSE, alpha=FALSE)
+      )
+      if (save_output) {dev.off()}
+      invisible(self)
+    },
+    
     plot_MSE_PVar = function(save_output = self$save_output) {#browser()
       if (save_output) {
         png(filename = paste0(self$folder_path,"/plotMSEPVar.png"),
@@ -331,6 +356,7 @@ if (F) {
   
   # For desirability
   ca1 <- compare.adaptR6$new(func=gaussian1, D=2, L=3, n0=6, obj="desirability", selection_method=c('max_des', 'SMED'), desirability_func=c('des_funcse', NA))$run_all()$plot()
-  ca1 <- compare.adaptR6$new(func=gaussian1, D=2, L=3, n0=20, obj=c("func","desirability"), selection_method=c('SMED', 'max_des_red'), desirability_func=c('NA', 'des_funcse'), package="GauPro")$run_all()$plot()
-  
+  ca1 <- compare.adaptR6$new(func=banana, D=2, L=4, n0=20, obj=c("func","desirability"), selection_method=c('SMED', 'max_des_red'), desirability_func=c('NA', 'des_funcse'), actual_des_func=c('NA', get_actual_des_funcse(alpha=1e3, f=banana, fmin=0, fmax=1)), package="laGP")$run_all()$plot()
+  ca1 <- compare.adaptR6$new(func=banana, reps=3, batches=3, D=2, L=4, n0=20, obj=c("func","desirability"), selection_method=c('SMED', 'max_des_red'), desirability_func=c('NA', 'des_funcse'), actual_des_func=c(get_actual_des_funcse(alpha=1e3, f=banana, fmin=0, fmax=1)), package="laGP")$run_all()$plot()
+  ca1 <- compare.adaptR6$new(func=banana, reps=10, batches=3, D=2, L=4, n0=20, obj=c("func","desirability"), selection_method=c('SMED', 'max_des_red'), desirability_func=c('NA', 'des_funcse'), actual_des_func=c(get_actual_des_funcse(alpha=1e3, f=banana, fmin=0, fmax=1)), package="laGP")$run_all()$plot()
 }
