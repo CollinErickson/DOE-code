@@ -52,11 +52,11 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
    L = NULL, # "numeric", 
    new_batches_per_batch = NULL,
    g = NULL, # "numeric", # g not used but I'll leave it for now
-   X = NULL, # "matrix", Z = "numeric", Xnotrun = "matrix",
+   X = NULL, # "matrix", Z = "numeric", Xopts = "matrix",
    X0 = NULL,
-   Xnotrun = NULL,
-   Xnotrun_tracker = NULL, # Keep track of data about candidate points
-   batch.tracker = NULL, # tracks when Xnotruns were added
+   Xopts = NULL,
+   Xopts_tracker = NULL, # Keep track of data about candidate points
+   batch.tracker = NULL, # tracks when Xoptss were added
    Z = NULL,
    s = NULL, # "sFFLHD" an object with $get.batch to get batch of points
    design = NULL,
@@ -80,7 +80,8 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
    initialize = function(D,L,package=NULL, obj=NULL, n0=0, 
                          force_old=0, force_pvar=0,
                          useSMEDtheta=F, func, take_until_maxpvar_below=NULL, design="sFFLHD",
-                         selection_method, X0=NULL, plot_grad=TRUE, new_batches_per_batch=5,
+                         selection_method, X0=NULL, Xopts=NULL,
+                         plot_grad=TRUE, new_batches_per_batch=5,
                          ...) {#browser()
      self$D <- D
      self$L <- L
@@ -105,12 +106,18 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
        self$s <- sFFLHD::sFFLHD(D=D, L=L, maximin=T)
      } else if (self$design == "random") {
        self$s <- random_design$new(D=D, L=L)
+     } else if (self$design == "given") { # This means Xopts is given in and no new points will be added to design
+       self$s <- NULL
      } else {
        stop("No design 3285729")
      }
      self$X0 <- X0
      self$X <- matrix(NA,0,D)
-     self$Xnotrun <- matrix(NA,0,D)
+     if (is.null(Xopts)) {
+       self$Xopts <- matrix(NA,0,D)
+     } else { # Option to give in Xopts
+       self$Xopts <- Xopts
+     }
      #if(length(lims)==0) {lims <<- matrix(c(0,1),D,2,byrow=T)}
      #mod$initialize(package = "mlegp")
      if(is.null(package)) {self$package <- "laGP"}
@@ -179,7 +186,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
        self$Z <- c(self$Z, apply(self$X,1,self$func))
        self$batch.tracker <- self$batch.tracker[-(1:self$n0)]
        if (nrow(Xnew) > self$n0) {
-         self$Xnotrun <- rbind(self$Xnotrun, Xnew[(self$n0+1):nrow(Xnew), , drop=F])
+         self$Xopts <- rbind(self$Xopts, Xnew[(self$n0+1):nrow(Xnew), , drop=F])
        }
        self$mod$update(Xall=self$X, Zall=self$Z)
      }
@@ -211,7 +218,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       self$iteration <- self$iteration + 1
     },
     add_data = function() {#browser()
-      # newL will be the L points selected from Xnotrun
+      # newL will be the L points selected from Xopts
       #   to add to the design
       newL <- NULL
       
@@ -232,10 +239,10 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
           return()
         } else if (!is.null(self$n0) && self$n0 > 0) { # Take first batches up to n0 and use it
           
-          self$add_new_batches_to_Xnotrun(num_batches_to_take = ceiling(self$n0/self$L))
+          self$add_new_batches_to_Xopts(num_batches_to_take = ceiling(self$n0/self$L))
           newL <- 1:self$n0
         } else { # no X0 or n0, so take first L
-          self$add_new_batches_to_Xnotrun(num_batches_to_take = 1)
+          self$add_new_batches_to_Xopts(num_batches_to_take = 1)
           newL <- 1:self$L
         }
         #return()
@@ -249,7 +256,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
         # self$Z <- c(self$Z, Znew)
         # return()
         
-        self$add_new_batches_to_Xnotrun(num_batches_to_take = 1)
+        self$add_new_batches_to_Xopts(num_batches_to_take = 1)
         newL <- 1:self$L
         
         
@@ -267,14 +274,14 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
           return()
         } else { # Instead of taking old trying to take space filling
           #browser()
-          self$add_new_batches_to_Xnotrun(1)
+          self$add_new_batches_to_Xopts(1)
           Xdesign <- self$X
           newL <- c()
           for (ell in 1:self$L) {
-            mindistsq <- apply(self$Xnotrun, 1, function(xvec) {min(rowSums(sweep(Xdesign, 2, xvec)^2))})
+            mindistsq <- apply(self$Xopts, 1, function(xvec) {min(rowSums(sweep(Xdesign, 2, xvec)^2))})
             whichmaxmin <- which.max(mindistsq)
             newL <- c(newL, whichmaxmin)
-            Xdesign <- rbind(Xdesign, self$Xnotrun[whichmaxmin,])
+            Xdesign <- rbind(Xdesign, self$Xopts[whichmaxmin,])
           }
           # self$add_newL_points_to_design(newL = newL)
           # return()
@@ -285,7 +292,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       
       # Add new batches if newL haven't already been selected
       if (is.null(newL)) {
-        self$add_new_batches_to_Xnotrun()
+        self$add_new_batches_to_Xopts()
       }
       
       #newL <- NULL
@@ -309,21 +316,21 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
         }
       }
       
-      #while(nrow(Xnotrun) < max(L^2, 20)) {
+      #while(nrow(Xopts) < max(L^2, 20)) {
       #if (F) {
-      #  objs <- obj_func(Xnotrun)
+      #  objs <- obj_func(Xopts)
       #  bestL <- order(objs, decreasing = T)[1:L]
       #} else { # SMED NEW STUFF !!!!
         #browser()
-      #  bestL <- SMED_selectC(f=obj_func, n=L, X0=X, Xopt=Xnotrun)
+      #  bestL <- SMED_selectC(f=obj_func, n=L, X0=X, Xopt=Xopts)
         # cf::cf_func(mod$grad_norm)
         # points(X, col=2, pch=19)
-        # text(Xnotrun[,1],Xnotrun[,2])
-        # SMED_select(f=obj_func,p=ncol(X),n=8, X0=X, Xopt=Xnotrun)
+        # text(Xopts[,1],Xopts[,2])
+        # SMED_select(f=obj_func,p=ncol(X),n=8, X0=X, Xopt=Xopts)
       #}
       #rand1 <- runif(1)
       #newL <- if (rand1 < force_old) {1:L} 
-      #        else if (rand1 < force_old + force_pvar) {order(mod$predict.var(Xnotrun), decreasing=T)[1:L]}
+      #        else if (rand1 < force_old + force_pvar) {order(mod$predict.var(Xopts), decreasing=T)[1:L]}
       #        else {bestL}#{print(paste('first L',iteration));1:L}
       
       self$add_newL_points_to_design(newL = newL)
@@ -358,7 +365,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
      #stats$level <<- c(stats$level, level)
      self$stats$pvar <- c(self$stats$pvar, msfunc(self$mod$predict.var,cbind(rep(0,self$D),rep(1,self$D))))
      self$stats$mse <- c(self$stats$mse, msecalc(self$func,self$mod$predict,cbind(rep(0,self$D),rep(1,self$D))))
-     self$stats$ppu <- c(self$stats$ppu, nrow(self$X) / (nrow(self$X) + nrow(self$Xnotrun)))
+     self$stats$ppu <- c(self$stats$ppu, nrow(self$X) / (nrow(self$X) + nrow(self$Xopts)))
      self$stats$minbatch <- c(self$stats$minbatch, if (length(self$batch.tracker>0)) min(self$batch.tracker) else 0)
      self$stats$pamv <- c(self$stats$pamv, self$mod$prop.at.max.var())
      if (!is.null(self$actual_desirability_func)) {
@@ -383,7 +390,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
                                        points(self$X[(nrow(self$X)-self$L+1):nrow(self$X),],col='yellow',pch=19, cex=.5) # plot last L separately
               }
        )
-       ###points(Xnotrun, col=2)
+       ###points(Xopts, col=2)
        #rect(xlim[1],ylim[1],xlim[2],ylim[2],lwd=5)
        #abline(v=xlim[1] + 1:(g-1)/g * (xlim[2]-xlim[1]),h=ylim[1] + 1:(g-1)/g * (ylim[2]-ylim[1]))
        #segments(x0=xlim[1] + 1:(g-1)/g * (xlim[2]-xlim[1]), y0=ylim[1], y1=ylim[2], col=1)
@@ -403,10 +410,10 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
        cf_func(self$mod$predict.var,batchmax=500, pretitle="Predicted Surface ", #pts=X)
                afterplotfunc=function(){points(self$X,pch=19)
                  points(self$X[(nrow(self$X)-self$L+1):nrow(self$X),],col='yellow',pch=19, cex=.5) # plot last L separately
-                 points(self$Xnotrun, col=2); # add points not selected
+                 points(self$Xopts, col=2); # add points not selected
                }
        )
-       ###points(Xnotrun, col=2)
+       ###points(Xopts, col=2)
        #rect(xlim[1],ylim[1],xlim[2],ylim[2],lwd=5)
        #abline(v=xlim[1] + 1:(g-1)/g * (xlim[2]-xlim[1]),h=ylim[1] + 1:(g-1)/g * (ylim[2]-ylim[1]))
        #segments(x0=xlim[1] + 1:(g-1)/g * (xlim[2]-xlim[1]), y0=ylim[1], y1=ylim[2], col=1)
@@ -499,15 +506,18 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
        }
      }
     },
-    add_new_batches_to_Xnotrun = function(num_batches_to_take=self$new_batches_per_batch) {
-     for (iii in 1:num_batches_to_take) {
+    add_new_batches_to_Xopts = function(num_batches_to_take=self$new_batches_per_batch) {
+      if (is.null(self$s)) { # If all options are given by user, don't add new points
+        return()
+      }
+      for (iii in 1:num_batches_to_take) {
        Xnew <- self$s$get.batch()
-       self$Xnotrun <- rbind(self$Xnotrun, Xnew)
+       self$Xopts <- rbind(self$Xopts, Xnew)
        self$batch.tracker <- c(self$batch.tracker, rep(self$s$b, self$L))
-       self$Xnotrun_tracker_add(Xnew) #self$Xnotrun_tracker <- rbind(self$Xnotrun_tracker, self$Xnotrun_tracker_add(Xnew))
-     }
+       self$Xopts_tracker_add(Xnew) #self$Xopts_tracker <- rbind(self$Xopts_tracker, self$Xopts_tracker_add(Xnew))
+      }
     },
-    Xnotrun_tracker_add = function(Xnew) {
+    Xopts_tracker_add = function(Xnew) {
       n <- nrow(Xnew)
       Xnewdf <- data.frame(iteration_added=rep(self$iteration, n),
                            time_added = rep(Sys.time(), n))
@@ -516,10 +526,10 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
           
         }
       }
-      self$Xnotrun_tracker <- rbind(self$Xnotrun_tracker, Xnewdf)
+      self$Xopts_tracker <- rbind(self$Xopts_tracker, Xnewdf)
     },
-    Xnotrun_tracker_remove = function(newL) {
-      self$Xnotrun_tracker <- self$Xnotrun_tracker[-newL,, drop=FALSE]
+    Xopts_tracker_remove = function(newL) {
+      self$Xopts_tracker <- self$Xopts_tracker[-newL,, drop=FALSE]
     },
     select_new_points_from_old_or_pvar = function() {
      newL <- NULL
@@ -535,27 +545,27 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
        }
      } else if (self$force_pvar > 0 & self$force_pvar <= 1) {
        rand1 <- runif(1)
-       if (rand1 < self$force_pvar) {newL <- order(self$mod$predict.var(self$Xnotrun), decreasing=T)[1:self$L]} 
+       if (rand1 < self$force_pvar) {newL <- order(self$mod$predict.var(self$Xopts), decreasing=T)[1:self$L]} 
      } else if (self$force_pvar > 1) {
        if ((iteration %% as.integer(self$force_pvar)) == 0) {
-         newL <- order(self$mod$predict.var(self$Xnotrun), decreasing=T)[1:self$L]
-         #newL <- SMED_selectC(f=mod$predict.var, n=L, X0=X, Xopt=Xnotrun)
+         newL <- order(self$mod$predict.var(self$Xopts), decreasing=T)[1:self$L]
+         #newL <- SMED_selectC(f=mod$predict.var, n=L, X0=X, Xopt=Xopts)
        }
      }
      newL
     },
     select_new_points_from_SMED = function() {
-      #bestL <- SMED_selectC(f=self$obj_func, n=self$L, X0=self$X, Xopt=self$Xnotrun, 
+      #bestL <- SMED_selectC(f=self$obj_func, n=self$L, X0=self$X, Xopt=self$Xopts, 
       #                      theta=if (self$useSMEDtheta) {self$mod$theta()} else {rep(1,2)})
       #browser()
-      Yall.try <- try(Yall <- self$obj_func(rbind(self$X, self$Xnotrun)))
+      Yall.try <- try(Yall <- self$obj_func(rbind(self$X, self$Xopts)))
       if (inherits(Yall.try, "try-error")) {
         browser()
-        Yall <- self$obj_func(rbind(self$X, self$Xnotrun))
+        Yall <- self$obj_func(rbind(self$X, self$Xopts))
       }
       Y0 <- Yall[1:nrow(self$X)]
       Yopt <- Yall[(nrow(self$X)+1):length(Yall)]
-      bestL <- SMED_selectYC(n=self$L, X0=self$X, Xopt=self$Xnotrun, Y0=Y0, Yopt=Yopt,
+      bestL <- SMED_selectYC(n=self$L, X0=self$X, Xopt=self$Xopts, Y0=Y0, Yopt=Yopt,
                              theta=if (self$useSMEDtheta) {self$mod$theta()} else {rep(1,2)})
       newL <- bestL
       newL
@@ -565,16 +575,16 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
      gpc <- self$mod$clone()
      bestL <- c()
      for (ell in 1:self$L) {
-       #objall <- self$obj_func(rbind(self$X, self$Xnotrun))
-       objall <- self$desirability_func(gpc, rbind(self$X, self$Xnotrun))
+       #objall <- self$obj_func(rbind(self$X, self$Xopts))
+       objall <- self$desirability_func(gpc, rbind(self$X, self$Xopts))
        objopt <- objall[(nrow(self$X)+1):length(objall)]
        objopt[bestL] <- -Inf # ignore the ones just selected
        bestopt <- which.max(objopt)
        bestL <- c(bestL, bestopt)
        if (ell < self$L) {
-         Xnewone <- self$Xnotrun[bestopt, , drop=FALSE]
+         Xnewone <- self$Xopts[bestopt, , drop=FALSE]
          Znewone = gpc$predict(Xnewone)
-         print(Xnewone);print(Znewone);#cf(function(xx) self$desirability_func(gpc, xx), batchmax=1e3, pts=self$Xnotrun)
+         print(Xnewone);print(Znewone);#cf(function(xx) self$desirability_func(gpc, xx), batchmax=1e3, pts=self$Xopts)
          gpc$update(Xnew=Xnewone, Znew=Znewone, restarts=0)
        }
      }
@@ -589,7 +599,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
     } else {
      gpc <- self$mod$clone(deep=TRUE)
     }
-    Xnotrun_to_consider <- 1:nrow(self$Xnotrun) #sample(1:nrow(self$Xnotrun),min(10,nrow(self$Xnotrun)),F)
+    Xopts_to_consider <- 1:nrow(self$Xopts) #sample(1:nrow(self$Xopts),min(10,nrow(self$Xopts)),F)
     if (self$D == 2) {
       split.screen(matrix(
         #c(0,.5,.25,1,  .5,1,.25,1,  0,1/3,0,.25, 1/3,2/3,0,.25, 2/3,1,0,.25),
@@ -598,7 +608,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       screen(1)
       cf::cf(self$mod$predict, batchmax=Inf, pts=self$X)
       screen(2)
-      cf(function(X)self$desirability_func(gpc, X), batchmax=5e3, afterplotfunc=function(){points(self$X, col=3, pch=2);points(self$Xnotrun[-Xnotrun_to_consider,], col=4,pch=3);points(self$Xnotrun[Xnotrun_to_consider,])})
+      cf(function(X)self$desirability_func(gpc, X), batchmax=5e3, afterplotfunc=function(){points(self$X, col=3, pch=2);points(self$Xopts[-Xopts_to_consider,], col=4,pch=3);points(self$Xopts[Xopts_to_consider,])})
       #browser()
     }
     if (exists("browser_max_des")) {if (browser_max_des) {browser()}}
@@ -607,24 +617,24 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
     if (self$selection_method == "max_des_red") {
      bestL <- c() # Start with none
     } else { # Start with L and replace
-     bestL <- sample(Xnotrun_to_consider, size = self$L, replace = FALSE)
+     bestL <- sample(Xopts_to_consider, size = self$L, replace = FALSE)
     }
     #int_points <- lapply(1:10, function(iii) {simple.LHS(1e3, self$D)})
     int_points <- simple.LHS(1e4, self$D)
     int_des_weight_func <- function() {mean(self$desirability_func(gpc,int_points))}
-    X_with_bestL <- self$X#, self$Xnotrun[bestL, ,drop=F])
+    X_with_bestL <- self$X#, self$Xopts[bestL, ,drop=F])
     Z_with_bestL <- self$Z
     for (ell in 1:self$L) {
-     print(paste('starting iter', ell, 'considering', length(Xnotrun_to_consider)))
-     Znotrun_preds <- gpc$predict(self$Xnotrun) # Need to use the predictions before each is added
-     int_des_weights <- rep(Inf, nrow(self$Xnotrun))
+     print(paste('starting iter', ell, 'considering', length(Xopts_to_consider)))
+     Znotrun_preds <- gpc$predict(self$Xopts) # Need to use the predictions before each is added
+     int_des_weights <- rep(Inf, nrow(self$Xopts))
      if (self$selection_method == "max_des_red") { # Don't have current value, so don't start with anything
        r_star <- NA
        int_des_weight_star <- Inf
      } else { # Start with ell and replace
        r_star <- bestL[ell]
        if (ell == 1) { # First time need to calculate current integrated des
-         X_with_bestL <- rbind(X_with_bestL, self$Xnotrun[bestL, , drop=F])
+         X_with_bestL <- rbind(X_with_bestL, self$Xopts[bestL, , drop=F])
          Z_with_bestL <- c(Z_with_bestL, Znotrun_preds[bestL])
          if (self$package == 'laGP') {
            gpc$delete()
@@ -638,14 +648,14 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
        }
        int_des_weights[bestL[ell]] <- int_des_weight_star # Store current selection in IDWs, but not actually using it for anything
      }
-     for ( r in setdiff(Xnotrun_to_consider, bestL)) {
+     for ( r in setdiff(Xopts_to_consider, bestL)) {
        if (self$package == 'laGP') {
          gpc$delete()
-         gpc <- UGP::IGP(X=rbind(X_with_bestL, self$Xnotrun[r, ,drop=F]), 
+         gpc <- UGP::IGP(X=rbind(X_with_bestL, self$Xopts[r, ,drop=F]), 
                          Z=c(Z_with_bestL, Znotrun_preds[r]), 
                          theta=self$mod$theta(), nugget=self$mod$nugget(), package="laGP", estimate_params=FALSE)
        } else {
-         gpc$update(Xall = rbind(X_with_bestL, self$Xnotrun[r, ,drop=F]), Zall=c(Z_with_bestL, Znotrun_preds[r]), restarts=0, no_update=TRUE)
+         gpc$update(Xall = rbind(X_with_bestL, self$Xopts[r, ,drop=F]), Zall=c(Z_with_bestL, Znotrun_preds[r]), restarts=0, no_update=TRUE)
        }
        #browser()
        
@@ -658,8 +668,8 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
          pda <- pdiff #abs(pdiff)
          summary(pda)
          which.max(pda)
-         rbind(xxx[which.max(pda),], self$Xnotrun[r, ])
-         xxxdists <- sqrt(rowSums(sweep(xxx,2,self$Xnotrun[r,])^2))
+         rbind(xxx[which.max(pda),], self$Xopts[r, ])
+         xxxdists <- sqrt(rowSums(sweep(xxx,2,self$Xopts[r,])^2))
          plot(xxxdists, pda)
        }
        
@@ -674,15 +684,15 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
      # Reduce the number to consider if large
      if (ell < self$L) {
        numtokeep <- if (ell==1) 30 else if (ell==2) 20 else if (ell==3) 10 else if (ell>=4) {5} else NA
-       Xnotrun_to_consider <- order(int_des_weights,decreasing = F)[1:min(length(int_des_weights), numtokeep)]
+       Xopts_to_consider <- order(int_des_weights,decreasing = F)[1:min(length(int_des_weights), numtokeep)]
      }
      
      # Add back in some random ones
-     if (length(setdiff(1:nrow(self$Xnotrun), Xnotrun_to_consider)) > 5) {
-       Xnotrun_to_consider <- c(Xnotrun_to_consider, sample(setdiff(1:nrow(self$Xnotrun), Xnotrun_to_consider), 5, F))
+     if (length(setdiff(1:nrow(self$Xopts), Xopts_to_consider)) > 5) {
+       Xopts_to_consider <- c(Xopts_to_consider, sample(setdiff(1:nrow(self$Xopts), Xopts_to_consider), 5, F))
      }
-     #objall <- self$obj_func(rbind(self$X, self$Xnotrun))
-     #objall <- self$desirability_func(gpc, rbind(self$X, self$Xnotrun))
+     #objall <- self$obj_func(rbind(self$X, self$Xopts))
+     #objall <- self$desirability_func(gpc, rbind(self$X, self$Xopts))
      #objopt <- objall[(nrow(self$X)+1):length(objall)]
      #objopt[bestL] <- -Inf # ignore the ones just selected
      #bestopt <- which.max(objopt)
@@ -695,17 +705,17 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
      }
      #bestL <- c(bestL, r_star)
      if (ell < self$L || TRUE) { # REMOVE THIS FOR SPEED
-       Xnewone <- self$Xnotrun[r_star, , drop=FALSE]
+       Xnewone <- self$Xopts[r_star, , drop=FALSE]
        Znewone <- Znotrun_preds[r_star] #gpc$predict(Xnewone)
        if (self$selection_method == "max_des_red") {
          if (F) {
-           cbind(self$Xnotrun, int_des_weights)
+           cbind(self$Xopts, int_des_weights)
            i1 <- 1
            # No good for laGP
-           gpc$update(Xall=rbind(X_with_bestL,self$Xnotrun[i1,,drop=F]), Zall=c(Z_with_bestL,Znotrun_preds[]), restarts=0, no_update=TRUE)
-           cf(function(X)self$desirability_func(gpc, X), batchmax=5e3, afterplotfunc=function(){points(self$X, col=3, pch=2);points(self$Xnotrun);points(self$Xnotrun);points(self$Xnotrun[bestL,], col=1,pch=19, cex=2);text(self$Xnotrun[bestL,], col=2,pch=19, cex=2)})
-           gpc$update(Xall=rbind(X_with_bestL,self$Xnotrun[r_star,,drop=F]), Zall=c(Z_with_bestL,Znotrun_preds[]), restarts=0, no_update=TRUE)
-           cf(function(X)self$desirability_func(gpc, X), batchmax=5e3, afterplotfunc=function(){points(self$X, col=3, pch=2);points(self$Xnotrun);points(self$Xnotrun);points(self$Xnotrun[bestL,], col=1,pch=19, cex=2);text(self$Xnotrun[bestL,], col=2,pch=19, cex=2)})
+           gpc$update(Xall=rbind(X_with_bestL,self$Xopts[i1,,drop=F]), Zall=c(Z_with_bestL,Znotrun_preds[]), restarts=0, no_update=TRUE)
+           cf(function(X)self$desirability_func(gpc, X), batchmax=5e3, afterplotfunc=function(){points(self$X, col=3, pch=2);points(self$Xopts);points(self$Xopts);points(self$Xopts[bestL,], col=1,pch=19, cex=2);text(self$Xopts[bestL,], col=2,pch=19, cex=2)})
+           gpc$update(Xall=rbind(X_with_bestL,self$Xopts[r_star,,drop=F]), Zall=c(Z_with_bestL,Znotrun_preds[]), restarts=0, no_update=TRUE)
+           cf(function(X)self$desirability_func(gpc, X), batchmax=5e3, afterplotfunc=function(){points(self$X, col=3, pch=2);points(self$Xopts);points(self$Xopts);points(self$Xopts[bestL,], col=1,pch=19, cex=2);text(self$Xopts[bestL,], col=2,pch=19, cex=2)})
          }
          X_with_bestL <- rbind(X_with_bestL, Xnewone)
          Z_with_bestL <- c(Z_with_bestL, Znewone)
@@ -718,7 +728,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
            }
          }
        } else {
-         X_with_bestL[nrow(self$X) + ell,] <- self$Xnotrun[r_star, ]
+         X_with_bestL[nrow(self$X) + ell,] <- self$Xopts[r_star, ]
          Z_with_bestL[nrow(self$X) + ell] <- Znotrun_preds[r_star]
          if (self$package == 'laGP') {
            gpc$delete()
@@ -727,13 +737,13 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
            gpc$update(Xall=X_with_bestL, Zall=Z_with_bestL, restarts=0, no_update=TRUE)
          }
        }
-       print(Xnewone);print(Znewone);#cf(function(xx) self$desirability_func(gpc, xx), batchmax=1e3, pts=self$Xnotrun)
+       print(Xnewone);print(Znewone);#cf(function(xx) self$desirability_func(gpc, xx), batchmax=1e3, pts=self$Xopts)
        #gpc$update(Xall=X_with_bestL, Zall=Z_with_bestL, restarts=0)
      }
     }
     if (self$D == 2) {
        screen(3)
-     cf(function(X)self$desirability_func(gpc, X), batchmax=5e3, afterplotfunc=function(){points(self$X, col=3, pch=2);points(self$Xnotrun[-Xnotrun_to_consider,], col=4,pch=3);points(self$Xnotrun[Xnotrun_to_consider,]);points(self$Xnotrun[bestL,], col=1,pch=19, cex=2);text(self$Xnotrun[bestL,], col=2,pch=19, cex=2)})
+     cf(function(X)self$desirability_func(gpc, X), batchmax=5e3, afterplotfunc=function(){points(self$X, col=3, pch=2);points(self$Xopts[-Xopts_to_consider,], col=4,pch=3);points(self$Xopts[Xopts_to_consider,]);points(self$Xopts[bestL,], col=1,pch=19, cex=2);text(self$Xopts[bestL,], col=2,pch=19, cex=2)})
      # browser()
      close.screen(all=TRUE)
     }
@@ -751,9 +761,9 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
           stop("Selected newL not of length L #84274")
         }
       }
-      self$Xnotrun_tracker_remove(newL=newL)
-      Xnew <- self$Xnotrun[newL,]
-      self$Xnotrun <- self$Xnotrun[-newL, , drop=FALSE]
+      self$Xopts_tracker_remove(newL=newL)
+      Xnew <- self$Xopts[newL,]
+      self$Xopts <- self$Xopts[-newL, , drop=FALSE]
       self$batch.tracker <- self$batch.tracker[-newL]
       Znew <- apply(Xnew,1,self$func) # This is where the simulations are run, will probably have to put this out to be parallelizable and sent out as jobs
       if (any(duplicated(rbind(self$X,Xnew)))) {browser()}
