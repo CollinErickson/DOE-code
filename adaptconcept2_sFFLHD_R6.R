@@ -57,6 +57,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
    Xopts = NULL,
    Xopts_tracker = NULL, # Keep track of data about candidate points
    batch.tracker = NULL, # tracks when Xoptss were added
+   Xopts_removed = NULL,
    Z = NULL,
    s = NULL, # "sFFLHD" an object with $get.batch to get batch of points
    design = NULL,
@@ -64,7 +65,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
    iteration = NULL, # "numeric",
    obj = NULL, # "character", 
    obj_func = NULL, # "function",
-   obj_alpha = NULL,
+   obj_nu = NULL,
    n0 = NULL, # "numeric"
    take_until_maxpvar_below = NULL, 
    package = NULL, # "character",
@@ -118,6 +119,8 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
      } else { # Option to give in Xopts
        self$Xopts <- Xopts
      }
+     self$Xopts_removed <- matrix(NA,0,D)
+     
      #if(length(lims)==0) {lims <<- matrix(c(0,1),D,2,byrow=T)}
      #mod$initialize(package = "mlegp")
      if(is.null(package)) {self$package <- "laGP"}
@@ -126,7 +129,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
      self$mod <- IGP(package = self$package, estimate.nugget=FALSE, set.nugget=1e-8)
      self$stats <- list(iteration=c(),n=c(),pvar=c(),mse=c(), ppu=c(), minbatch=c(), pamv=c(), actual_weighted_error=c())
      self$iteration <- 1
-     self$obj_alpha <- 0.5
+     self$obj_nu <- NaN
      
      # set objective function to minimize or pick dive area by max
      self$obj <- obj
@@ -148,12 +151,20 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
        self$obj_func <- function(xx) pmax(1e-16, self$mod$predict(xx))
      } else if (self$obj == "pvar") {
        self$obj_func <- function(xx) pmax(1e-16, self$mod$predict.var(xx))#{apply(xx, 1, mod$grad_norm)}
-     } else if (self$obj == "gradpvaralpha") {
-       self$obj_func <- function(xx) { 1              *      self$mod$grad_norm(xx) + 
-                                       self$obj_alpha *      max(1e-16, self$mod$predict.se(xx))}
+     } else if (self$obj == "gradpvarnu") {
+       self$obj_func <- function(xx) {#browser()
+         if (is.nan(self$obj_nu)) { # if not defined yet, set obj_nu so the two are balanced
+           XXX <- matrix(runif(1e3*self$D), ncol=self$D)
+           gn_max  <- max(self$mod$grad_norm(XXX))
+           pse_max <- max(self$mod$predict.se(XXX))
+           self$obj_nu <- gn_max / pse_max
+         }
+         1           *      self$mod$grad_norm(xx) + 
+         self$obj_nu *      pmax(1e-16, self$mod$predict.se(xx))
+       }
      } else if (self$obj == "nonadapt") {
        # use next batch only #obj_func <<- NULL
-     } else if (self$obj == "desirability") {#browser()
+     } else if (self$obj %in% c("desirability", "des")) {#browser()
        self$obj_func <- function(XX) {list(...)$desirability_func(mod=self$mod, XX=XX)}
        self$desirability_func <- list(...)$desirability_func
        if (is.character(self$desirability_func)) {
@@ -335,22 +346,26 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       
       self$add_newL_points_to_design(newL = newL)
     },
-    update_obj_alpha = function(Xnew, Znew) {#browser()
+    update_obj_nu = function(Xnew, Znew) {#browser()
       if (is.null(self$mod$X)) {return(rep(NA, nrow(Xnew)))}
-      if (is.null(self$obj_alpha)) return()
+      if (is.nan(self$obj_nu)) return()
+      if (is.nan(self$obj_nu)) { # Initialize it intelligently
+        browser()
+        self$obj_nu <- .5
+      }
       Zlist <- self$mod$predict(Xnew, se.fit=T)
       Zmean <- Zlist$fit
       Zse   <- Zlist$se
       abs.scores <- abs(Znew - Zmean) / Zse
       for (score in abs.scores) {
-        if (score < 3) {
-          self$obj_alpha <- .5 * self$obj_alpha
+        if (score < 3 && score > .001) { # If score is too close to zero than something is wrong? Maybe not, but don't want to reward models that just have huge error everywhere
+          self$obj_nu <- .5 * self$obj_nu
         } else {
-          self$obj_alpha <- 2  * self$obj_alpha
+          self$obj_nu <- 2  * self$obj_nu
         }
       }
       #browser()
-      print(paste('alpha changed to ', self$obj_alpha))
+      print(paste('alpha changed to ', self$obj_nu))
     },
     update_mod = function() {#browser()
       self$mod$update(Xall=self$X, Zall=self$Z)
@@ -769,7 +784,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       if (any(duplicated(rbind(self$X,Xnew)))) {browser()}
       self$X <- rbind(self$X,Xnew)
       self$Z <- c(self$Z,Znew)
-      self$update_obj_alpha(Xnew=Xnew, Znew=Znew)
+      self$update_obj_nu(Xnew=Xnew, Znew=Znew)
     },
     delete = function() {
       self$mod$delete()
@@ -818,7 +833,7 @@ if (F) {
   lineprof::shine(l)
   
   # banana with null
-  a <- adapt.concept2.sFFLHD.R6$new(D=4,L=5,func=add_null_dims(banana,2), obj="gradpvaralpha", n0=12, take_until_maxpvar_below=.9, package="GauPro", design='sFFLHD')
+  a <- adapt.concept2.sFFLHD.R6$new(D=4,L=5,func=add_null_dims(banana,2), obj="gradpvarnu", n0=12, take_until_maxpvar_below=.9, package="GauPro", design='sFFLHD')
   a$run(5)
   
   a <- adapt.concept2.sFFLHD.R6$new(D=2,L=5,func=banana, obj="desirability", desirability_func=des_funcse, n0=12, take_until_maxpvar_below=.9, package="GauPro", design='sFFLHD', selection_method="max_des_red")
