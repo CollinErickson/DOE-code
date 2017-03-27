@@ -49,7 +49,8 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
   public = list(
    func = NULL, # "function", 
    D = NULL, # "numeric", 
-   L = NULL, # "numeric", 
+   L = NULL, # sFFLHD batch size, probably the same as b, or number of points design gives when taking a single batch
+   b = NULL, # batch size to add each iteration, probably the same as L
    new_batches_per_batch = NULL,
    g = NULL, # "numeric", # g not used but I'll leave it for now
    X = NULL, # "matrix", Z = "numeric", Xopts = "matrix",
@@ -78,7 +79,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
    selection_method = NULL, # string
    plot_grad = NULL,
  
-   initialize = function(D,L,package=NULL, obj=NULL, n0=0, 
+   initialize = function(D,L,b=NULL, package=NULL, obj=NULL, n0=0, 
                          force_old=0, force_pvar=0,
                          useSMEDtheta=F, func, take_until_maxpvar_below=NULL, design="sFFLHD",
                          selection_method, X0=NULL, Xopts=NULL,
@@ -86,6 +87,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
                          ...) {#browser()
      self$D <- D
      self$L <- L
+     self$b <- if (is.null(b)) L else b
      self$new_batches_per_batch <- new_batches_per_batch
      self$func <- func
      self$force_old <- force_old
@@ -190,8 +192,9 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
        Xnew <- matrix(NA, 0, self$D)
        self$batch.tracker <- c()
        while (nrow(Xnew) < self$n0) {
-         Xnew <- rbind(Xnew, self$s$get.batch())
-         self$batch.tracker <- c(self$batch.tracker, rep(self$s$b,self$L))
+         Xnewbatch <- self$s$get.batch()
+         Xnew <- rbind(Xnew, Xnewbatch)
+         self$batch.tracker <- c(self$batch.tracker, rep(self$s$b, nrow(Xnewbatch)))
        }
        self$X <- rbind(self$X, Xnew[1:self$n0, , drop=F])
        self$Z <- c(self$Z, apply(self$X,1,self$func))
@@ -217,6 +220,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
      }
     },
     run1 = function(plotit=TRUE) {#browser()#if(iteration>24)browser()
+      if (nrow(self$Xopts) + nrow(self$Xopts_removed) < self$b) {stop("Not enough points left to get a batch #82389, initial design not big enough, b reached")}
       self$add_data()
       self$update_mod()
       #get_mses()
@@ -254,7 +258,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
           newL <- 1:self$n0
         } else { # no X0 or n0, so take first L
           self$add_new_batches_to_Xopts(num_batches_to_take = 1)
-          newL <- 1:self$L
+          newL <- 1:self$b
         }
         #return()
       }#;browser()
@@ -268,7 +272,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
         # return()
         
         self$add_new_batches_to_Xopts(num_batches_to_take = 1)
-        newL <- 1:self$L
+        newL <- 1:self$b
         
         
         
@@ -288,7 +292,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
           self$add_new_batches_to_Xopts(1)
           Xdesign <- self$X
           newL <- c()
-          for (ell in 1:self$L) {
+          for (ell in 1:self$b) {
             mindistsq <- apply(self$Xopts, 1, function(xvec) {min(rowSums(sweep(Xdesign, 2, xvec)^2))})
             whichmaxmin <- which.max(mindistsq)
             newL <- c(newL, whichmaxmin)
@@ -402,7 +406,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
        #ylim <- lims[2,]
        cf_func(self$mod$predict,batchmax=500, pretitle="Predicted Surface ", #pts=X)
               afterplotfunc=function(){points(self$X,pch=19)
-                                       points(self$X[(nrow(self$X)-self$L+1):nrow(self$X),],col='yellow',pch=19, cex=.5) # plot last L separately
+                                       points(self$X[(nrow(self$X)-self$b+1):nrow(self$X),],col='yellow',pch=19, cex=.5) # plot last L separately
               }
        )
        ###points(Xopts, col=2)
@@ -424,7 +428,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
        screen(2)
        cf_func(self$mod$predict.var,batchmax=500, pretitle="Predicted Surface ", #pts=X)
                afterplotfunc=function(){points(self$X,pch=19)
-                 points(self$X[(nrow(self$X)-self$L+1):nrow(self$X),],col='yellow',pch=19, cex=.5) # plot last L separately
+                 points(self$X[(nrow(self$X)-self$b+1):nrow(self$X),],col='yellow',pch=19, cex=.5) # plot last L separately
                  points(self$Xopts, col=2); # add points not selected
                }
        )
@@ -528,7 +532,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       for (iii in 1:num_batches_to_take) {
        Xnew <- self$s$get.batch()
        self$Xopts <- rbind(self$Xopts, Xnew)
-       self$batch.tracker <- c(self$batch.tracker, rep(self$s$b, self$L))
+       self$batch.tracker <- c(self$batch.tracker, rep(self$s$b, nrow(Xnew)))
        self$Xopts_tracker_add(Xnew) #self$Xopts_tracker <- rbind(self$Xopts_tracker, self$Xopts_tracker_add(Xnew))
       }
     },
@@ -553,24 +557,24 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
        stop("No can force_old and force_pvar")
      } else if (self$force_old > 0 & self$force_old <= 1) {
        rand1 <- runif(1)
-       if (rand1 < self$force_old) {newL <- 1:self$L} 
+       if (rand1 < self$force_old) {newL <- 1:self$b} 
      } else if (self$force_old > 1) {
        if ((iteration %% as.integer(self$force_old)) == 0) {
-         newL <- 1:self$L
+         newL <- 1:self$b
        }
      } else if (self$force_pvar > 0 & self$force_pvar <= 1) {
        rand1 <- runif(1)
-       if (rand1 < self$force_pvar) {newL <- order(self$mod$predict.var(self$Xopts), decreasing=T)[1:self$L]} 
+       if (rand1 < self$force_pvar) {newL <- order(self$mod$predict.var(self$Xopts), decreasing=T)[1:self$b]} 
      } else if (self$force_pvar > 1) {
        if ((iteration %% as.integer(self$force_pvar)) == 0) {
-         newL <- order(self$mod$predict.var(self$Xopts), decreasing=T)[1:self$L]
+         newL <- order(self$mod$predict.var(self$Xopts), decreasing=T)[1:self$b]
          #newL <- SMED_selectC(f=mod$predict.var, n=L, X0=X, Xopt=Xopts)
        }
      }
      newL
     },
     select_new_points_from_SMED = function() {
-      #bestL <- SMED_selectC(f=self$obj_func, n=self$L, X0=self$X, Xopt=self$Xopts, 
+      #bestL <- SMED_selectC(f=self$obj_func, n=self$b, X0=self$X, Xopt=self$Xopts, 
       #                      theta=if (self$useSMEDtheta) {self$mod$theta()} else {rep(1,2)})
       #browser()
       Yall.try <- try(Yall <- self$obj_func(rbind(self$X, self$Xopts)))
@@ -580,7 +584,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       }
       Y0 <- Yall[1:nrow(self$X)]
       Yopt <- Yall[(nrow(self$X)+1):length(Yall)]
-      bestL <- SMED_selectYC(n=self$L, X0=self$X, Xopt=self$Xopts, Y0=Y0, Yopt=Yopt,
+      bestL <- SMED_selectYC(n=self$b, X0=self$X, Xopt=self$Xopts, Y0=Y0, Yopt=Yopt,
                              theta=if (self$useSMEDtheta) {self$mod$theta()} else {rep(1,2)})
       newL <- bestL
       newL
@@ -589,14 +593,14 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
      # take point with max desirability, update model, requires using se or pvar so adding a point goes to zero
      gpc <- self$mod$clone()
      bestL <- c()
-     for (ell in 1:self$L) {
+     for (ell in 1:self$b) {
        #objall <- self$obj_func(rbind(self$X, self$Xopts))
        objall <- self$desirability_func(gpc, rbind(self$X, self$Xopts))
        objopt <- objall[(nrow(self$X)+1):length(objall)]
        objopt[bestL] <- -Inf # ignore the ones just selected
        bestopt <- which.max(objopt)
        bestL <- c(bestL, bestopt)
-       if (ell < self$L) {
+       if (ell < self$b) {
          Xnewone <- self$Xopts[bestopt, , drop=FALSE]
          Znewone = gpc$predict(Xnewone)
          print(Xnewone);print(Znewone);#cf(function(xx) self$desirability_func(gpc, xx), batchmax=1e3, pts=self$Xopts)
@@ -632,14 +636,14 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
     if (self$selection_method == "max_des_red") {
      bestL <- c() # Start with none
     } else { # Start with L and replace
-     bestL <- sample(Xopts_to_consider, size = self$L, replace = FALSE)
+     bestL <- sample(Xopts_to_consider, size = self$b, replace = FALSE)
     }
     #int_points <- lapply(1:10, function(iii) {simple.LHS(1e3, self$D)})
     int_points <- simple.LHS(1e4, self$D)
     int_des_weight_func <- function() {mean(self$desirability_func(gpc,int_points))}
     X_with_bestL <- self$X#, self$Xopts[bestL, ,drop=F])
     Z_with_bestL <- self$Z
-    for (ell in 1:self$L) {
+    for (ell in 1:self$b) {
      print(paste('starting iter', ell, 'considering', length(Xopts_to_consider)))
      Znotrun_preds <- gpc$predict(self$Xopts) # Need to use the predictions before each is added
      int_des_weights <- rep(Inf, nrow(self$Xopts))
@@ -697,7 +701,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
      }
      
      # Reduce the number to consider if large
-     if (ell < self$L) {
+     if (ell < self$b) {
        numtokeep <- if (ell==1) 30 else if (ell==2) 20 else if (ell==3) 10 else if (ell>=4) {5} else NA
        Xopts_to_consider <- order(int_des_weights,decreasing = F)[1:min(length(int_des_weights), numtokeep)]
      }
@@ -719,7 +723,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
        bestL[ell] <- r_star
      }
      #bestL <- c(bestL, r_star)
-     if (ell < self$L || TRUE) { # REMOVE THIS FOR SPEED
+     if (ell < self$b || TRUE) { # REMOVE THIS FOR SPEED
        Xnewone <- self$Xopts[r_star, , drop=FALSE]
        Znewone <- Znotrun_preds[r_star] #gpc$predict(Xnewone)
        if (self$selection_method == "max_des_red") {
@@ -770,7 +774,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
     newL
     },
     add_newL_points_to_design = function(newL=NULL, use_X0=FALSE) {
-      if (length(newL) != self$L) { 
+      if (length(newL) != self$b) { 
         if (length(newL) != self$n0  || nrow(self$X)!=0) {
           browser()
           stop("Selected newL not of length L #84274")
