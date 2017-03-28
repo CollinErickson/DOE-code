@@ -220,7 +220,9 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
      }
     },
     run1 = function(plotit=TRUE) {#browser()#if(iteration>24)browser()
-      if (nrow(self$Xopts) + nrow(self$Xopts_removed) < self$b) {stop("Not enough points left to get a batch #82389, initial design not big enough, b reached")}
+      if (is.null(self$s)) { # If no design s, then we can only add points when we have enough left, so check to make sure there are at least b left
+        if (nrow(self$Xopts) + nrow(self$Xopts_removed) < self$b) {stop("Not enough points left to get a batch #82389, initial design not big enough, b reached")}
+      }
       self$add_data()
       self$update_mod()
       #get_mses()
@@ -604,7 +606,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
          Xnewone <- self$Xopts[bestopt, , drop=FALSE]
          Znewone = gpc$predict(Xnewone)
          print(Xnewone);print(Znewone);#cf(function(xx) self$desirability_func(gpc, xx), batchmax=1e3, pts=self$Xopts)
-         gpc$update(Xnew=Xnewone, Znew=Znewone, restarts=0)
+         gpc$update(Xnew=Xnewone, Znew=Znewone, restarts=0, no_update=TRUE)
        }
      }
      newL <- bestL#;browser()
