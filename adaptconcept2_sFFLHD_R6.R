@@ -47,114 +47,121 @@ library(magrittr)
 #'   }
 adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
   public = list(
-   func = NULL, # "function", 
-   D = NULL, # "numeric", 
-   L = NULL, # sFFLHD batch size, probably the same as b, or number of points design gives when taking a single batch
-   b = NULL, # batch size to add each iteration, probably the same as L
-   new_batches_per_batch = NULL,
-   g = NULL, # "numeric", # g not used but I'll leave it for now
-   X = NULL, # "matrix", Z = "numeric", Xopts = "matrix",
-   X0 = NULL,
-   Xopts = NULL,
-   Xopts_tracker = NULL, # Keep track of data about candidate points
-   batch.tracker = NULL, # tracks when Xoptss were added
-   Xopts_removed = NULL,
-   Z = NULL,
-   s = NULL, # "sFFLHD" an object with $get.batch to get batch of points
-   design = NULL,
-   stats = NULL, # "list", 
-   iteration = NULL, # "numeric",
-   obj = NULL, # "character", 
-   obj_func = NULL, # "function",
-   obj_nu = NULL,
-   n0 = NULL, # "numeric"
-   take_until_maxpvar_below = NULL, 
-   package = NULL, # "character",
-   force_old = NULL, # "numeric", 
-   force_pvar = NULL, # "numeric",
-   useSMEDtheta = NULL, # "logical"
-   mod = NULL,
-   desirability_func = NULL, # args are mod and XX
-   actual_desirability_func = NULL, # 
-   selection_method = NULL, # string
-   plot_grad = NULL,
+    func = NULL, # "function", 
+    D = NULL, # "numeric", 
+    L = NULL, # sFFLHD batch size, probably the same as b, or number of points design gives when taking a single batch
+    b = NULL, # batch size to add each iteration, probably the same as L
+    new_batches_per_batch = NULL,
+    g = NULL, # "numeric", # g not used but I'll leave it for now
+    X = NULL, # "matrix", Z = "numeric", Xopts = "matrix",
+    X0 = NULL,
+    Xopts = NULL,
+    Xopts_tracker = NULL, # Keep track of data about candidate points
+    batch.tracker = NULL, # tracks when Xoptss were added
+    Xopts_removed = NULL,
+    Z = NULL,
+    s = NULL, # "sFFLHD" an object with $get.batch to get batch of points
+    design = NULL,
+    stats = NULL, # "list", 
+    iteration = NULL, # "numeric",
+    obj = NULL, # "character", 
+    obj_func = NULL, # "function",
+    obj_nu = NULL,
+    n0 = NULL, # "numeric"
+    take_until_maxpvar_below = NULL, 
+    package = NULL, # "character",
+    force_old = NULL, # "numeric", 
+    force_pvar = NULL, # "numeric",
+    useSMEDtheta = NULL, # "logical"
+    mod = NULL,
+    #desirability_func = NULL, # args are mod and XX, this was the full weighted error function, poorly named
+    #actual_desirability_func = NULL, # 
+    des_func = NULL, # desirability function: args are mod and XX, should be the delta desirability function, output from 0 to 1
+    alpha_des = NULL,
+    actual_des_func = NULL,
+    #weight_func = NULL, # weight function: 1 + alpha_des * des_func()
+    weight_const = 1,
+    #werror_func = NULL, # weighted error function: sigmahat * (1+alpha_des*des_func())
+    selection_method = NULL, # string
+    plot_grad = NULL,
  
-   initialize = function(D,L,b=NULL, package=NULL, obj=NULL, n0=0, 
+    initialize = function(D,L,b=NULL, package=NULL, obj=NULL, n0=0, 
                          force_old=0, force_pvar=0,
-                         useSMEDtheta=F, func, take_until_maxpvar_below=NULL, design="sFFLHD",
+                         useSMEDtheta=F, func, take_until_maxpvar_below=NULL,
+                         design="sFFLHD",
                          selection_method, X0=NULL, Xopts=NULL,
                          plot_grad=TRUE, new_batches_per_batch=5,
                          ...) {#browser()
-     self$D <- D
-     self$L <- L
-     self$b <- if (is.null(b)) L else b
-     self$new_batches_per_batch <- new_batches_per_batch
-     self$func <- func
-     self$force_old <- force_old
-     self$force_pvar <- force_pvar
-     self$take_until_maxpvar_below <- take_until_maxpvar_below
-     self$selection_method <- selection_method
-     self$plot_grad <- plot_grad
-     
-     
-     #if (any(length(D)==0, length(L)==0, length(g)==0)) {
-     if (any(length(D)==0, length(L)==0)) {
-       message("D and L must be specified")
-     }
-     
-     self$design <- design
-     if (self$design == "sFFLHD") {
-       #self$s <- sFFLHD::sFFLHDmm(D=D, L=L, maximin=F)
-       # Try maximin 
-       self$s <- sFFLHD::sFFLHD(D=D, L=L, maximin=T)
-     } else if (self$design == "random") {
-       self$s <- random_design$new(D=D, L=L)
-     } else if (self$design == "given") { # This means Xopts is given in and no new points will be added to design
-       self$s <- NULL
-     } else {
-       stop("No design 3285729")
-     }
-     self$X0 <- X0
-     self$X <- matrix(NA,0,D)
-     if (is.null(Xopts)) {
-       self$Xopts <- matrix(NA,0,D)
-     } else { # Option to give in Xopts
-       self$Xopts <- Xopts
-     }
-     self$Xopts_removed <- matrix(NA,0,D)
-     
-     #if(length(lims)==0) {lims <<- matrix(c(0,1),D,2,byrow=T)}
-     #mod$initialize(package = "mlegp")
-     if(is.null(package)) {self$package <- "laGP"}
-     else {self$package <- package}
-     #self$mod <- UGP$new(package = self$package)
-     self$mod <- IGP(package = self$package, estimate.nugget=FALSE, set.nugget=1e-8)
-     self$stats <- list(iteration=c(),n=c(),pvar=c(),mse=c(), ppu=c(), minbatch=c(), pamv=c(), actual_weighted_error=c())
-     self$iteration <- 1
-     self$obj_nu <- NaN
-     
-     # set objective function to minimize or pick dive area by max
-     self$obj <- obj
-     if (is.null(self$obj) || self$obj == "mse") { # The default
-       #self$obj <- "mse" # Don't want it to be character(0) when I have to check it later
-       self$obj_func <- mod$predict.var #function(xx) {apply(xx, 1, mod$predict.var)}
-       #function(lims) {
-      #   msfunc(mod$predict.var, lims=lims, pow=1, batch=T)
-      # }
-     } else if (self$obj == "maxerr") {
-       self$obj_func <- function(lims) {
-         maxgridfunc(self$mod$predict.var, lims=lims, batch=T)
-       }
-     } else if (self$obj == "grad") {
-       self$obj_func <- self$mod$grad_norm#{apply(xx, 1, mod$grad_norm)}
-     } else if (self$obj == "func") {
-       #self$obj_func <- function(xx) max(1e-16, self$mod$predict(xx))#{apply(xx, 1, mod$grad_norm)}
-       #self$obj_func <- function(xx) {pv <- self$mod$predict(xx);ifelse(pv<0,1e-16, pv)}
-       self$obj_func <- function(xx) pmax(1e-16, self$mod$predict(xx))
-     } else if (self$obj == "pvar") {
-       self$obj_func <- function(xx) pmax(1e-16, self$mod$predict.var(xx))#{apply(xx, 1, mod$grad_norm)}
-     } else if (self$obj == "gradpvarnu") {
-       self$obj_func <- function(xx) {#browser()
+      self$D <- D
+      self$L <- L
+      self$b <- if (is.null(b)) L else b
+      self$new_batches_per_batch <- new_batches_per_batch
+      self$func <- func
+      self$force_old <- force_old
+      self$force_pvar <- force_pvar
+      self$take_until_maxpvar_below <- take_until_maxpvar_below
+      self$selection_method <- selection_method
+      self$plot_grad <- plot_grad
+      
+      
+      #if (any(length(D)==0, length(L)==0, length(g)==0)) {
+      if (any(length(D)==0, length(L)==0)) {
+        message("D and L must be specified")
+      }
+      
+      self$design <- design
+      if (self$design == "sFFLHD") {
+        #self$s <- sFFLHD::sFFLHDmm(D=D, L=L, maximin=F)
+        # Try maximin 
+        self$s <- sFFLHD::sFFLHD(D=D, L=L, maximin=T)
+      } else if (self$design == "random") {
+        self$s <- random_design$new(D=D, L=L)
+      } else if (self$design == "given") { # This means Xopts is given in and no new points will be added to design
+        self$s <- NULL
+      } else {
+        stop("No design 3285729")
+      }
+      self$X0 <- X0
+      self$X <- matrix(NA,0,D)
+      if (is.null(Xopts)) {
+        self$Xopts <- matrix(NA,0,D)
+      } else { # Option to give in Xopts
+        self$Xopts <- Xopts
+      }
+      self$Xopts_removed <- matrix(NA,0,D)
+      
+      #if(length(lims)==0) {lims <<- matrix(c(0,1),D,2,byrow=T)}
+      #mod$initialize(package = "mlegp")
+      if(is.null(package)) {self$package <- "laGP"}
+      else {self$package <- package}
+      #self$mod <- UGP$new(package = self$package)
+      self$mod <- IGP(package = self$package, estimate.nugget=FALSE, set.nugget=1e-8)
+      self$stats <- list(iteration=c(),n=c(),pvar=c(),mse=c(), ppu=c(), minbatch=c(), pamv=c(), actual_weighted_error=c())
+      self$iteration <- 1
+      self$obj_nu <- NaN
+      
+      # set objective function to minimize or pick dive area by max
+      self$obj <- obj
+      if (is.null(self$obj) || self$obj == "mse") { # The default
+        #self$obj <- "mse" # Don't want it to be character(0) when I have to check it later
+        self$obj_func <- mod$predict.var #function(xx) {apply(xx, 1, mod$predict.var)}
+        #function(lims) {
+        #   msfunc(mod$predict.var, lims=lims, pow=1, batch=T)
+        # }
+      } else if (self$obj == "maxerr") {
+        self$obj_func <- function(lims) {
+          maxgridfunc(self$mod$predict.var, lims=lims, batch=T)
+        }
+      } else if (self$obj == "grad") {
+        self$obj_func <- self$mod$grad_norm#{apply(xx, 1, mod$grad_norm)}
+      } else if (self$obj == "func") {
+        #self$obj_func <- function(xx) max(1e-16, self$mod$predict(xx))#{apply(xx, 1, mod$grad_norm)}
+        #self$obj_func <- function(xx) {pv <- self$mod$predict(xx);ifelse(pv<0,1e-16, pv)}
+        self$obj_func <- function(xx) pmax(1e-16, self$mod$predict(xx))
+      } else if (self$obj == "pvar") {
+        self$obj_func <- function(xx) pmax(1e-16, self$mod$predict.var(xx))#{apply(xx, 1, mod$grad_norm)}
+      } else if (self$obj == "gradpvarnu") {
+        self$obj_func <- function(xx) {#browser()
          if (is.nan(self$obj_nu)) { # if not defined yet, set obj_nu so the two are balanced
            XXX <- matrix(runif(1e3*self$D), ncol=self$D)
            gn_max  <- max(self$mod$grad_norm(XXX))
@@ -163,61 +170,63 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
          }
          1           *      self$mod$grad_norm(xx) + 
          self$obj_nu *      pmax(1e-16, self$mod$predict.se(xx))
-       }
-     } else if (self$obj == "nonadapt") {
-       # use next batch only #obj_func <<- NULL
-     } else if (self$obj %in% c("desirability", "des")) {#browser()
-       self$obj_func <- function(XX) {list(...)$desirability_func(mod=self$mod, XX=XX)}
-       self$desirability_func <- list(...)$desirability_func
-       if (is.character(self$desirability_func)) {
-         if (self$desirability_func == "des_funcse") {#browser()
-           self$desirability_func <- des_funcse
-         }
-       }
-     }
-     
-     # This can be used even when not using desirability in order to make comparisons
-     if ('actual_des_func' %in% names(list(...))) { #browser()
-       self$actual_desirability_func <- list(...)$actual_des_func
-     }
-     
-     self$n0 <- n0
-     if (F && !is.null(self$X0)) {
-       self$X <- self$X0
-       self$Z <- c(self$Z, apply(self$X,1,self$func))
-       self$mod$update(Xall=self$X, Zall=self$Z)
-     }
-     #HERE add Z if X0 not null, should enter loop below
-     if (F && length(self$n0) != 0 && self$n0 > 0 && is.null(self$X0)) {
-       Xnew <- matrix(NA, 0, self$D)
-       self$batch.tracker <- c()
-       while (nrow(Xnew) < self$n0) {
-         Xnewbatch <- self$s$get.batch()
-         Xnew <- rbind(Xnew, Xnewbatch)
-         self$batch.tracker <- c(self$batch.tracker, rep(self$s$b, nrow(Xnewbatch)))
-       }
-       self$X <- rbind(self$X, Xnew[1:self$n0, , drop=F])
-       self$Z <- c(self$Z, apply(self$X,1,self$func))
-       self$batch.tracker <- self$batch.tracker[-(1:self$n0)]
-       if (nrow(Xnew) > self$n0) {
-         self$Xopts <- rbind(self$Xopts, Xnew[(self$n0+1):nrow(Xnew), , drop=F])
-       }
-       self$mod$update(Xall=self$X, Zall=self$Z)
-     }
-     
-     #if (length(never_dive)==0) {never_dive <<- FALSE}
-     #if (length(force_old) == 0) {self$force_old <- 0}
-     #if (length(force_pvar) == 0) {self$force_pvar <- 0}
-     self$useSMEDtheta <- if (length(useSMEDtheta)==0) {FALSE} else {useSMEDtheta}
+        }
+      } else if (self$obj == "nonadapt") {
+        # use next batch only #obj_func <<- NULL
+      } else if (self$obj %in% c("desirability", "des")) {#browser()
+        self$obj_func <- function(XX) {list(...)$des_func(mod=self$mod, XX=XX)}
+        self$des_func <- list(...)$des_func
+        self$alpha_des <- list(...)$alpha_des
+        if (is.character(self$des_func)) {
+          if (self$des_func == "des_funcse") {#browser()
+            stop("don't use des_funcse anymore")
+            self$des_func <- des_funcse
+          }
+        }
+      }
+      
+      # This can be used even when not using desirability in order to make comparisons
+      if ('actual_des_func' %in% names(list(...))) { #browser()
+        self$actual_des_func <- list(...)$actual_des_func
+      }
+      
+      self$n0 <- n0
+      if (F && !is.null(self$X0)) {
+        self$X <- self$X0
+        self$Z <- c(self$Z, apply(self$X,1,self$func))
+        self$mod$update(Xall=self$X, Zall=self$Z)
+      }
+      #HERE add Z if X0 not null, should enter loop below
+      if (F && length(self$n0) != 0 && self$n0 > 0 && is.null(self$X0)) {
+        Xnew <- matrix(NA, 0, self$D)
+        self$batch.tracker <- c()
+        while (nrow(Xnew) < self$n0) {
+          Xnewbatch <- self$s$get.batch()
+          Xnew <- rbind(Xnew, Xnewbatch)
+          self$batch.tracker <- c(self$batch.tracker, rep(self$s$b, nrow(Xnewbatch)))
+        }
+        self$X <- rbind(self$X, Xnew[1:self$n0, , drop=F])
+        self$Z <- c(self$Z, apply(self$X,1,self$func))
+        self$batch.tracker <- self$batch.tracker[-(1:self$n0)]
+        if (nrow(Xnew) > self$n0) {
+          self$Xopts <- rbind(self$Xopts, Xnew[(self$n0+1):nrow(Xnew), , drop=F])
+        }
+        self$mod$update(Xall=self$X, Zall=self$Z)
+      }
+      
+      #if (length(never_dive)==0) {never_dive <<- FALSE}
+      #if (length(force_old) == 0) {self$force_old <- 0}
+      #if (length(force_pvar) == 0) {self$force_pvar <- 0}
+      self$useSMEDtheta <- if (length(useSMEDtheta)==0) {FALSE} else {useSMEDtheta}
     },
     run = function(maxit, plotlastonly=F, noplot=F) {
-     i <- 1
-     while(i <= maxit) {
-       #print(paste('Starting iteration', iteration))
-       iplotit <- ((i == maxit) | !plotlastonly) & !noplot
-       self$run1(plotit=iplotit)
-       i <- i + 1
-     }
+      i <- 1
+      while(i <= maxit) {
+        #print(paste('Starting iteration', iteration))
+        iplotit <- ((i == maxit) | !plotlastonly) & !noplot
+        self$run1(plotit=iplotit)
+        i <- i + 1
+      }
     },
     run1 = function(plotit=TRUE) {#browser()#if(iteration>24)browser()
       if (is.null(self$s)) { # If no design s, then we can only add points when we have enough left, so check to make sure there are at least b left
@@ -389,8 +398,8 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
      self$stats$ppu <- c(self$stats$ppu, nrow(self$X) / (nrow(self$X) + nrow(self$Xopts)))
      self$stats$minbatch <- c(self$stats$minbatch, if (length(self$batch.tracker>0)) min(self$batch.tracker) else 0)
      self$stats$pamv <- c(self$stats$pamv, self$mod$prop.at.max.var())
-     if (!is.null(self$actual_desirability_func)) {
-       self$stats$actual_weighted_error <- c(self$stats$actual_weighted_error, self$actual_desirability_func(self$mod))
+     if (!is.null(self$actual_des_func)) {
+       self$stats$actual_weighted_error <- c(self$stats$actual_weighted_error, stop('Fix this, pass actual_des_func to weighted error func'))#self$actual_desirability_func(self$mod))
      } else {
        self$stats$actual_weighted_error <- c(self$stats$actual_weighted_error, NaN)
      }
@@ -542,7 +551,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       n <- nrow(Xnew)
       Xnewdf <- data.frame(iteration_added=rep(self$iteration, n),
                            time_added = rep(Sys.time(), n))
-      if (self$obj == "desirability") {
+      if (self$obj %in% c("desirability","des")) {
         if (self$selection_method == "max_des_red") {
           
         }
@@ -596,8 +605,9 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
      gpc <- self$mod$clone()
      bestL <- c()
      for (ell in 1:self$b) {
-       #objall <- self$obj_func(rbind(self$X, self$Xopts))
-       objall <- self$desirability_func(gpc, rbind(self$X, self$Xopts))
+       # objall <- self$obj_func(rbind(self$X, self$Xopts))
+       # objall <- self$desirability_func(gpc, rbind(self$X, self$Xopts))
+       objall <- self$werror_func(gpc, rbind(self$X, self$Xopts))
        objopt <- objall[(nrow(self$X)+1):length(objall)]
        objopt[bestL] <- -Inf # ignore the ones just selected
        bestopt <- which.max(objopt)
@@ -614,7 +624,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
      rm(gpc, objall, objopt, bestopt, bestL, Xnewone, Znewone)#;browser()
      newL
    },
-  select_new_points_from_max_des_red = function() {
+  select_new_points_from_max_des_red = function() {browser()
     if (self$package == 'laGP') {
      gpc <- UGP::IGP(X = self$X, Z=self$Z, package='laGP', d=1/self$mod$theta(), g=self$mod$nugget(), estimate_params=FALSE)
     } else {
@@ -629,7 +639,8 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       screen(1)
       cf::cf(self$mod$predict, batchmax=Inf, pts=self$X)
       screen(2)
-      cf(function(X)self$desirability_func(gpc, X), batchmax=5e3, afterplotfunc=function(){points(self$X, col=3, pch=2);points(self$Xopts[-Xopts_to_consider,], col=4,pch=3);points(self$Xopts[Xopts_to_consider,])})
+      # cf(function(X)self$desirability_func(gpc, X), batchmax=5e3, afterplotfunc=function(){points(self$X, col=3, pch=2);points(self$Xopts[-Xopts_to_consider,], col=4,pch=3);points(self$Xopts[Xopts_to_consider,])})
+      cf(function(X)self$werror_func(mod=gpc, XX=X), batchmax=5e3, afterplotfunc=function(){points(self$X, col=3, pch=2);points(self$Xopts[-Xopts_to_consider,], col=4,pch=3);points(self$Xopts[Xopts_to_consider,])})
       #browser()
     }
     if (exists("browser_max_des")) {if (browser_max_des) {browser()}}
@@ -642,159 +653,173 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
     }
     #int_points <- lapply(1:10, function(iii) {simple.LHS(1e3, self$D)})
     int_points <- simple.LHS(1e4, self$D)
-    int_des_weight_func <- function() {mean(self$desirability_func(gpc,int_points))}
+    # int_des_weight_func <- function() {mean(self$desirability_func(gpc,int_points))}
+    int_werror_func <- function() {mean(self$werror_func(XX=int_points, mod=gpc))}
     X_with_bestL <- self$X#, self$Xopts[bestL, ,drop=F])
     Z_with_bestL <- self$Z
     for (ell in 1:self$b) {
-     print(paste('starting iter', ell, 'considering', length(Xopts_to_consider)))
-     Znotrun_preds <- gpc$predict(self$Xopts) # Need to use the predictions before each is added
-     int_des_weights <- rep(Inf, nrow(self$Xopts))
-     if (self$selection_method == "max_des_red") { # Don't have current value, so don't start with anything
-       r_star <- NA
-       int_des_weight_star <- Inf
-     } else { # Start with ell and replace
-       r_star <- bestL[ell]
-       if (ell == 1) { # First time need to calculate current integrated des
-         X_with_bestL <- rbind(X_with_bestL, self$Xopts[bestL, , drop=F])
-         Z_with_bestL <- c(Z_with_bestL, Znotrun_preds[bestL])
-         if (self$package == 'laGP') {
-           gpc$delete()
-           gpc <- UGP::IGP(X=X_with_bestL, Z=Z_with_bestL, theta=self$mod$theta(), nugget=self$mod$nugget(), package="laGP", estimate_params=FALSE)
-         } else {
-           gpc$update(Xall=X_with_bestL, Zall=Z_with_bestL, restarts=0, no_update=TRUE)
-         }
-         int_des_weight_star <- int_des_weight_func()
-       } else { # After that it just stays as star value
-         # essentially int_des_weight_star <- int_des_weight_star
-       }
-       int_des_weights[bestL[ell]] <- int_des_weight_star # Store current selection in IDWs, but not actually using it for anything
-     }
-     for ( r in setdiff(Xopts_to_consider, bestL)) {
-       if (self$package == 'laGP') {
-         gpc$delete()
-         gpc <- UGP::IGP(X=rbind(X_with_bestL, self$Xopts[r, ,drop=F]), 
+      print(paste('starting iter', ell, 'considering', length(Xopts_to_consider)))
+      Znotrun_preds <- gpc$predict(self$Xopts) # Need to use the predictions before each is added
+      int_werror_vals <- rep(Inf, nrow(self$Xopts))
+      if (self$selection_method == "max_des_red") { # Don't have current value, so don't start with anything
+        r_star <- NA # Track best index
+        int_werror_vals_star <- Inf # Track best value
+      } else { # Start with ell and replace
+        r_star <- bestL[ell]
+        if (ell == 1) { # First time need to calculate current integrated des
+          X_with_bestL <- rbind(X_with_bestL, self$Xopts[bestL, , drop=F])
+          Z_with_bestL <- c(Z_with_bestL, Znotrun_preds[bestL])
+          if (self$package == 'laGP') {
+            gpc$delete()
+            gpc <- UGP::IGP(X=X_with_bestL, Z=Z_with_bestL, theta=self$mod$theta(), nugget=self$mod$nugget(), package="laGP", estimate_params=FALSE)
+          } else {
+            gpc$update(Xall=X_with_bestL, Zall=Z_with_bestL, restarts=0, no_update=TRUE)
+          }
+          int_werror_vals_star <- int_werror_func()
+        } else { # After that it just stays as star value
+          # essentially int_des_weight_star <- int_des_weight_star
+        }
+        int_werror_vals[bestL[ell]] <- int_werror_vals_star # Store current selection in IDWs, but not actually using it for anything
+      }
+      for (r in setdiff(Xopts_to_consider, bestL)) {
+        if (self$package == 'laGP') {
+          gpc$delete()
+          gpc <- UGP::IGP(X=rbind(X_with_bestL, self$Xopts[r, ,drop=F]), 
                          Z=c(Z_with_bestL, Znotrun_preds[r]), 
-                         theta=self$mod$theta(), nugget=self$mod$nugget(), package="laGP", estimate_params=FALSE)
-       } else {
-         gpc$update(Xall = rbind(X_with_bestL, self$Xopts[r, ,drop=F]), Zall=c(Z_with_bestL, Znotrun_preds[r]), restarts=0, no_update=TRUE)
-       }
-       #browser()
-       
-       # This false chunk shows the distribution of change in desirability of points
-       if (F) {
-         close.screen(all=T) # This messes up the plotting, probably will have to restart after
-         xxx <- matrix(runif(1000*self$D), ncol=self$D) # Create random points
-         plot(self$desirability_func(gpc, xxx), self$desirability_func(self$mod, xxx))
-         pdiff <- -self$desirability_func(gpc, xxx) + self$desirability_func(self$mod, xxx)
-         pda <- pdiff #abs(pdiff)
-         summary(pda)
-         which.max(pda)
-         rbind(xxx[which.max(pda),], self$Xopts[r, ])
-         xxxdists <- sqrt(rowSums(sweep(xxx,2,self$Xopts[r,])^2))
-         plot(xxxdists, pda)
-       }
-       
-       int_des_weight_r <- int_des_weight_func()
-       if (int_des_weight_r < int_des_weight_star) {
-         int_des_weight_star <- int_des_weight_r
-         r_star <- r
-       }
-       int_des_weights[r] <- int_des_weight_r
-     }
+               theta=self$mod$theta(), nugget=self$mod$nugget(), package="laGP", estimate_params=FALSE)
+        } else {
+          gpc$update(Xall = rbind(X_with_bestL, self$Xopts[r, ,drop=F]), Zall=c(Z_with_bestL, Znotrun_preds[r]), restarts=0, no_update=TRUE)
+        }
+        #browser()
+        
+        # This false chunk shows the distribution of change in desirability of points
+        if (F) {
+          close.screen(all=T) # This messes up the plotting, probably will have to restart after
+          xxx <- matrix(runif(1000*self$D), ncol=self$D) # Create random points
+          plot(self$werror_func(mod=gpc, XX=xxx), self$werror_func(mod=self$mod, XX=xxx))
+          pdiff <- -self$werror_func(mod=gpc, XX=xxx) + self$werror_func(mod=self$mod, XX=xxx)
+          pda <- pdiff #abs(pdiff)
+          summary(pda)
+          which.max(pda)
+          rbind(xxx[which.max(pda),], self$Xopts[r, ])
+          xxxdists <- sqrt(rowSums(sweep(xxx,2,self$Xopts[r,])^2))
+          plot(xxxdists, pda)
+        }
+        
+        int_werror_vals_r <- int_werror_func()
+        if (int_werror_vals_r < int_werror_vals_star) {
+          int_werror_vals_star <- int_werror_vals_r
+          r_star <- r
+        }
+        int_werror_vals[r] <- int_werror_vals_r
+      }
      
-     # Reduce the number to consider if large
-     if (ell < self$b) {
+      # Reduce the number to consider if large
+      if (ell < self$b) {
        numtokeep <- if (ell==1) 30 else if (ell==2) 20 else if (ell==3) 10 else if (ell>=4) {5} else NA
-       Xopts_to_consider <- order(int_des_weights,decreasing = F)[1:min(length(int_des_weights), numtokeep)]
-     }
+       Xopts_to_consider <- order(int_werror_vals,decreasing = F)[1:min(length(int_werror_vals), numtokeep)]
+      }
      
-     # Add back in some random ones
-     if (length(setdiff(1:nrow(self$Xopts), Xopts_to_consider)) > 5) {
+      # Add back in some random ones
+      if (length(setdiff(1:nrow(self$Xopts), Xopts_to_consider)) > 5) {
        Xopts_to_consider <- c(Xopts_to_consider, sample(setdiff(1:nrow(self$Xopts), Xopts_to_consider), 5, F))
-     }
-     #objall <- self$obj_func(rbind(self$X, self$Xopts))
-     #objall <- self$desirability_func(gpc, rbind(self$X, self$Xopts))
-     #objopt <- objall[(nrow(self$X)+1):length(objall)]
-     #objopt[bestL] <- -Inf # ignore the ones just selected
-     #bestopt <- which.max(objopt)
-     #bestL <- c(bestL, bestopt)
+      }
+      #objall <- self$obj_func(rbind(self$X, self$Xopts))
+      #objall <- self$desirability_func(gpc, rbind(self$X, self$Xopts))
+      #objopt <- objall[(nrow(self$X)+1):length(objall)]
+      #objopt[bestL] <- -Inf # ignore the ones just selected
+      #bestopt <- which.max(objopt)
+      #bestL <- c(bestL, bestopt)
      
-     if (self$selection_method == "max_des_red") { # if starting with none and adding one
+      if (self$selection_method == "max_des_red") { # if starting with none and adding one
        bestL <- c(bestL, r_star)
-     } else { # if starting with L and replacing as go
+      } else { # if starting with L and replacing as go
        bestL[ell] <- r_star
-     }
-     #bestL <- c(bestL, r_star)
-     if (ell < self$b || TRUE) { # REMOVE THIS FOR SPEED
-       Xnewone <- self$Xopts[r_star, , drop=FALSE]
-       Znewone <- Znotrun_preds[r_star] #gpc$predict(Xnewone)
-       if (self$selection_method == "max_des_red") {
-         if (F) {
-           cbind(self$Xopts, int_des_weights)
+      }
+      #bestL <- c(bestL, r_star)
+      if (ell < self$b || TRUE) { # REMOVE THIS FOR SPEED
+        Xnewone <- self$Xopts[r_star, , drop=FALSE]
+        Znewone <- Znotrun_preds[r_star] #gpc$predict(Xnewone)
+        if (self$selection_method == "max_des_red") {
+          if (F) {
+           cbind(self$Xopts, int_werror_vals)
            i1 <- 1
            # No good for laGP
            gpc$update(Xall=rbind(X_with_bestL,self$Xopts[i1,,drop=F]), Zall=c(Z_with_bestL,Znotrun_preds[]), restarts=0, no_update=TRUE)
-           cf(function(X)self$desirability_func(gpc, X), batchmax=5e3, afterplotfunc=function(){points(self$X, col=3, pch=2);points(self$Xopts);points(self$Xopts);points(self$Xopts[bestL,], col=1,pch=19, cex=2);text(self$Xopts[bestL,], col=2,pch=19, cex=2)})
+           cf(function(X)self$werror_func(mod=gpc, XX=X), batchmax=5e3, afterplotfunc=function(){points(self$X, col=3, pch=2);points(self$Xopts);points(self$Xopts);points(self$Xopts[bestL,], col=1,pch=19, cex=2);text(self$Xopts[bestL,], col=2,pch=19, cex=2)})
            gpc$update(Xall=rbind(X_with_bestL,self$Xopts[r_star,,drop=F]), Zall=c(Z_with_bestL,Znotrun_preds[]), restarts=0, no_update=TRUE)
-           cf(function(X)self$desirability_func(gpc, X), batchmax=5e3, afterplotfunc=function(){points(self$X, col=3, pch=2);points(self$Xopts);points(self$Xopts);points(self$Xopts[bestL,], col=1,pch=19, cex=2);text(self$Xopts[bestL,], col=2,pch=19, cex=2)})
-         }
-         X_with_bestL <- rbind(X_with_bestL, Xnewone)
-         Z_with_bestL <- c(Z_with_bestL, Znewone)
-         if (T) { # REMOVE THIS FOR SPEED
+           cf(function(X)self$werror_func(mod=gpc, XX=X), batchmax=5e3, afterplotfunc=function(){points(self$X, col=3, pch=2);points(self$Xopts);points(self$Xopts);points(self$Xopts[bestL,], col=1,pch=19, cex=2);text(self$Xopts[bestL,], col=2,pch=19, cex=2)})
+          }
+          X_with_bestL <- rbind(X_with_bestL, Xnewone)
+          Z_with_bestL <- c(Z_with_bestL, Znewone)
+          if (T) { # REMOVE THIS FOR SPEED
            if (self$package =='laGP') {
              gpc$delete()
              gpc <- UGP::IGP(X=X_with_bestL, Z=Z_with_bestL, package='laGP', theta=self$mod$theta(), nugget=self$mod$nugget(), estimate_params=FALSE)
            } else {
              gpc$update(Xall=X_with_bestL, Zall=Z_with_bestL, restarts=0, no_update=TRUE)
            }
-         }
-       } else {
-         X_with_bestL[nrow(self$X) + ell,] <- self$Xopts[r_star, ]
-         Z_with_bestL[nrow(self$X) + ell] <- Znotrun_preds[r_star]
-         if (self$package == 'laGP') {
+          }
+        } else {
+          X_with_bestL[nrow(self$X) + ell,] <- self$Xopts[r_star, ]
+          Z_with_bestL[nrow(self$X) + ell] <- Znotrun_preds[r_star]
+          if (self$package == 'laGP') {
            gpc$delete()
            gpc <- UGP::IGP(X=X_with_bestL, Z=Z_with_bestL, theta=self$mod$theta(), nugget=self$mod$nugget(), estimate_parameters=FALSE)
-         } else {
+          } else {
            gpc$update(Xall=X_with_bestL, Zall=Z_with_bestL, restarts=0, no_update=TRUE)
-         }
-       }
-       print(Xnewone);print(Znewone);#cf(function(xx) self$desirability_func(gpc, xx), batchmax=1e3, pts=self$Xopts)
-       #gpc$update(Xall=X_with_bestL, Zall=Z_with_bestL, restarts=0)
-     }
+          }
+        }
+        print(Xnewone);print(Znewone);#cf(function(xx) self$desirability_func(gpc, xx), batchmax=1e3, pts=self$Xopts)
+        #gpc$update(Xall=X_with_bestL, Zall=Z_with_bestL, restarts=0)
+      }
     }
     if (self$D == 2) {
-       screen(3)
-     cf(function(X)self$desirability_func(gpc, X), batchmax=5e3, afterplotfunc=function(){points(self$X, col=3, pch=2);points(self$Xopts[-Xopts_to_consider,], col=4,pch=3);points(self$Xopts[Xopts_to_consider,]);points(self$Xopts[bestL,], col=1,pch=19, cex=2);text(self$Xopts[bestL,], col=2,pch=19, cex=2)})
-     # browser()
-     close.screen(all=TRUE)
+      screen(3)
+      cf(function(X)self$werror_func(mod=gpc, XX=X), batchmax=5e3, afterplotfunc=function(){points(self$X, col=3, pch=2);points(self$Xopts[-Xopts_to_consider,], col=4,pch=3);points(self$Xopts[Xopts_to_consider,]);points(self$Xopts[bestL,], col=1,pch=19, cex=2);text(self$Xopts[bestL,], col=2,pch=19, cex=2)})
+      # browser()
+      close.screen(all=TRUE)
     }
-    if (exists("browser_max_des")) {if (browser_max_des) {browser()}}
+    if (exists("browser_max_des")) {
+      if (browser_max_des) {
+        browser()
+      }
+    }
     
     newL <- bestL#;browser()
     #gpc$delete() # This deletes the laGP C side part, don't do it
     rm(gpc, bestL, Xnewone, Znewone)#;browser()
     newL
-    },
-    add_newL_points_to_design = function(newL=NULL, use_X0=FALSE) {
-      if (length(newL) != self$b) { 
-        if (length(newL) != self$n0  || nrow(self$X)!=0) {
-          browser()
-          stop("Selected newL not of length L #84274")
-        }
+  },
+  add_newL_points_to_design = function(newL=NULL, use_X0=FALSE) {
+    if (length(newL) != self$b) { 
+      if (length(newL) != self$n0  || nrow(self$X)!=0) {
+        browser()
+        stop("Selected newL not of length L #84274")
       }
-      self$Xopts_tracker_remove(newL=newL)
-      Xnew <- self$Xopts[newL,]
-      self$Xopts <- self$Xopts[-newL, , drop=FALSE]
-      self$batch.tracker <- self$batch.tracker[-newL]
-      Znew <- apply(Xnew,1,self$func) # This is where the simulations are run, will probably have to put this out to be parallelizable and sent out as jobs
-      if (any(duplicated(rbind(self$X,Xnew)))) {browser()}
-      self$X <- rbind(self$X,Xnew)
-      self$Z <- c(self$Z,Znew)
-      self$update_obj_nu(Xnew=Xnew, Znew=Znew)
-    },
-    delete = function() {
-      self$mod$delete()
     }
+    self$Xopts_tracker_remove(newL=newL)
+    Xnew <- self$Xopts[newL,]
+    self$Xopts <- self$Xopts[-newL, , drop=FALSE]
+    self$batch.tracker <- self$batch.tracker[-newL]
+    Znew <- apply(Xnew,1,self$func) # This is where the simulations are run, will probably have to put this out to be parallelizable and sent out as jobs
+    if (any(duplicated(rbind(self$X,Xnew)))) {browser()}
+    self$X <- rbind(self$X,Xnew)
+    self$Z <- c(self$Z,Znew)
+    self$update_obj_nu(Xnew=Xnew, Znew=Znew)
+  },
+  # The weight function 1 + alpha * delta()
+  weight_func = function(..., XX, mod=self$mod, des_func=self$des_func, alpha=self$alpha_des, weight_const=self$weight_const) {
+    weight_const + alpha * des_func(XX=XX, mod=mod)
+  },
+  # The weighted error function sigmahat * (1 + alpha * delta())
+  werror_func = function(..., XX, mod=self$mod, des_func=self$des_func, alpha=self$alpha_des, weight_const=self$weight_const, weight_func=self$weight_func) {browser()
+    err <- self$mod$predict.se(XX)
+    err * weight_func(XX=XX, mod=mod, des_func=des_func, alpha=alpha,weight_const=weight_const)
+  },
+  delete = function() {
+    self$mod$delete()
+  }
   )
 )
 

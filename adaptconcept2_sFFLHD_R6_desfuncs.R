@@ -1,5 +1,5 @@
 # Test desirability function
-des_func <- function(mod, XX) {
+des_func_relmax <- function(mod, XX) {
   pred <- mod$predict(XX, se=F)
   pred2 <- mod$predict(matrix(runif(1000*2), ncol=2), se=F)
   predall <- c(pred, pred2)
@@ -8,7 +8,7 @@ des_func <- function(mod, XX) {
   des <- (pred - minpred) / (maxpred - minpred)
   des
 }
-actual_des_funcse <- function(mod, alpha, f, fmin, fmax) {#browser()
+actual_werror_func_relmax <- function(mod, alpha, f, fmin, fmax) {#browser()
   D <- ncol(mod$X)
   N <- 1e5
   XX <- matrix(runif(D*N),ncol=D)
@@ -16,14 +16,15 @@ actual_des_funcse <- function(mod, alpha, f, fmin, fmax) {#browser()
   ZZ.actual <- apply(XX, 1, f)
   abserr <- abs(ZZ - ZZ.actual)
   des <- (ZZ.actual - fmin) / (fmax - fmin)
-  mean(des*abserr)
+  weight <- 1 + alpha*des
+  mean(weight*abserr)
 }
-get_actual_des_funcse <- function (alpha, f, fmin, fmax) {
+get_actual_werror_func_relmax <- function (alpha, f, fmin, fmax) {
   function(mod) {
-    actual_des_funcse(mod, alpha=alpha, f=f, fmin=fmin, fmax=fmax)
+    actual_werror_func_relmax(mod, alpha=alpha, f=f, fmin=fmin, fmax=fmax)
   }
 }
-des_funcse <- function(mod, XX, alpha=1000, split_speed=T) {#browser()
+werror_func_relmax <- function(mod, XX, alpha=1000, split_speed=T) {#browser()
   D <- ncol(mod$X)
   # split_speed gives 3x speedup for 300 pts, 14x for 3000 pts
   if (!is.matrix(XX) || nrow(XX) <= 200 || !split_speed) {
@@ -63,7 +64,7 @@ des_funcse <- function(mod, XX, alpha=1000, split_speed=T) {#browser()
   if(any(is.nan(des * pred$se))) {browser()}
   des * pred$se
 }
-des_func14 <- function(mod, XX, split_speed=T) {#browser()
+werror_func14 <- function(mod, XX, split_speed=T) {#browser()
   # split_speed gives ?? speedup
   if (!is.matrix(XX) || nrow(XX) <= 200 || !split_speed) {
     pred <- mod$predict(XX, se=T)
