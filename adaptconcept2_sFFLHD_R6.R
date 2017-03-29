@@ -22,7 +22,7 @@ library(magrittr)
 #' @return Object of \code{\link{R6Class}} with methods for running an adaptive experiment.
 #' @format \code{\link{R6Class}} object.
 #' @examples
-#' a <- adapt.concept2.sFFLHD.R6$new(D=2,L=3,func=gaussian1, obj="desirability", desirability_func=des_func14, n0=12, take_until_maxpvar_below=.9, package="GauPro", design='sFFLHD', selection_method="max_des_red")
+#' a <- adapt.concept2.sFFLHD.R6$new(D=2,L=3,func=gaussian1, obj="desirability", des_func=des_func14, n0=12, take_until_maxpvar_below=.9, package="GauPro", design='sFFLHD', selection_method="max_des_red")
 #' a$run(5)
 #' @field X Design matrix
 #' @field Z Responses
@@ -79,6 +79,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
     des_func = NULL, # desirability function: args are mod and XX, should be the delta desirability function, output from 0 to 1
     alpha_des = NULL,
     actual_des_func = NULL,
+    actual_werror_func = NULL,
     #weight_func = NULL, # weight function: 1 + alpha_des * des_func()
     weight_const = 1,
     #werror_func = NULL, # weighted error function: sigmahat * (1+alpha_des*des_func())
@@ -136,7 +137,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       else {self$package <- package}
       #self$mod <- UGP$new(package = self$package)
       self$mod <- IGP(package = self$package, estimate.nugget=FALSE, set.nugget=1e-8)
-      self$stats <- list(iteration=c(),n=c(),pvar=c(),mse=c(), ppu=c(), minbatch=c(), pamv=c(), actual_weighted_error=c())
+      self$stats <- list(iteration=c(),n=c(),pvar=c(),mse=c(), ppu=c(), minbatch=c(), pamv=c(), actual_intwerror=c())
       self$iteration <- 1
       self$obj_nu <- NaN
       
@@ -177,6 +178,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
         self$obj_func <- function(XX) {list(...)$des_func(mod=self$mod, XX=XX)}
         self$des_func <- list(...)$des_func
         self$alpha_des <- list(...)$alpha_des
+        if (is.null(self$alpha_des)) {stop("alpha_des must be given in")}
         if (is.character(self$des_func)) {
           if (self$des_func == "des_funcse") {#browser()
             stop("don't use des_funcse anymore")
@@ -188,6 +190,12 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       # This can be used even when not using desirability in order to make comparisons
       if ('actual_des_func' %in% names(list(...))) { #browser()
         self$actual_des_func <- list(...)$actual_des_func
+      }
+      if ('actual_intwerror_func' %in% names(list(...))) { #browser()
+        self$actual_intwerror_func <- list(...)$actual_intwerror_func
+      }
+      if ('alpha_des' %in% names(list(...))) { #browser()
+        self$alpha_des <- list(...)$alpha_des
       }
       
       self$n0 <- n0
@@ -398,11 +406,11 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
      self$stats$ppu <- c(self$stats$ppu, nrow(self$X) / (nrow(self$X) + nrow(self$Xopts)))
      self$stats$minbatch <- c(self$stats$minbatch, if (length(self$batch.tracker>0)) min(self$batch.tracker) else 0)
      self$stats$pamv <- c(self$stats$pamv, self$mod$prop.at.max.var())
-     if (!is.null(self$actual_des_func)) {
-       self$stats$actual_weighted_error <- c(self$stats$actual_weighted_error, stop('Fix this, pass actual_des_func to weighted error func'))#self$actual_desirability_func(self$mod))
-     } else {
-       self$stats$actual_weighted_error <- c(self$stats$actual_weighted_error, NaN)
-     }
+     # if (!is.null(self$actual_intwerror_func)) {
+       self$stats$actual_intwerror <- c(self$stats$actual_intwerror, self$actual_intwerror_func())
+     # } else { NO LONGER USE THIS since self$actual_intwerror_func will return NaN if it can't calculate it
+     #   self$stats$actual_intwerror <- c(self$stats$actual_intwerror, NaN)
+     # }
     },
     plot1 = function() {#browser()
      if (self$D == 2) {
@@ -624,7 +632,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
      rm(gpc, objall, objopt, bestopt, bestL, Xnewone, Znewone)#;browser()
      newL
    },
-  select_new_points_from_max_des_red = function() {browser()
+  select_new_points_from_max_des_red = function() {#browser()
     if (self$package == 'laGP') {
      gpc <- UGP::IGP(X = self$X, Z=self$Z, package='laGP', d=1/self$mod$theta(), g=self$mod$nugget(), estimate_params=FALSE)
     } else {
@@ -640,6 +648,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       cf::cf(self$mod$predict, batchmax=Inf, pts=self$X)
       screen(2)
       # cf(function(X)self$desirability_func(gpc, X), batchmax=5e3, afterplotfunc=function(){points(self$X, col=3, pch=2);points(self$Xopts[-Xopts_to_consider,], col=4,pch=3);points(self$Xopts[Xopts_to_consider,])})
+      # browser()
       cf(function(X)self$werror_func(mod=gpc, XX=X), batchmax=5e3, afterplotfunc=function(){points(self$X, col=3, pch=2);points(self$Xopts[-Xopts_to_consider,], col=4,pch=3);points(self$Xopts[Xopts_to_consider,])})
       #browser()
     }
@@ -654,7 +663,10 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
     #int_points <- lapply(1:10, function(iii) {simple.LHS(1e3, self$D)})
     int_points <- simple.LHS(1e4, self$D)
     # int_des_weight_func <- function() {mean(self$desirability_func(gpc,int_points))}
-    int_werror_func <- function() {mean(self$werror_func(XX=int_points, mod=gpc))}
+    int_werror_func <- function() {
+      #browser();
+      mean(self$werror_func(XX=int_points, mod=gpc))
+    }
     X_with_bestL <- self$X#, self$Xopts[bestL, ,drop=F])
     Z_with_bestL <- self$Z
     for (ell in 1:self$b) {
@@ -813,9 +825,28 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
     weight_const + alpha * des_func(XX=XX, mod=mod)
   },
   # The weighted error function sigmahat * (1 + alpha * delta())
-  werror_func = function(..., XX, mod=self$mod, des_func=self$des_func, alpha=self$alpha_des, weight_const=self$weight_const, weight_func=self$weight_func) {browser()
-    err <- self$mod$predict.se(XX)
+  werror_func = function(..., XX, mod=self$mod, des_func=self$des_func, alpha=self$alpha_des, weight_const=self$weight_const, weight_func=self$weight_func) {#browser()
+    #browser()
+    err <- mod$predict.se(XX)
     err * weight_func(XX=XX, mod=mod, des_func=des_func, alpha=alpha,weight_const=weight_const)
+  },
+  intwerror_func = function(..., N=1e4, mod=self$mod, des_func=self$des_func, alpha=self$alpha_des, weight_const=self$weight_const, weight_func=self$weight_func){
+    # use self$func instead of self$mod to get actual value
+    XX <- simple.LHS(N, self$D) #matrix(runif(n*self$D), ncol=self$D)
+    mean(self$werror_func(XX=XX, mod=mod, des_func=des_func, alpha=alpha,weight_const=weight_const))
+  },
+  actual_intwerror_func = function(..., N=2e3, mod=self$mod, f=self$func) {
+    if (is.null(self$actual_des_func)) { # Return NaN if user doesn't give actual_des_func
+      return(NaN)
+    }
+    XX <- simple.LHS(n = N,d = self$D)
+    ZZ <- mod$predict(XX)
+    ZZ.actual <- apply(XX, 1, f)
+    abserr <- abs(ZZ - ZZ.actual)
+    # TODO LATER Have actual_des_func return ZZ to save time
+    #browser()
+    weight <- self$weight_const + self$alpha_des * self$actual_des_func(XX=XX, mod=mod)
+    mean(weight * abserr)
   },
   delete = function() {
     self$mod$delete()
@@ -867,21 +898,21 @@ if (F) {
   a <- adapt.concept2.sFFLHD.R6$new(D=4,L=5,func=add_null_dims(banana,2), obj="gradpvarnu", n0=12, take_until_maxpvar_below=.9, package="GauPro", design='sFFLHD')
   a$run(5)
   
-  a <- adapt.concept2.sFFLHD.R6$new(D=2,L=5,func=banana, obj="desirability", desirability_func=des_funcse, n0=12, take_until_maxpvar_below=.9, package="GauPro", design='sFFLHD', selection_method="max_des_red")
+  a <- adapt.concept2.sFFLHD.R6$new(D=2,L=5,func=banana, obj="desirability", des_func=des_func_relmax, n0=12, take_until_maxpvar_below=.9, package="GauPro", design='sFFLHD', selection_method="max_des_red")
   a$run(5)
-  cf(function(x) des_funcse(a$mod, x), batchmax=1e3, pts=a$X)
-  a <- adapt.concept2.sFFLHD.R6$new(D=2,L=5,func=banana, obj="desirability", desirability_func=des_funcse, n0=12, take_until_maxpvar_below=.9, package="GauPro", design='sFFLHD', selection_method="max_des_red", actual_des_func=get_actual_des_funcse(alpha=1e3, f=banana, fmin=0, fmax=1))
+  cf(function(x) des_func_relmax(a$mod, x), batchmax=1e3, pts=a$X)
+  a <- adapt.concept2.sFFLHD.R6$new(D=2,L=5,func=banana, obj="desirability", des_func=des_func_relmax, n0=12, take_until_maxpvar_below=.9, package="GauPro", design='sFFLHD', selection_method="max_des_red", actual_des_func=get_actual_des_func_relmax(f=banana, fmin=0, fmax=1))
   a$run(5)
   a <- adapt.concept2.sFFLHD.R6$new(D=2,L=5,func=add_linear_terms(banana, c(.01,-.01)), 
-                                    obj="desirability", desirability_func=des_funcse, n0=12, take_until_maxpvar_below=.9, package="GauPro", design='sFFLHD', selection_method="max_des_red", actual_des_func=get_actual_des_funcse(alpha=1e3, f=add_linear_terms(banana, c(.01,-.01)), fmin=-.01, fmax=1.005))  
+                                    obj="desirability", des_func=des_func_relmax, n0=12, alpha_des=1e3, take_until_maxpvar_below=.9, package="GauPro", design='sFFLHD', selection_method="max_des_red", actual_des_func=get_actual_des_func_relmax(f=add_linear_terms(banana, c(.01,-.01)), fmin=-.01, fmax=1.005))  
   a <- adapt.concept2.sFFLHD.R6$new(D=2,L=5,func=add_zoom(banana, c(.2,.5), c(.8,1)), 
-                                    obj="desirability", desirability_func=des_funcse, n0=12, take_until_maxpvar_below=.9, package="GauPro", design='sFFLHD', selection_method="max_des_red")  
+                                    obj="desirability", des_func=des_func_relmax, n0=12, take_until_maxpvar_below=.9, package="GauPro", design='sFFLHD', selection_method="max_des_red")  
   
   # banana with null
-  a <- adapt.concept2.sFFLHD.R6$new(D=4,L=5,func=add_null_dims(banana,2), obj="desirability", desirability_func=des_funcse, n0=12, take_until_maxpvar_below=.9, package="GauPro", design='sFFLHD', selection_method="max_des_red")
+  a <- adapt.concept2.sFFLHD.R6$new(D=4,L=5,func=add_null_dims(banana,2), obj="desirability", des_func=des_func_relmax, n0=12, take_until_maxpvar_below=.9, package="GauPro", design='sFFLHD', selection_method="max_des_red")
   a$run(5)
   
-  a <- adapt.concept2.sFFLHD.R6$new(D=2,L=5,func=banana, obj="desirability", desirability_func=des_funcse, n0=12, take_until_maxpvar_below=.9, package="laGP", design='sFFLHD', selection_method="max_des_red")
+  a <- adapt.concept2.sFFLHD.R6$new(D=2,L=5,func=banana, obj="desirability", des_func=des_func_relmax, alpha_des=1e3, actual_des_func=actual_des_func_relmax_banana, n0=12, take_until_maxpvar_below=.9, package="laGP", design='sFFLHD', selection_method="max_des_red")
   a$run(5)
   a <- adapt.concept2.sFFLHD.R6$new(D=2,L=5,func=banana, obj="func", n0=12, take_until_maxpvar_below=.9, package="laGP", design='sFFLHD', selection_method="SMED")
   a$run(5)

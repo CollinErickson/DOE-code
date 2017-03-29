@@ -1,14 +1,28 @@
-# Test desirability function
-des_func_relmax <- function(mod, XX) {
+# Test desirability functions
+# A des func where output is scaled 0 to 1, max higher
+#' @param return_se whether the se prediction should be returned along with
+#'   the des, all will be returned in data.frame, this will save
+#'   time if calculating the werror function since it is faster
+#'   to predict both at once instead of separately
+des_func_relmax <- function(mod, XX, return_se=F) {
   pred <- mod$predict(XX, se=F)
-  pred2 <- mod$predict(matrix(runif(1000*2), ncol=2), se=F)
+  pred2 <- mod$predict(matrix(runif(1000*2), ncol=2), return_se=return_se)
+  if (se) {
+    se_toreturn <- pred2$se
+    pred2 <- pred2$fit
+  }
   predall <- c(pred, pred2)
   maxpred <- max(predall)
   minpred <- min(predall)
   des <- (pred - minpred) / (maxpred - minpred)
+  if (se) {
+    return(data.frame(des=des, se=se_toreturn))
+  }
   des
 }
-actual_werror_func_relmax <- function(mod, alpha, f, fmin, fmax) {#browser()
+
+# A func that calculated the actual value of int (weight * |y-hat|) dx
+actual_intwerror_func_relmax <- function(mod, alpha, f, fmin, fmax) {#browser()
   D <- ncol(mod$X)
   N <- 1e5
   XX <- matrix(runif(D*N),ncol=D)
@@ -19,11 +33,37 @@ actual_werror_func_relmax <- function(mod, alpha, f, fmin, fmax) {#browser()
   weight <- 1 + alpha*des
   mean(weight*abserr)
 }
-get_actual_werror_func_relmax <- function (alpha, f, fmin, fmax) {
+# A func that returns a func for above where you can specify alpha, f, fmin, fmax
+get_actual_intwerror_func_relmax <- function (alpha, f, fmin, fmax) {
   function(mod) {
-    actual_werror_func_relmax(mod, alpha=alpha, f=f, fmin=fmin, fmax=fmax)
+    actual_intwerror_func_relmax(mod, alpha=alpha, f=f, fmin=fmin, fmax=fmax)
   }
 }
+
+# A func that calculated the actual value of int (weight * |y-hat|) dx
+actual_des_func_relmax <- function(..., XX, mod, f, fmin, fmax) {#browser()
+  # TODO LATER have this return ZZ so it isn't recalculated later
+  # D <- ncol(mod$X)
+  # N <- 1e5
+  # XX <- matrix(runif(D*N),ncol=D)
+  ZZ <- mod$predict(XX)
+  ZZ.actual <- apply(XX, 1, f)
+  abserr <- abs(ZZ - ZZ.actual)
+  des <- (ZZ.actual - fmin) / (fmax - fmin)
+  # weight <- 1 + alpha*des
+  # mean(weight*abserr)
+  des
+}
+# A func that returns a func for above where you can specify alpha, f, fmin, fmax
+get_actual_des_func_relmax <- function (f, fmin, fmax) {#browser()
+  function(XX, mod) {
+    actual_des_func_relmax(XX=XX, mod=mod, f=f, fmin=fmin, fmax=fmax)
+  }
+}
+actual_des_func_relmax_banana <- get_actual_des_func_relmax(f=banana, fmin=0, fmax=1)
+
+
+
 werror_func_relmax <- function(mod, XX, alpha=1000, split_speed=T) {#browser()
   D <- ncol(mod$X)
   # split_speed gives 3x speedup for 300 pts, 14x for 3000 pts
