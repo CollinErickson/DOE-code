@@ -185,6 +185,11 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
             self$des_func <- des_funcse
           }
         }
+        if (is.character(self$des_func)) {
+          if (self$des_func == "des_func_relmax") {#browser()
+            self$des_func <- des_func_relmax
+          }
+        }
       }
       
       # This can be used even when not using desirability in order to make comparisons

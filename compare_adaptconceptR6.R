@@ -21,6 +21,7 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
     seed_start = NULL,
     folder_created = FALSE,
     outdf = data.frame(),
+    outrawdf = data.frame(),
     plotdf = data.frame(),
     enddf = data.frame(),
     meandf = data.frame(),
@@ -29,7 +30,8 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
     rungridlist = list(),
     package = NULL,
     selection_method=NULL,
-    desirability_func=NULL,
+    des_func=NULL,
+    alpha_des = NULL,
     actual_des_func=NULL,
     number_runs = NULL,
     completed_runs = NULL,
@@ -43,7 +45,7 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
                           seed_start=NULL,
                           package="laGP",
                           selection_method='SMED',
-                          desirability_func=NA,
+                          des_func=NA, alpha_des=NaN,
                           actual_des_func=NULL,
                           ...) {
       self$func <- func
@@ -61,7 +63,8 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
       self$seed_start <- seed_start
       self$package <- package
       self$selection_method <- selection_method
-      self$desirability_func <- desirability_func
+      self$des_func <- des_func
+      self$alpha_des <- alpha_des
       self$actual_des_func <- actual_des_func
       #browser()
       if (is.null(func_string)) {
@@ -85,14 +88,14 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
                    data.frame(repl=1:reps, seed=if(!is.null(seed_start)) seed_start+1:reps-1 else NA),
                    data.frame(reps),
                    data.frame(batches),
-                   data.frame(obj, selection_method, desirability_func,
+                   data.frame(obj, selection_method, des_func, alpha_des,
                               actual_des_func=deparse(substitute(actual_des_func)), actual_des_func_num=1:length(actual_des_func),
                               stringsAsFactors = F),
                    #data.frame(forces=forces,force_vals=force_vals),
                    data.frame(force_old,force_pvar),
                    data.frame(n0),
                    data.frame(package, stringsAsFactors = FALSE)
-                   #data.frame(selection_method, desirability_func, stringsAsFactors = FALSE)
+                   #data.frame(selection_method, des_func, stringsAsFactors = FALSE)
                 )
       #self$multiple_option_columns <- c()
       #self$rungrid$Group <- ""
@@ -113,6 +116,7 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
       self$rungridlist$actual_des_func <- c(actual_des_func)[self$rungrid$actual_des_func_num]
       self$number_runs <- nrow(self$rungrid)
       self$completed_runs <- rep(FALSE, self$number_runs)
+      #self$outrawdf <- data.frame()
     },
     create_output_folder = function(timestamp = FALSE) {
       folderTime0 <- gsub(" ","_", Sys.time())
@@ -169,7 +173,7 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
           }
         }
       }
-      if (self$save_output) {write.csv(self$outdf, paste0(self$folder_path,"/data.csv"))}  
+      if (self$save_output) {write.csv(self$outrawdf, paste0(self$folder_path,"/dataraw.csv"))}  
       self$postprocess_outdf()
       
       invisible(self)        
@@ -197,7 +201,7 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
       } else if (self$completed_runs[irow] == TRUE) {
         warning("irow already run, will run again anyways")
       }
-      
+      #browser()
       row_grid <- self$rungrid[irow, ] #rungrid row for current run
       if (!is.na(row_grid$seed)) {set.seed(seed)}
       #browser()
@@ -211,7 +215,7 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
       #browser()
       newdf0 <- data.frame(batch=u$stats$iteration, mse=u$stats$mse, 
                            pvar=u$stats$pvar, pamv=u$stats$pamv,
-                           actual_weighted_error=u$stats$actual_weighted_error,
+                           actual_intwerror=u$stats$actual_intwerror,
                            #obj=row_grid$obj, 
                            num=paste0(row_grid$obj,row_grid$repl),
                            time = systime[3], #repl=row_grid$repl,
@@ -221,7 +225,14 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
                            row.names=NULL
       )
       newdf1 <- cbind(row_grid, newdf0, row.names=NULL)
-      self$outdf <- rbind(self$outdf, newdf1)
+      if (browsernow) {browser()}
+      #self$outdf <- rbind(self$outdf, newdf1)
+      if (nrow(self$outrawdf) == 0) { # If outrawdf not yet created, created blank df with correct names and size
+        self$outrawdf <- as.data.frame(matrix(data=NA, nrow=nrow(self$rungrid) * self$batches, ncol=ncol(newdf1)))
+        colnames(self$outrawdf) <- colnames(newdf1)
+      }
+      self$outrawdf[((irow-1)*self$batches+1):(irow*self$batches), ] <- newdf1
+      stop("Here it is adding some columns wrong, force2 should be 0_0 and I think it is as newdf0, but it shows up as 1 in final df")
       if (save_output) {
         if (file.exists(paste0(self$folder_path,"/data_cat.csv"))) { # append new row
           write.table(x=newdf1, file=paste0(self$folder_path,"/data_cat.csv"),append=T, sep=",", col.names=F)
@@ -233,17 +244,18 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
       self$completed_runs[irow] <- TRUE
       invisible(self)
     },
-    postprocess_outdf = function() {#browser()
+    postprocess_outdf = function(save_output=self$save_output) {#browser()
+      self$outdf <- self$outrawdf
       self$outdf$rmse <- sqrt(ifelse(self$outdf$mse>=0, self$outdf$mse, 1e-16))
       self$outdf$prmse <- sqrt(ifelse(self$outdf$pvar>=0, self$outdf$pvar, 1e-16))
       self$enddf <- self$outdf[self$outdf$batch == self$batches,]
       # Want to get mean of these columns across replicates
-      meanColNames <- c("mse","pvar","pamv","rmse","prmse","actual_weighted_error")
+      meanColNames <- c("mse","pvar","pamv","rmse","prmse","actual_intwerror")
       # Use these as ID, exclude repl, seed, and num and time
       splitColNames <- c("func","func_string","func_num","D","L",
                          "reps","batches",
                          "force_old","force_pvar","force2",
-                         "n0","obj", "batch", "Group","package", "actual_des_func_num")
+                         "n0","obj", "batch", "Group","package", "actual_des_func_num", "alpha_des")
       self$meandf <- plyr::ddply(
                        self$outdf, 
                        splitColNames, 
@@ -258,6 +270,9 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
                         exp(colMeans(log(tdf[,meanColNames])))
                       }
       )
+      
+      if (self$save_output) {write.csv(self$outdf, paste0(self$folder_path,"/data.csv"))} 
+      
       invisible(self)
     },
     plot_over_batch = function(save_output = self$save_output) {
@@ -278,16 +293,16 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
     },
     plot_awe_over_batch = function(save_output = self$save_output) {
       if (save_output) {
-        png(filename = paste0(self$folder_path,"/plot_actual_weighted_error.png"),
+        png(filename = paste0(self$folder_path,"/plot_actual_intwerror.png"),
             width = 480, height = 480)
       }
       print(
-        ggplot(data=self$outdf, aes(x=batch, y=actual_weighted_error, group = interaction(num,Group), colour = Group)) +
+        ggplot(data=self$outdf, aes(x=batch, y=actual_intwerror, group = interaction(num,Group), colour = Group)) +
           geom_line() +
-          geom_line(inherit.aes = F, data=self$meanlogdf, aes(x=batch, y=actual_weighted_error, colour = Group, size=3, alpha=.5)) +
+          geom_line(inherit.aes = F, data=self$meanlogdf, aes(x=batch, y=actual_intwerror, colour = Group, size=3, alpha=.5)) +
           geom_point() + 
           scale_y_log10() + 
-          xlab("Batch") + ylab("actual_weighted_error") + guides(size=FALSE, alpha=FALSE)
+          xlab("Batch") + ylab("actual_intwerror") + guides(size=FALSE, alpha=FALSE)
       )
       if (save_output) {dev.off()}
       invisible(self)
@@ -355,8 +370,9 @@ if (F) {
   
   
   # For desirability
-  ca1 <- compare.adaptR6$new(func=gaussian1, D=2, L=3, n0=6, obj="desirability", selection_method=c('max_des', 'SMED'), desirability_func=c('des_funcse', NA))$run_all()$plot()
-  ca1 <- compare.adaptR6$new(func=banana, D=2, L=4, n0=20, obj=c("func","desirability"), selection_method=c('SMED', 'max_des_red'), desirability_func=c('NA', 'des_funcse'), actual_des_func=c('NA', get_actual_des_funcse(alpha=1e3, f=banana, fmin=0, fmax=1)), package="laGP")$run_all()$plot()
-  ca1 <- compare.adaptR6$new(func=banana, reps=3, batches=3, D=2, L=4, n0=20, obj=c("func","desirability"), selection_method=c('SMED', 'max_des_red'), desirability_func=c('NA', 'des_funcse'), actual_des_func=c(get_actual_des_funcse(alpha=1e3, f=banana, fmin=0, fmax=1)), package="laGP")$run_all()$plot()
-  ca1 <- compare.adaptR6$new(func=banana, reps=10, batches=3, D=2, L=4, n0=20, obj=c("func","desirability"), selection_method=c('SMED', 'max_des_red'), desirability_func=c('NA', 'des_funcse'), actual_des_func=c(get_actual_des_funcse(alpha=1e3, f=banana, fmin=0, fmax=1)), package="laGP")$run_all()$plot()
+  ca1 <- compare.adaptR6$new(func=gaussian1, D=2, L=3, n0=6, obj="desirability", selection_method=c('max_des', 'SMED'), des_func=c('des_func_relmax', NA))$run_all()$plot()
+  ca1 <- compare.adaptR6$new(func=banana, D=2, L=4, n0=20, obj=c("func","desirability"), selection_method=c('SMED', 'max_des_red'), des_func=c('NA', 'des_func_relmax'), alpha_des=1e3, actual_des_func=c('NA', get_actual_des_func_relmax(f=banana, fmin=0, fmax=1)), package="laGP")$run_all()$plot()
+  ca1 <- compare.adaptR6$new(func=banana, reps=3, batches=3, D=2, L=4, n0=20, obj=c("func","desirability"), selection_method=c('SMED', 'max_des_red'), des_func=c('NA', 'des_func_relmax'), alpha_des=1e3, actual_des_func=c(get_actual_des_func_relmax(f=banana, fmin=0, fmax=1)), package="laGP")$run_all()$plot()
+  ca1 <- compare.adaptR6$new(func=banana, reps=10, batches=10, D=2, L=4, n0=20, obj=c("func","desirability"), selection_method=c('SMED', 'max_des_red'), des_func=c('NA', 'des_func_relmax'), alpha_des=1e3, actual_des_func=c(get_actual_des_func_relmax(f=banana, fmin=0, fmax=1)), package="laGP")$run_all()$plot()
+  ca1$plot_awe_over_batch()
 }

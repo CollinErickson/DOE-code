@@ -5,9 +5,9 @@
 #'   time if calculating the werror function since it is faster
 #'   to predict both at once instead of separately
 des_func_relmax <- function(mod, XX, return_se=F) {
-  pred <- mod$predict(XX, se=F)
+  pred <- mod$predict(XX, return_se=F)
   pred2 <- mod$predict(matrix(runif(1000*2), ncol=2), return_se=return_se)
-  if (se) {
+  if (return_se) {
     se_toreturn <- pred2$se
     pred2 <- pred2$fit
   }
@@ -15,7 +15,7 @@ des_func_relmax <- function(mod, XX, return_se=F) {
   maxpred <- max(predall)
   minpred <- min(predall)
   des <- (pred - minpred) / (maxpred - minpred)
-  if (se) {
+  if (return_se) {
     return(data.frame(des=des, se=se_toreturn))
   }
   des
