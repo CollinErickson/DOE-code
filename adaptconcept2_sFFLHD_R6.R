@@ -48,6 +48,8 @@ library(magrittr)
 adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
   public = list(
     func = NULL, # "function", 
+    func_run_together = NULL, # Should the matrix of values to be run be passed to func as a matrix or by row?, useful if you parallelize your own function or call another program to get actual values
+    func_fast = NULL, # Is the func super fast so the actual MSE can be calculated?
     D = NULL, # "numeric", 
     L = NULL, # sFFLHD batch size, probably the same as b, or number of points design gives when taking a single batch
     b = NULL, # batch size to add each iteration, probably the same as L
@@ -85,19 +87,29 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
     #werror_func = NULL, # weighted error function: sigmahat * (1+alpha_des*des_func())
     selection_method = NULL, # string
     plot_grad = NULL,
+    
+    parallel = NULL, # Should the new values be calculated in parallel? Not for the model, for getting actual new Z values
+    parallel_cores = NULL, # Number of cores used for parallel
+    parallel_cluster = NULL, # The object for the cluster currently running
+    
  
     initialize = function(D,L,b=NULL, package=NULL, obj=NULL, n0=0, 
                          force_old=0, force_pvar=0,
-                         useSMEDtheta=F, func, take_until_maxpvar_below=NULL,
+                         useSMEDtheta=F, 
+                         func, func_run_together=FALSE, func_fast=TRUE,
+                         take_until_maxpvar_below=NULL,
                          design="sFFLHD",
                          selection_method, X0=NULL, Xopts=NULL,
                          plot_grad=TRUE, new_batches_per_batch=5,
+                         parallel=FALSE, parallel_cores="detect",
                          ...) {#browser()
       self$D <- D
       self$L <- L
       self$b <- if (is.null(b)) L else b
       self$new_batches_per_batch <- new_batches_per_batch
       self$func <- func
+      self$func_run_together <- func_run_together
+      self$func_fast <- func_fast
       self$force_old <- force_old
       self$force_pvar <- force_pvar
       self$take_until_maxpvar_below <- take_until_maxpvar_below
@@ -231,6 +243,19 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       #if (length(force_old) == 0) {self$force_old <- 0}
       #if (length(force_pvar) == 0) {self$force_pvar <- 0}
       self$useSMEDtheta <- if (length(useSMEDtheta)==0) {FALSE} else {useSMEDtheta}
+      
+      # Set up parallel stuff
+      self$parallel <- parallel
+      if (self$parallel) {
+        # Use a list to store info about parallel, such as num nodes, cluster, etc
+        if (parallel_cores == "detect") {
+          self$parallel_cores <- parallel::detectCores()
+        } else {
+          self$parallel_cores <- parallel_cores
+        }
+        # For now assume using parallel package
+        self$parallel_cluster <- parallel::makeCluster(spec = self$parallel_cores, type = "SOCK")
+      }
     },
     run = function(maxit, plotlastonly=F, noplot=F) {
       i <- 1
@@ -407,15 +432,23 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
      self$stats$n <- c(self$stats$n, nrow(self$X))
      #stats$level <<- c(stats$level, level)
      self$stats$pvar <- c(self$stats$pvar, msfunc(self$mod$predict.var,cbind(rep(0,self$D),rep(1,self$D))))
-     self$stats$mse <- c(self$stats$mse, msecalc(self$func,self$mod$predict,cbind(rep(0,self$D),rep(1,self$D))))
+     self$stats$mse <- c(self$stats$mse, self$mse_func()) #msecalc(self$func,self$mod$predict,cbind(rep(0,self$D),rep(1,self$D))))
      self$stats$ppu <- c(self$stats$ppu, nrow(self$X) / (nrow(self$X) + nrow(self$Xopts)))
      self$stats$minbatch <- c(self$stats$minbatch, if (length(self$batch.tracker>0)) min(self$batch.tracker) else 0)
      self$stats$pamv <- c(self$stats$pamv, self$mod$prop.at.max.var())
      # if (!is.null(self$actual_intwerror_func)) {
+     # if (self$calculate_actual_intwerror) {
        self$stats$actual_intwerror <- c(self$stats$actual_intwerror, self$actual_intwerror_func())
      # } else { NO LONGER USE THIS since self$actual_intwerror_func will return NaN if it can't calculate it
      #   self$stats$actual_intwerror <- c(self$stats$actual_intwerror, NaN)
      # }
+    },
+    mse_func = function() {
+      if (self$func_fast) {
+        msecalc(self$func,self$mod$predict,cbind(rep(0,self$D),rep(1,self$D)))
+      } else {
+        NaN
+      }
     },
     plot1 = function() {#browser()
      if (self$D == 2) {
@@ -468,9 +501,11 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       # } else {
       #   rect(lims.up[1,1],lims.up[2,1],lims.up[1,2],lims.up[2,2],lwd=2,border='red')
        #}
-       screen(3) # actual squared error plot
-       par(mar=c(2,2,0,0.5)) # 5.1 4.1 4.1 2.1 BLTR
-       cf_func(self$func, n = 20, mainminmax_minmax = F, pretitle="Actual ")
+       if (self$func_fast) { # Only plot true func if fast
+         screen(3) # actual squared error plot
+         par(mar=c(2,2,0,0.5)) # 5.1 4.1 4.1 2.1 BLTR
+         cf_func(self$func, n = 20, mainminmax_minmax = F, pretitle="Actual ")
+       }
        if (self$iteration >= 2) {#browser()
          statsdf <- as.data.frame(self$stats)
          screen(4) # MSE plot
@@ -498,11 +533,12 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
               xlab="Iteration")#, ylab="Level")
          legend('bottomleft',legend="% pts",fill=1)
        }
-       screen(7) # actual squared error plot
-       par(mar=c(2,2,0,0.5)) # 5.1 4.1 4.1 2.1 BLTR
-       cf_func(function(xx){(self$mod$predict(xx) - self$func(xx))^2},
-                          n = 20, mainminmax_minmax = F, pretitle="SqErr ")
-       
+       if (self$func_fast) {
+         screen(7) # actual squared error plot
+         par(mar=c(2,2,0,0.5)) # 5.1 4.1 4.1 2.1 BLTR
+         cf_func(function(xx){(self$mod$predict(xx) - self$func(xx))^2},
+                            n = 20, mainminmax_minmax = F, pretitle="SqErr ")
+       }       
        close.screen(all = TRUE)
      } else { # D != 2 
        par(mfrow=c(2,2))
@@ -526,14 +562,19 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
          #plot(statsdf$iter, statsdf$level, type='o', pch=19)
          #legend('topleft',legend="Level",fill=1)
          Xplot <- matrix(runif(self$D*50), ncol=self$D)
-         Zplot.pred <- self$mod$predict(Xplot)
-         Zplot.act <- apply(Xplot,1, self$func)
+         if (self$func_fast) { # Only do these if fast
+           Zplot.pred <- self$mod$predict(Xplot)
+           Zplot.act <- apply(Xplot,1, self$func)
+         } else {
+           Zplot.pred <- c()
+           Zplot.act <- c()
+         }
          Zplot.se <- self$mod$predict.se(Xplot)
          Zused.pred <- self$mod$predict(self$X)
          plot(NULL, xlim=c(min(self$Z, Zplot.act), max(self$Z, Zplot.act)), 
               ylim=c(min(Zused.pred, Zplot.pred), max(Zused.pred, Zplot.pred)))
          abline(a = 0, b = 1)
-         points(Zplot.act, Zplot.pred, xlab="Z", ylab="Predicted")
+         if (self$func_fast) {points(Zplot.act, Zplot.pred, xlab="Z", ylab="Predicted")}
          points(self$Z, Zused.pred, col=2)
          # 3 % pts used plot
          plot(statsdf$iter, statsdf$ppu, type='o', pch=19,
@@ -819,11 +860,22 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
     Xnew <- self$Xopts[newL,]
     self$Xopts <- self$Xopts[-newL, , drop=FALSE]
     self$batch.tracker <- self$batch.tracker[-newL]
-    Znew <- apply(Xnew,1,self$func) # This is where the simulations are run, will probably have to put this out to be parallelizable and sent out as jobs
+    Znew <- self$calculate_Z(Xnew) #apply(Xnew,1,self$func) # This is where the simulations are run, will probably have to put this out to be parallelizable and sent out as jobs
     if (any(duplicated(rbind(self$X,Xnew)))) {browser()}
     self$X <- rbind(self$X,Xnew)
     self$Z <- c(self$Z,Znew)
     self$update_obj_nu(Xnew=Xnew, Znew=Znew)
+  },
+  calculate_Z = function(X) {#browser()
+    # Used to just be apply(self$X, 1, self$func)
+    if (self$parallel && inherits(self$parallel_cluster, "cluster")) {
+      # parallel::clusterApply(cl = self$parallal_cluster, x = 1:nrow(X))
+      parallel::parRapply(cl = self$parallel_cluster, x = X, self$func)
+    } else if (self$func_run_together) {
+      self$func(X)
+    } else {
+      apply(X, 1, self$func)
+    }
   },
   # The weight function 1 + alpha * delta()
   weight_func = function(..., XX, mod=self$mod, des_func=self$des_func, alpha=self$alpha_des, weight_const=self$weight_const) {
@@ -855,6 +907,10 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
   },
   delete = function() {
     self$mod$delete()
+    if (self$parallel) {
+      print("Deleting cluster")
+      parallel::stopCluster(cl = self$parallel_cluster)
+    }
   }
   )
 )
