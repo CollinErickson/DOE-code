@@ -9,6 +9,7 @@ library(SMED, lib.loc = lib.loc)
 library(sFFLHD, lib.loc = lib.loc)
 library(UGP, lib.loc = lib.loc)
 library(magrittr)
+csa <- function() close.screen(all.screens = TRUE)
 #setOldClass("UGP")
 
 
@@ -678,7 +679,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
      rm(gpc, objall, objopt, bestopt, bestL, Xnewone, Znewone)#;browser()
      newL
    },
-  select_new_points_from_max_des_red = function() {#browser()
+  select_new_points_from_max_des_red = function() {browser()
     if (self$package == 'laGP') {
      gpc <- UGP::IGP(X = self$X, Z=self$Z, package='laGP', d=1/self$mod$theta(), g=self$mod$nugget(), estimate_params=FALSE)
     } else {
@@ -739,6 +740,13 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
         }
         int_werror_vals[bestL[ell]] <- int_werror_vals_star # Store current selection in IDWs, but not actually using it for anything
       }
+      
+      # Testing variance reduction
+      pvs <- self$int_pvar_red_for_opts(Xopts = self$Xopts, XX = int_points, mod = self$mod)
+      pvs2 <- rep(NA, nrow(self$Xopts))
+      gpc$mod$s2_hat <- self$mod$mod$s2_hat
+      # DELETE THE ABOVE LINE OR IT WILL BE BAD
+      
       for (r in setdiff(Xopts_to_consider, bestL)) {
         if (self$package == 'laGP') {
           gpc$delete()
@@ -748,7 +756,11 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
         } else {
           gpc$update(Xall = rbind(X_with_bestL, self$Xopts[r, ,drop=F]), Zall=c(Z_with_bestL, Znotrun_preds[r]), restarts=0, no_update=TRUE)
         }
-        #browser()
+        
+        # browser()
+        gpc$mod$s2_hat <- self$mod$mod$s2_hat
+        # DELETE THE ABOVE LINE OR IT WILL BE BAD
+        pvs2[r] <- mean(self$mod$predict.var(int_points) - gpc$predict.var(int_points))
         
         # This false chunk shows the distribution of change in desirability of points
         if (F) {
@@ -771,6 +783,10 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
         }
         int_werror_vals[r] <- int_werror_vals_r
       }
+      
+      browser()
+      # See if pvar reduction by shortcut is same as full, it is now, 4 sec vs 8 sec so faster
+      # csa(); plot(pvs, pvs2); lmp <- lm(pvs2~pvs); lmp
      
       # Reduce the number to consider if large
       if (ell < self$b) {
@@ -887,10 +903,44 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
     err <- mod$predict.se(XX)
     err * weight_func(XX=XX, mod=mod, des_func=des_func, alpha=alpha,weight_const=weight_const)
   },
-  intwerror_func = function(..., N=1e4, mod=self$mod, des_func=self$des_func, alpha=self$alpha_des, weight_const=self$weight_const, weight_func=self$weight_func){
+  intwerror_func = function(..., XX=NULL, N=1e4, mod=self$mod, des_func=self$des_func, alpha=self$alpha_des, weight_const=self$weight_const, weight_func=self$weight_func){
     # use self$func instead of self$mod to get actual value
-    XX <- simple.LHS(N, self$D) #matrix(runif(n*self$D), ncol=self$D)
+    if (is.null(XX)) {
+      XX <- simple.LHS(N, self$D) #matrix(runif(n*self$D), ncol=self$D)
+    }
     mean(self$werror_func(XX=XX, mod=mod, des_func=des_func, alpha=alpha,weight_const=weight_const))
+  },
+  int_pvar_red_for_opts = function(..., Xopts, XX=NULL, N=1e4, mod=self$mod, des_func=self$des_func, alpha=self$alpha_des, weight_const=self$weight_const, weight_func=self$weight_func){
+    # browser()
+    # use self$func instead of self$mod to get actual value
+    if (is.null(XX)) {
+      XX <- simple.LHS(N, self$D) #matrix(runif(n*self$D), ncol=self$D)
+    }
+    #browser()
+    K_X_XX <- mod$mod$corr_func(self$X, XX)
+    to <- apply(X=Xopts, MARGIN=1, FUN=self$int_pvar_red_for_one, X_=self$X, 
+                XX=XX, corr_func=mod$mod$corr_func, Kinv=self$mod$mod$Kinv, 
+                s2=self$mod$mod$s2_hat, K_X_XX=K_X_XX)
+    to
+  },
+  int_pvar_red_for_one = function(v, X_, XX, corr_func, Kinv, s2, K_X_XX) { #browser()
+    X <- X_ # can't pass X through apply since it matches first arg
+    vmatrix <- matrix(v, nrow=1)
+    Kxv <- as.numeric(corr_func(X, vmatrix))
+    Kvv <- as.numeric(corr_func(vmatrix, vmatrix))
+    Kxinv_Kxv <- as.numeric(Kinv %*% Kxv) # convert to vector to be faster
+    s2_over_bottom <- as.numeric(s2/ (Kvv - t(Kxv) %*% Kxinv_Kxv))
+    reds <- sapply(1:nrow(XX), function(i) { #browser()
+      zmatrix <- XX[i, , drop=F]
+      # zmatrix <- matrix(z, nrow=1)
+      # Kxz <- corr_func(X, zmatrix)
+      Kxz <- K_X_XX[, i]
+      Kvz <- corr_func(vmatrix, zmatrix)
+      t1 <- s2_over_bottom * (sum(Kxz * Kxinv_Kxv) - Kvz)^2
+      if (is.na(t1)) {browser()}
+      t1
+    })
+    mean(reds)
   },
   actual_intwerror_func = function(..., N=2e3, mod=self$mod, f=self$func) {
     if (is.null(self$actual_des_func)) { # Return NaN if user doesn't give actual_des_func
@@ -904,6 +954,14 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
     #browser()
     weight <- self$weight_const + self$alpha_des * self$actual_des_func(XX=XX, mod=mod)
     mean(weight * abserr)
+  },
+  print_results = function() { browser()
+    best_index <- which.max(self$Z)
+    bestZ <- self$Z[best_index]
+    bestX <- self$X[best_index, ]
+    cat("Best design point is ", signif(bestX, 3),
+        " with objective value ", bestZ, '\n')
+    
   },
   delete = function() {
     self$mod$delete()
@@ -978,4 +1036,9 @@ if (F) {
   a <- adapt.concept2.sFFLHD.R6$new(D=2,L=5,func=banana, obj="func", n0=12, take_until_maxpvar_below=.9, package="laGP", design='sFFLHD', selection_method="SMED")
   a$run(5)
   
+  quad_peaks <- function(XX) {.2+.015*TestFunctions::add_zoom(TestFunctions::rastrigin, scale_low = c(.4,.4), scale_high = c(.6,.6))(XX)^.9}
+  quad_peaks_slant <- TestFunctions::add_linear_terms(function(XX) {.2+.015*TestFunctions::add_zoom(TestFunctions::rastrigin, scale_low = c(.4,.4), scale_high = c(.6,.6))(XX)^.9}, coeffs = c(.01,.01))
+  cf::cf(quad_peaks)
+  cf::cf(quad_peaks_slant)
+  a <- adapt.concept2.sFFLHD.R6$new(D=2,L=5,func=quad_peaks_slant, obj="desirability", des_func=des_func_relmax, alpha_des=1e3, n0=22, take_until_maxpvar_below=.9, package="laGP", design='sFFLHD', selection_method="max_des_red")
 }
