@@ -118,3 +118,47 @@ werror_func14 <- function(mod, XX, split_speed=T) {#browser()
   des <- apply(XX, 1, function(yy) {if (yy[1] < .5) 4 else 1})
   des * pred$se
 }
+
+
+
+# Test desirability functions
+# A des func where output is scaled 0 to 1, max higher
+#' @param threshold Scalar in [0,1) thresholding how big the quantile should be.
+#' @param power The power the quantiles will be raised to after thresholding.
+#' @param return_se whether the se prediction should be returned along with
+#'   the des, all will be returned in data.frame, this will save
+#'   time if calculating the werror function since it is faster
+#'   to predict both at once instead of separately
+des_func_quantile <- function(mod, XX, threshold=0, power=1, return_se=F) {
+  N <- 1e3
+  pred <- mod$predict(XX, return_se=F)
+  pred2 <- mod$predict(matrix(runif(N*2), ncol=2), return_se=return_se)
+  if (return_se) {
+    se_toreturn <- pred2$se
+    pred2 <- pred2$fit
+  }
+  predall <- c(pred, pred2)
+  maxpred <- max(predall)
+  minpred <- min(predall)
+  # des <- (pred - minpred) / (maxpred - minpred)
+  quants <- sapply(pred, function(pp) {sum(pp > pred2) / N})
+  thresh_quants <- pmax(0, quants - threshold) / (1-threshold)
+  if (power == 1) {
+    pow_thresh_quants <- thresh_quants
+  } else if (power == 0) {
+    pow_thresh_quants <- ceiling(thresh_quants)
+  } else {
+    pow_thresh_quants <- thresh_quants^power
+  }
+  
+  if (return_se) {
+    return(data.frame(des=des, se=se_toreturn))
+  }
+  pow_thresh_quants
+}
+
+get_des_func_quantile <- function(threshold=0, power=1, return_se=F) {
+  function(XX, mod) {
+    des_func_quantile(XX=XX, mod=mod, threshold=threshold, power=power, return_se=return_se)
+  }
+}

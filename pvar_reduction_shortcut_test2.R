@@ -1,4 +1,4 @@
-### FIGURE OUT PROBLEM
+### FIGURED OUT PROBLEM
 # The second model has a different s2_hat even though the parameters didn't change.
 # If they are set to be the same then all three methods should be within rounding error (1e-12)
 
@@ -19,7 +19,7 @@ zv <- quad_peaks_slant(v)
 mod2 <- mod1$clone(deep = T)
 #cf(mod2$predict)
 mod2$update(Xnew = v, Znew = zv, no_update=T)
-mod2$mod$s2_hat <- 
+mod2$mod$s2_hat <- mod1$mod$s2_hat
 rbind(mod1$theta(), mod2$theta())
 
 get_both_for_one = function() {
@@ -55,7 +55,7 @@ summary(pvars2[pvars1>1e-4]  / pvars1[pvars1>1e-4])
 Y <- rbind(X, v)
 kyv <- mod1$mod$corr_func(Y, vmatrix)
 
-get_three_for_one = function() { browser()
+get_three_for_one = function() { #browser()
   z <- runif(d)
   zmatrix <- matrix(z, nrow=1)
   kxv <- mod1$mod$corr_func(X, vmatrix)

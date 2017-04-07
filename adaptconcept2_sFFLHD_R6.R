@@ -28,7 +28,7 @@ csa <- function() close.screen(all.screens = TRUE)
 #' @field X Design matrix
 #' @field Z Responses
 #' @field b batch size
-#' @field nb Number of batches
+#' @field nb Number of batches, if you know before starting how many there will be
 #' @field D Dimension of data
 #' @field Xopts Available points
 #' @field X0 Initial design
@@ -710,9 +710,21 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
     #int_points <- lapply(1:10, function(iii) {simple.LHS(1e3, self$D)})
     int_points <- simple.LHS(1e4, self$D)
     # int_des_weight_func <- function() {mean(self$desirability_func(gpc,int_points))}
-    int_werror_func <- function() {
-      #browser();
-      mean(self$werror_func(XX=int_points, mod=gpc))
+    
+    reuse_int_points_des_values <- TRUE
+    if (reuse_int_points_des_values) {
+      # There can be alot of variability in calculating the desirability
+      #   when it involves sampling stuff, so the intwerror values will
+      #   fluctuate if you recalculate each time. And that is slower.
+      int_points_numdes <- self$des_func(XX=int_points, mod=gpc)
+      int_werror_func <- function() {
+        mean(self$werror_func(XX=int_points, mod=gpc, des_func=int_points_numdes))
+      }
+    } else {
+      int_werror_func <- function() {
+        #browser();
+        mean(self$werror_func(XX=int_points, mod=gpc))
+      }
     }
     X_with_bestL <- self$X#, self$Xopts[bestL, ,drop=F])
     Z_with_bestL <- self$Z
@@ -742,12 +754,11 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       }
       
       # Testing variance reduction
-      pvs <- self$int_pvar_red_for_opts(Xopts = self$Xopts, XX = int_points, mod = self$mod)
-      pvs2 <- rep(NA, nrow(self$Xopts))
-      gpc$mod$s2_hat <- self$mod$mod$s2_hat
-      # DELETE THE ABOVE LINE OR IT WILL BE BAD
-      
+      # pvs <- self$int_pvar_red_for_opts(Xopts = self$Xopts, XX = int_points, mod = self$mod)
+      # pvs2 <- rep(NA, nrow(self$Xopts))
+
       for (r in setdiff(Xopts_to_consider, bestL)) {
+        if (ell == 3 && max(abs(self$Xopts[r,] - c(.2159992,.9280008)))<.0001) {browser()}
         if (self$package == 'laGP') {
           gpc$delete()
           gpc <- UGP::IGP(X=rbind(X_with_bestL, self$Xopts[r, ,drop=F]), 
@@ -758,9 +769,9 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
         }
         
         # browser()
-        gpc$mod$s2_hat <- self$mod$mod$s2_hat
+        # gpc$mod$s2_hat <- self$mod$mod$s2_hat
         # DELETE THE ABOVE LINE OR IT WILL BE BAD
-        pvs2[r] <- mean(self$mod$predict.var(int_points) - gpc$predict.var(int_points))
+        # pvs2[r] <- mean(self$mod$predict.var(int_points) - gpc$predict.var(int_points))
         
         # This false chunk shows the distribution of change in desirability of points
         if (F) {
@@ -784,7 +795,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
         int_werror_vals[r] <- int_werror_vals_r
       }
       
-      browser()
+      # browser()
       # See if pvar reduction by shortcut is same as full, it is now, 4 sec vs 8 sec so faster
       # csa(); plot(pvs, pvs2); lmp <- lm(pvs2~pvs); lmp
      
@@ -895,7 +906,14 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
   },
   # The weight function 1 + alpha * delta()
   weight_func = function(..., XX, mod=self$mod, des_func=self$des_func, alpha=self$alpha_des, weight_const=self$weight_const) {
-    weight_const + alpha * des_func(XX=XX, mod=mod)
+    if (is.function(des_func)) {
+      weight_const + alpha * des_func(XX=XX, mod=mod)
+    } else if (is.numeric(des_func)) { 
+      # browser()
+      weight_const + alpha * des_func
+    } else {
+      browser("Shouldn't be here error #132817585")
+    }
   },
   # The weighted error function sigmahat * (1 + alpha * delta())
   werror_func = function(..., XX, mod=self$mod, des_func=self$des_func, alpha=self$alpha_des, weight_const=self$weight_const, weight_func=self$weight_func) {#browser()
@@ -910,7 +928,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
     }
     mean(self$werror_func(XX=XX, mod=mod, des_func=des_func, alpha=alpha,weight_const=weight_const))
   },
-  int_pvar_red_for_opts = function(..., Xopts, XX=NULL, N=1e4, mod=self$mod, des_func=self$des_func, alpha=self$alpha_des, weight_const=self$weight_const, weight_func=self$weight_func){
+  int_pvar_red_for_opts = function(..., Xopts, XX=NULL, N=1e4, mod=self$mod, des_func=self$des_func, alpha=self$alpha_des, weight_const=self$weight_const, weight_func=self$weight_func, delta_pvar_func=mean){
     # browser()
     # use self$func instead of self$mod to get actual value
     if (is.null(XX)) {
@@ -920,10 +938,10 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
     K_X_XX <- mod$mod$corr_func(self$X, XX)
     to <- apply(X=Xopts, MARGIN=1, FUN=self$int_pvar_red_for_one, X_=self$X, 
                 XX=XX, corr_func=mod$mod$corr_func, Kinv=self$mod$mod$Kinv, 
-                s2=self$mod$mod$s2_hat, K_X_XX=K_X_XX)
+                s2=self$mod$mod$s2_hat, K_X_XX=K_X_XX, delta_pvar_func=delta_pvar_func)
     to
   },
-  int_pvar_red_for_one = function(v, X_, XX, corr_func, Kinv, s2, K_X_XX) { #browser()
+  int_pvar_red_for_one = function(v, X_, XX, corr_func, Kinv, s2, K_X_XX, delta_pvar_func=mean) { #browser()
     X <- X_ # can't pass X through apply since it matches first arg
     vmatrix <- matrix(v, nrow=1)
     Kxv <- as.numeric(corr_func(X, vmatrix))
@@ -940,7 +958,11 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       if (is.na(t1)) {browser()}
       t1
     })
-    mean(reds)
+    #browser()
+    # Before was just taking mean
+    # mean(reds)
+    # Now letting you pass in func, can weight them, or sqrt * weight
+    delta_pvar_func(reds)
   },
   actual_intwerror_func = function(..., N=2e3, mod=self$mod, f=self$func) {
     if (is.null(self$actual_des_func)) { # Return NaN if user doesn't give actual_des_func
