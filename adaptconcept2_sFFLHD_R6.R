@@ -679,7 +679,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
      rm(gpc, objall, objopt, bestopt, bestL, Xnewone, Znewone)#;browser()
      newL
    },
-  select_new_points_from_max_des_red = function() {browser()
+  select_new_points_from_max_des_red = function() {#browser()
     if (self$package == 'laGP') {
      gpc <- UGP::IGP(X = self$X, Z=self$Z, package='laGP', d=1/self$mod$theta(), g=self$mod$nugget(), estimate_params=FALSE)
     } else {
@@ -800,14 +800,16 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       # csa(); plot(pvs, pvs2); lmp <- lm(pvs2~pvs); lmp
      
       # Reduce the number to consider if large
-      if (ell < self$b) {
-       numtokeep <- if (ell==1) 30 else if (ell==2) 20 else if (ell==3) 10 else if (ell>=4) {5} else NA
-       Xopts_to_consider <- order(int_werror_vals,decreasing = F)[1:min(length(int_werror_vals), numtokeep)]
-      }
-     
-      # Add back in some random ones
-      if (length(setdiff(1:nrow(self$Xopts), Xopts_to_consider)) > 5) {
-       Xopts_to_consider <- c(Xopts_to_consider, sample(setdiff(1:nrow(self$Xopts), Xopts_to_consider), 5, F))
+      if (F) {
+        if (ell < self$b) {
+         numtokeep <- if (ell==1) 30 else if (ell==2) 20 else if (ell==3) 10 else if (ell>=4) {5} else NA
+         Xopts_to_consider <- order(int_werror_vals,decreasing = F)[1:min(length(int_werror_vals), numtokeep)]
+        }
+       
+        # Add back in some random ones
+        if (length(setdiff(1:nrow(self$Xopts), Xopts_to_consider)) > 5) {
+         Xopts_to_consider <- c(Xopts_to_consider, sample(setdiff(1:nrow(self$Xopts), Xopts_to_consider), 5, F))
+        }
       }
       #objall <- self$obj_func(rbind(self$X, self$Xopts))
       #objall <- self$desirability_func(gpc, rbind(self$X, self$Xopts))
@@ -1063,4 +1065,6 @@ if (F) {
   cf::cf(quad_peaks)
   cf::cf(quad_peaks_slant)
   a <- adapt.concept2.sFFLHD.R6$new(D=2,L=5,func=quad_peaks_slant, obj="desirability", des_func=des_func_relmax, alpha_des=1e3, n0=22, take_until_maxpvar_below=.9, package="laGP", design='sFFLHD', selection_method="max_des_red")
+  # The following shows laGP giving awful picks but GauPro being good if you change package
+  set.seed(0); csa(); a <- adapt.concept2.sFFLHD.R6$new(D=2,L=5,func=quad_peaks_slant, obj="desirability", des_func=get_des_func_quantile(threshold=.75), alpha_des=1e2, n0=32, take_until_maxpvar_below=.9, package="laGP", design='sFFLHD', selection_method="max_des_red"); a$run(1)
 }
