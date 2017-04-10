@@ -681,7 +681,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
    },
   select_new_points_from_max_des_red = function() {#browser()
     if (self$package == 'laGP') {
-     gpc <- UGP::IGP(X = self$X, Z=self$Z, package='laGP', d=1/self$mod$theta(), g=self$mod$nugget(), estimate_params=FALSE)
+     gpc <- UGP::IGP(X = self$X, Z=self$Z, package='laGP', d=1/self$mod$theta(), g=self$mod$nugget(), no_update=TRUE)
     } else {
      gpc <- self$mod$clone(deep=TRUE)
     }
@@ -742,7 +742,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
           Z_with_bestL <- c(Z_with_bestL, Znotrun_preds[bestL])
           if (self$package == 'laGP') {
             gpc$delete()
-            gpc <- UGP::IGP(X=X_with_bestL, Z=Z_with_bestL, theta=self$mod$theta(), nugget=self$mod$nugget(), package="laGP", estimate_params=FALSE)
+            gpc <- UGP::IGP(X=X_with_bestL, Z=Z_with_bestL, theta=self$mod$theta(), nugget=self$mod$nugget(), package="laGP", no_update=TRUE)
           } else {
             gpc$update(Xall=X_with_bestL, Zall=Z_with_bestL, restarts=0, no_update=TRUE)
           }
@@ -763,7 +763,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
           gpc$delete()
           gpc <- UGP::IGP(X=rbind(X_with_bestL, self$Xopts[r, ,drop=F]), 
                          Z=c(Z_with_bestL, Znotrun_preds[r]), 
-               theta=self$mod$theta(), nugget=self$mod$nugget(), package="laGP", estimate_params=FALSE)
+               theta=self$mod$theta(), nugget=self$mod$nugget(), package="laGP", no_update=TRUE)
         } else {
           gpc$update(Xall = rbind(X_with_bestL, self$Xopts[r, ,drop=F]), Zall=c(Z_with_bestL, Znotrun_preds[r]), restarts=0, no_update=TRUE)
         }
@@ -788,6 +788,9 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
         }
         
         int_werror_vals_r <- int_werror_func()
+        if (inherits(try({if (int_werror_vals_r < int_werror_vals_star) 12}), "try-error")) {
+          browser()
+        }
         if (int_werror_vals_r < int_werror_vals_star) {
           int_werror_vals_star <- int_werror_vals_r
           r_star <- r
@@ -842,7 +845,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
           if (T) { # REMOVE THIS FOR SPEED
            if (self$package =='laGP') {
              gpc$delete()
-             gpc <- UGP::IGP(X=X_with_bestL, Z=Z_with_bestL, package='laGP', theta=self$mod$theta(), nugget=self$mod$nugget(), estimate_params=FALSE)
+             gpc <- UGP::IGP(X=X_with_bestL, Z=Z_with_bestL, package='laGP', theta=self$mod$theta(), nugget=self$mod$nugget(), no_update=TRUE)
            } else {
              gpc$update(Xall=X_with_bestL, Zall=Z_with_bestL, restarts=0, no_update=TRUE)
            }
@@ -852,7 +855,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
           Z_with_bestL[nrow(self$X) + ell] <- Znotrun_preds[r_star]
           if (self$package == 'laGP') {
            gpc$delete()
-           gpc <- UGP::IGP(X=X_with_bestL, Z=Z_with_bestL, theta=self$mod$theta(), nugget=self$mod$nugget(), estimate_parameters=FALSE)
+           gpc <- UGP::IGP(X=X_with_bestL, Z=Z_with_bestL, theta=self$mod$theta(), nugget=self$mod$nugget(), no_update=TRUE)
           } else {
            gpc$update(Xall=X_with_bestL, Zall=Z_with_bestL, restarts=0, no_update=TRUE)
           }
@@ -1067,4 +1070,8 @@ if (F) {
   a <- adapt.concept2.sFFLHD.R6$new(D=2,L=5,func=quad_peaks_slant, obj="desirability", des_func=des_func_relmax, alpha_des=1e3, n0=22, take_until_maxpvar_below=.9, package="laGP", design='sFFLHD', selection_method="max_des_red")
   # The following shows laGP giving awful picks but GauPro being good if you change package
   set.seed(0); csa(); a <- adapt.concept2.sFFLHD.R6$new(D=2,L=5,func=quad_peaks_slant, obj="desirability", des_func=get_des_func_quantile(threshold=.75), alpha_des=1e2, n0=32, take_until_maxpvar_below=.9, package="laGP", design='sFFLHD', selection_method="max_des_red"); a$run(1)
+  
+  # Borehole
+  set.seed(0); csa(); a <- adapt.concept2.sFFLHD.R6$new(D=8,L=8, b=4,func=borehole, obj="desirability", des_func=get_des_func_quantile(threshold=.75), alpha_des=1e2, n0=20, take_until_maxpvar_below=.9, package="laGP", design='sFFLHD', selection_method="max_des_red", actual_des_func=actual_des_func_relmax_borehole); a$run(1)
+  
 }

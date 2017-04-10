@@ -4,9 +4,10 @@
 #'   the des, all will be returned in data.frame, this will save
 #'   time if calculating the werror function since it is faster
 #'   to predict both at once instead of separately
-des_func_relmax <- function(mod, XX, return_se=F) {
+des_func_relmax <- function(mod, XX, return_se=F, N_add=1e3) {
+  D <- if (is.matrix(XX)) ncol(XX) else length(XX)
   pred <- mod$predict(XX, return_se=F)
-  pred2 <- mod$predict(matrix(runif(1000*2), ncol=2), return_se=return_se)
+  pred2 <- mod$predict(matrix(runif(N_add*D), ncol=D), return_se=return_se)
   if (return_se) {
     se_toreturn <- pred2$se
     pred2 <- pred2$fit
@@ -18,6 +19,8 @@ des_func_relmax <- function(mod, XX, return_se=F) {
   if (return_se) {
     return(data.frame(des=des, se=se_toreturn))
   }
+  if (any(is.nan(des))) {browser()}
+  if (any(is.na(des))) {browser()}
   des
 }
 
@@ -61,6 +64,7 @@ get_actual_des_func_relmax <- function (f, fmin, fmax) {#browser()
   }
 }
 actual_des_func_relmax_banana <- get_actual_des_func_relmax(f=banana, fmin=0, fmax=1)
+actual_des_func_relmax_borehole <- get_actual_des_func_relmax(f=borehole, fmin=0.001252, fmax=0.044450)
 
 
 
@@ -129,10 +133,10 @@ werror_func14 <- function(mod, XX, split_speed=T) {#browser()
 #'   the des, all will be returned in data.frame, this will save
 #'   time if calculating the werror function since it is faster
 #'   to predict both at once instead of separately
-des_func_quantile <- function(mod, XX, threshold=0, power=1, return_se=F) {
-  N <- 1e3
+des_func_quantile <- function(mod, XX, threshold=0, power=1, return_se=F, N_add=1e3) {
+  D <- if (is.matrix(XX)) ncol(XX) else length(XX)
   pred <- mod$predict(XX, return_se=F)
-  pred2 <- mod$predict(matrix(runif(N*2), ncol=2), return_se=return_se)
+  pred2 <- mod$predict(matrix(runif(N_add*D), ncol=D), return_se=return_se)
   if (return_se) {
     se_toreturn <- pred2$se
     pred2 <- pred2$fit
@@ -141,7 +145,7 @@ des_func_quantile <- function(mod, XX, threshold=0, power=1, return_se=F) {
   maxpred <- max(predall)
   minpred <- min(predall)
   # des <- (pred - minpred) / (maxpred - minpred)
-  quants <- sapply(pred, function(pp) {sum(pp > pred2) / N})
+  quants <- sapply(pred, function(pp) {sum(pp > pred2) / N_add})
   thresh_quants <- pmax(0, quants - threshold) / (1-threshold)
   if (power == 1) {
     pow_thresh_quants <- thresh_quants
