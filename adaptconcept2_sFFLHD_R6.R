@@ -9,7 +9,7 @@ library(SMED, lib.loc = lib.loc)
 library(sFFLHD, lib.loc = lib.loc)
 library(UGP, lib.loc = lib.loc)
 library(magrittr)
-csa <- function() close.screen(all.screens = TRUE)
+# csa <- function() close.screen(all.screens = TRUE)
 #setOldClass("UGP")
 
 
@@ -93,6 +93,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
     parallel_cores = NULL, # Number of cores used for parallel
     parallel_cluster = NULL, # The object for the cluster currently running
     
+    options = NULL, # A list for holding other things that aren't worth giving own variable
  
     initialize = function(D,L,b=NULL, package=NULL, obj=NULL, n0=0, 
                          force_old=0, force_pvar=0,
@@ -103,6 +104,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
                          selection_method, X0=NULL, Xopts=NULL,
                          plot_grad=TRUE, new_batches_per_batch=5,
                          parallel=FALSE, parallel_cores="detect",
+                         #optio
                          ...) {#browser()
       self$D <- D
       self$L <- L
@@ -371,12 +373,12 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       
       # if nothing forced, run SMED_select
       if (is.null(newL)) { #browser()
-        if (self$selection_method == "SMED") {# standard min energy
+        if (self$selection_method %in% c("SMED","SMED_true")) {# standard min energy
           newL <- self$select_new_points_from_SMED()
         } else if (self$selection_method == "max_des") { # take point with max desirability, update model, requires using se or pvar so adding a point goes to zero
           #browser()
           newL <- self$select_new_points_from_max_des()
-        } else if (self$selection_method %in% c("max_des_red", "max_des_red_all")) { # take maximum reduction, update model, requires using se or pvar so adding a point goes to zero
+        } else if (self$selection_method %in% c("max_des_red", "max_des_red_all", "max_des_red_all_best")) { # take maximum reduction, update model, requires using se or pvar so adding a point goes to zero
           newL <- self$select_new_points_from_max_des_red()
         }
       }
@@ -642,8 +644,14 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
     select_new_points_from_SMED = function() {
       #bestL <- SMED_selectC(f=self$obj_func, n=self$b, X0=self$X, Xopt=self$Xopts, 
       #                      theta=if (self$useSMEDtheta) {self$mod$theta()} else {rep(1,2)})
-      #browser()
-      Yall.try <- try(Yall <- self$obj_func(rbind(self$X, self$Xopts)))
+      browser()
+      if (self$selection_method == "SMED") {
+        Yall.try <- try(Yall <- self$obj_func(rbind(self$X, self$Xopts)))
+      } else if (self$selection_method == "SMED_true") {
+        Yall.try <- try(Yall <- self$func(rbind(self$X, self$Xopts)))
+      } else {
+        stop("no SMED #35230")
+      }
       if (inherits(Yall.try, "try-error")) {
         browser()
         Yall <- self$obj_func(rbind(self$X, self$Xopts))
@@ -662,7 +670,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
      for (ell in 1:self$b) {
        # objall <- self$obj_func(rbind(self$X, self$Xopts))
        # objall <- self$desirability_func(gpc, rbind(self$X, self$Xopts))
-       objall <- self$werror_func(gpc, rbind(self$X, self$Xopts))
+       objall <- self$werror_func(mod=gpc, XX=rbind(self$X, self$Xopts))
        objopt <- objall[(nrow(self$X)+1):length(objall)]
        objopt[bestL] <- -Inf # ignore the ones just selected
        bestopt <- which.max(objopt)
@@ -703,12 +711,17 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
     
     # Can start with none and select one at time, or start with random and replace
     if (self$selection_method == "max_des_red") {
-     bestL <- c() # Start with none
-    } else { # Start with L and replace
-     bestL <- sample(Xopts_to_consider, size = self$b, replace = FALSE)
+      bestL <- c() # Start with none
+    } else if (self$selection_method == "max_des_red_all") { # Start with L and replace
+      bestL <- sample(Xopts_to_consider, size = self$b, replace = FALSE)
+    } else if (self$selection_method == "max_des_red_all_best") { browser() # Start with best L and replace
+      Xotc_werrors <- self$werror_func(XX = self$Xopts[Xopts_to_consider,])
+      bestL <- order(Xotc_werrors, decreasing = TRUE)[self$b:1] # Make the biggest last so it is least likely to be replaced
+    } else {
+      browser("Selection method doesn't match up #92352583")
     }
     #int_points <- lapply(1:10, function(iii) {simple.LHS(1e3, self$D)})
-    int_points <- simple.LHS(1e4, self$D)
+    int_points <- simple.LHS(1e3, self$D)
     # int_des_weight_func <- function() {mean(self$desirability_func(gpc,int_points))}
     
     reuse_int_points_des_values <- TRUE
@@ -803,9 +816,9 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       # csa(); plot(pvs, pvs2); lmp <- lm(pvs2~pvs); lmp
      
       # Reduce the number to consider if large
-      if (F) {
+      if (T) {
         if (ell < self$b) {
-         numtokeep <- if (ell==1) 30 else if (ell==2) 20 else if (ell==3) 10 else if (ell>=4) {5} else NA
+         numtokeep <- if (ell==1) 30 else if (ell==2) 25 else if (ell==3) 20 else if (ell>=4) {15} else NA
          Xopts_to_consider <- order(int_werror_vals,decreasing = F)[1:min(length(int_werror_vals), numtokeep)]
         }
        
@@ -1063,8 +1076,8 @@ if (F) {
   a <- adapt.concept2.sFFLHD.R6$new(D=2,L=5,func=banana, obj="func", n0=12, take_until_maxpvar_below=.9, package="laGP", design='sFFLHD', selection_method="SMED")
   a$run(5)
   
-  quad_peaks <- function(XX) {.2+.015*TestFunctions::add_zoom(TestFunctions::rastrigin, scale_low = c(.4,.4), scale_high = c(.6,.6))(XX)^.9}
-  quad_peaks_slant <- TestFunctions::add_linear_terms(function(XX) {.2+.015*TestFunctions::add_zoom(TestFunctions::rastrigin, scale_low = c(.4,.4), scale_high = c(.6,.6))(XX)^.9}, coeffs = c(.01,.01))
+  # quad_peaks <- function(XX) {.2+.015*TestFunctions::add_zoom(TestFunctions::rastrigin, scale_low = c(.4,.4), scale_high = c(.6,.6))(XX)^.9}
+  # quad_peaks_slant <- TestFunctions::add_linear_terms(function(XX) {.2+.015*TestFunctions::add_zoom(TestFunctions::rastrigin, scale_low = c(.4,.4), scale_high = c(.6,.6))(XX)^.9}, coeffs = c(.01,.01))
   cf::cf(quad_peaks)
   cf::cf(quad_peaks_slant)
   a <- adapt.concept2.sFFLHD.R6$new(D=2,L=5,func=quad_peaks_slant, obj="desirability", des_func=des_func_relmax, alpha_des=1e3, n0=22, take_until_maxpvar_below=.9, package="laGP", design='sFFLHD', selection_method="max_des_red")
@@ -1073,5 +1086,23 @@ if (F) {
   
   # Borehole
   set.seed(0); csa(); a <- adapt.concept2.sFFLHD.R6$new(D=8,L=8, b=4,func=borehole, obj="desirability", des_func=get_des_func_quantile(threshold=.75), alpha_des=1e2, n0=20, take_until_maxpvar_below=.9, package="laGP", design='sFFLHD', selection_method="max_des_red", actual_des_func=actual_des_func_relmax_borehole); a$run(1)
+  set.seed(0); csa(); a <- adapt.concept2.sFFLHD.R6$new(D=6,L=8, b=4,func=OTL_Circuit, obj="desirability", des_func=get_des_func_quantile(threshold=.75), alpha_des=1e2, n0=20, take_until_maxpvar_below=.9, package="laGP", design='sFFLHD', selection_method="max_des_red"); a$run(1)
   
+  # table
+  table_func1 <- function(x) {
+    if (x[1] > .25 && x[1] < .75 && x[2] > .25 && x[2] < .75) {
+      1e3 #.8
+    } else {
+      1 #.2
+    }
+  }
+  set.seed(0); csa(); a <- adapt.concept2.sFFLHD.R6$new(D=2,L=3,func=table_func1, obj="desirability", des_func=des_func_relmax, alpha_des=3, n0=20, take_until_maxpvar_below=.9, package="laGP_GauPro", design='sFFLHD', selection_method="max_des_red_all"); a$run(1)
+  csa(); a <- adapt.concept2.sFFLHD.R6$new(D=2,L=3,func=table_func1, obj="desirability", des_func=des_func_relmax, alpha_des=3, n0=40, take_until_maxpvar_below=.9, package="GauPro", design='sFFLHD', selection_method="max_des_red_all"); a$run(1)
+  
+  # banana with 75% quantile
+  set.seed(0); csa(); a <- adapt.concept2.sFFLHD.R6$new(D=2,L=3,func=banana, obj="desirability", des_func=get_des_func_quantile(threshold=.75), alpha_des=1e2, n0=20, take_until_maxpvar_below=.9, package="laGP_GauPro", design='sFFLHD', selection_method="max_des_red_all_best"); a$run(1)
+  # SMED
+  set.seed(0); csa(); a <- adapt.concept2.sFFLHD.R6$new(D=2,L=3,func=banana, obj="desirability", des_func=get_des_func_quantile(threshold=.75), alpha_des=1e2, n0=20, take_until_maxpvar_below=.9, package="laGP_GauPro", design='sFFLHD', selection_method="SMED"); a$run(1)
+  # SMED_true with relmax, shows that SMED is working correctly
+  set.seed(0); csa(); a <- adapt.concept2.sFFLHD.R6$new(D=2,L=3,func=banana, obj="desirability", des_func=des_func_relmax, alpha_des=1e2, n0=12, take_until_maxpvar_below=1, package="laGP_GauPro", design='sFFLHD', selection_method="SMED_true", Xopts=lhs::randomLHS(n=1e3,k=2)); a$run(1)
 }
