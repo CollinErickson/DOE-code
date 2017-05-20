@@ -166,3 +166,32 @@ get_des_func_quantile <- function(threshold=0, power=1, return_se=F) {
     des_func_quantile(XX=XX, mod=mod, threshold=threshold, power=power, return_se=return_se)
   }
 }
+
+
+
+# Test desirability functions
+# A des func where output is scaled 0 to 1, max higher
+#' @param return_se whether the se prediction should be returned along with
+#'   the des, all will be returned in data.frame, this will save
+#'   time if calculating the werror function since it is faster
+#'   to predict both at once instead of separately
+des_func_relmaxgrad <- function(mod, XX, return_se=F, N_add=1e3) {
+  D <- if (is.matrix(XX)) ncol(XX) else length(XX)
+  pred <- mod$grad_norm(XX)
+  pred2 <- mod$grad_norm(matrix(runif(N_add*D), ncol=D))
+  if (return_se) {
+    stop("Not implemented #923857")
+    se_toreturn <- pred2$se
+    pred2 <- pred2$fit
+  }
+  predall <- c(pred, pred2)
+  maxpred <- max(predall)
+  minpred <- min(predall)
+  des <- (pred - minpred) / (maxpred - minpred)
+  if (return_se) {
+    return(data.frame(des=des, se=se_toreturn))
+  }
+  if (any(is.nan(des))) {browser()}
+  if (any(is.na(des))) {browser()}
+  des
+}
