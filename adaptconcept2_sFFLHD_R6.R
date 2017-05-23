@@ -4,7 +4,7 @@ source('LHS.R')
 source("random_design.R")
 source('adaptconcept2_sFFLHD_R6_desfuncs.R')
 library(TestFunctions, lib.loc = lib.loc)
-library(cf, lib.loc = lib.loc)
+library(ContourFunctions, lib.loc = lib.loc)
 library(SMED, lib.loc = lib.loc)
 library(sFFLHD, lib.loc = lib.loc)
 library(UGP, lib.loc = lib.loc)
@@ -104,6 +104,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
                          selection_method, X0=NULL, Xopts=NULL,
                          plot_grad=TRUE, new_batches_per_batch=5,
                          parallel=FALSE, parallel_cores="detect",
+                         nugget=1e-8,
                          #optio
                          ...) {#browser()
       self$D <- D
@@ -151,8 +152,8 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       if(is.null(package)) {self$package <- "laGP"}
       else {self$package <- package}
       #self$mod <- UGP$new(package = self$package)
-      self$mod <- IGP(package = self$package, estimate.nugget=FALSE, set.nugget=1e-8)
-      self$stats <- list(iteration=c(),n=c(),pvar=c(),mse=c(), ppu=c(), minbatch=c(), pamv=c(), actual_intwerror=c())
+      self$mod <- IGP(package = self$package, estimate.nugget=FALSE, set.nugget=nugget)
+      self$stats <- list(iteration=c(),n=c(),pvar=c(),mse=c(), ppu=c(), minbatch=c(), pamv=c(), actual_intwerror=c(), intwerror=c())
       self$iteration <- 1
       self$obj_nu <- NaN
       
@@ -390,7 +391,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       #} else { # SMED NEW STUFF !!!!
         #browser()
       #  bestL <- SMED_selectC(f=obj_func, n=L, X0=X, Xopt=Xopts)
-        # cf::cf_func(mod$grad_norm)
+        # cf_func(mod$grad_norm)
         # points(X, col=2, pch=19)
         # text(Xopts[,1],Xopts[,2])
         # SMED_select(f=obj_func,p=ncol(X),n=8, X0=X, Xopt=Xopts)
@@ -445,6 +446,11 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
      # } else { NO LONGER USE THIS since self$actual_intwerror_func will return NaN if it can't calculate it
      #   self$stats$actual_intwerror <- c(self$stats$actual_intwerror, NaN)
      # }
+     if (!is.null(self$des_func)) {
+       self$stats$intwerror <- c(self$stats$intwerror, self$intwerror_func())
+     } else {
+       self$stats$intwerror <- c(self$stats$intwerror, NaN)
+     }
     },
     mse_func = function() {
       if (self$func_fast) {
@@ -466,7 +472,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
        #ylim <- lims[2,]
        cf_func(self$mod$predict,batchmax=500, pretitle="Predicted Surface ", #pts=X)
               afterplotfunc=function(){points(self$X,pch=19)
-                                       points(self$X[(nrow(self$X)-self$b+1):nrow(self$X),],col='yellow',pch=19, cex=.5) # plot last L separately
+                                       if (self$iteration > 1) {points(self$X[(nrow(self$X)-self$b+1):nrow(self$X),],col='yellow',pch=19, cex=.5)} # plot last L separately
               }
        )
        ###points(Xopts, col=2)
@@ -486,9 +492,9 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       # }
        # Plot s2 predictions
        screen(2)
-       cf_func(self$mod$predict.var,batchmax=500, pretitle="Predicted Surface ", #pts=X)
+       cf_func(self$mod$predict.var,batchmax=500, pretitle="Predicted Error ", #pts=X)
                afterplotfunc=function(){points(self$X,pch=19)
-                 points(self$X[(nrow(self$X)-self$b+1):nrow(self$X),],col='yellow',pch=19, cex=.5) # plot last L separately
+                 if (self$iteration > 1) {points(self$X[(nrow(self$X)-self$b+1):nrow(self$X),],col='yellow',pch=19, cex=.5)} # plot last L separately
                  points(self$Xopts, col=2); # add points not selected
                }
        )
@@ -644,7 +650,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
     select_new_points_from_SMED = function() {
       #bestL <- SMED_selectC(f=self$obj_func, n=self$b, X0=self$X, Xopt=self$Xopts, 
       #                      theta=if (self$useSMEDtheta) {self$mod$theta()} else {rep(1,2)})
-      browser()
+      #browser()
       if (self$selection_method == "SMED") {
         Yall.try <- try(Yall <- self$obj_func(rbind(self$X, self$Xopts)))
       } else if (self$selection_method == "SMED_true") {
@@ -700,11 +706,11 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
         c(0,1/3,0,1, 1/3,2/3,0,1, 2/3,1,0,1),#  .5,1,.25,1,  0,1/ln,0,.25, 1/ln,2/ln,0,.25, 2/ln,3/ln,0,.25, 3/ln,4/ln,0,.25, 4/ln,1,0,.25),
         ncol=4,byrow=T))
       screen(1)
-      cf::cf(self$mod$predict, batchmax=Inf, pts=self$X)
+      cf(self$mod$predict, batchmax=Inf, pts=self$X)
       screen(2)
       # cf(function(X)self$desirability_func(gpc, X), batchmax=5e3, afterplotfunc=function(){points(self$X, col=3, pch=2);points(self$Xopts[-Xopts_to_consider,], col=4,pch=3);points(self$Xopts[Xopts_to_consider,])})
       # browser()
-      cf(function(X)self$werror_func(mod=gpc, XX=X), batchmax=5e3, afterplotfunc=function(){points(self$X, col=3, pch=2);points(self$Xopts[-Xopts_to_consider,], col=4,pch=3);points(self$Xopts[Xopts_to_consider,])})
+      cf(function(X)self$werror_func(mod=gpc, XX=X), batchmax=5e3, afterplotfunc=function(){points(self$X, col=3, pch=2);points(self$Xopts[-Xopts_to_consider,], col=4,pch=3);text(self$Xopts[Xopts_to_consider,])})
       #browser()
     }
     if (exists("browser_max_des")) {if (browser_max_des) {browser()}}
@@ -714,14 +720,14 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       bestL <- c() # Start with none
     } else if (self$selection_method == "max_des_red_all") { # Start with L and replace
       bestL <- sample(Xopts_to_consider, size = self$b, replace = FALSE)
-    } else if (self$selection_method == "max_des_red_all_best") { browser() # Start with best L and replace
+    } else if (self$selection_method == "max_des_red_all_best") { #browser() # Start with best L and replace
       Xotc_werrors <- self$werror_func(XX = self$Xopts[Xopts_to_consider,])
       bestL <- order(Xotc_werrors, decreasing = TRUE)[self$b:1] # Make the biggest last so it is least likely to be replaced
     } else {
       browser("Selection method doesn't match up #92352583")
     }
     #int_points <- lapply(1:10, function(iii) {simple.LHS(1e3, self$D)})
-    int_points <- simple.LHS(1e3, self$D)
+    int_points <- simple.LHS(1e4, self$D)
     # int_des_weight_func <- function() {mean(self$desirability_func(gpc,int_points))}
     
     reuse_int_points_des_values <- TRUE
@@ -730,7 +736,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       #   when it involves sampling stuff, so the intwerror values will
       #   fluctuate if you recalculate each time. And that is slower.
       int_points_numdes <- self$des_func(XX=int_points, mod=gpc)
-      int_werror_func <- function() {
+      int_werror_func <- function() {#browser()
         mean(self$werror_func(XX=int_points, mod=gpc, des_func=int_points_numdes))
       }
     } else {
@@ -741,9 +747,16 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
     }
     X_with_bestL <- self$X#, self$Xopts[bestL, ,drop=F])
     Z_with_bestL <- self$Z
+    Znotrun_preds <- gpc$predict(self$Xopts) # Need to use the predictions before each is added
+    #browser()
     for (ell in 1:self$b) {
-      print(paste('starting iter', ell, 'considering', length(Xopts_to_consider)))
-      Znotrun_preds <- gpc$predict(self$Xopts) # Need to use the predictions before each is added
+      print(paste(c('starting iter', ell, 'considering', length(Xopts_to_consider), 'bestL is', bestL), collapse = ' '))
+      
+      # The surrogate values
+      if (exists("use_true_for_surrogates") && use_true_for_surrogates) {print("cheating")
+        Znotrun_preds <- self$func(self$Xopts)
+      }
+      
       int_werror_vals <- rep(Inf, nrow(self$Xopts))
       if (self$selection_method == "max_des_red") { # Don't have current value, so don't start with anything
         r_star <- NA # Track best index
@@ -763,7 +776,11 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
         } else { # After that it just stays as star value
           # essentially int_des_weight_star <- int_des_weight_star
         }
+        # Need to remove ell of bestL from X since it is being replaced
+        #browser()
         int_werror_vals[bestL[ell]] <- int_werror_vals_star # Store current selection in IDWs, but not actually using it for anything
+        X_with_bestL <- rbind(self$X, self$Xopts[bestL[-ell], , drop=F])
+        Z_with_bestL <- c(self$Z, Znotrun_preds[bestL[-ell]])
       }
       
       # Testing variance reduction
@@ -801,6 +818,10 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
         }
         
         int_werror_vals_r <- int_werror_func()
+        # if (ell == 3  && (r == 7 || r == 16)) {
+        #   print( c(ell, r, int_werror_vals_r))
+        #   browser()
+        # }
         if (inherits(try({if (int_werror_vals_r < int_werror_vals_star) 12}), "try-error")) {
           browser()
         }
@@ -810,6 +831,8 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
         }
         int_werror_vals[r] <- int_werror_vals_r
       }
+      print("Here are int_werror_vals")
+      print(cbind(1:length(int_werror_vals), int_werror_vals))
       
       # browser()
       # See if pvar reduction by shortcut is same as full, it is now, 4 sec vs 8 sec so faster
@@ -864,8 +887,11 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
            }
           }
         } else {
-          X_with_bestL[nrow(self$X) + ell,] <- self$Xopts[r_star, ]
-          Z_with_bestL[nrow(self$X) + ell] <- Znotrun_preds[r_star]
+          # X_with_bestL[nrow(self$X) + ell,] <- self$Xopts[r_star, ]
+          # Z_with_bestL[nrow(self$X) + ell] <- Znotrun_preds[r_star]
+          # Fixing this
+          X_with_bestL <- rbind(X_with_bestL, self$Xopts[r_star, ])
+          Z_with_bestL <- c(Z_with_bestL, Znotrun_preds[r_star])
           if (self$package == 'laGP') {
            gpc$delete()
            gpc <- UGP::IGP(X=X_with_bestL, Z=Z_with_bestL, theta=self$mod$theta(), nugget=self$mod$nugget(), no_update=TRUE)
@@ -888,11 +914,40 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
         browser()
       }
     }
+    #browser()
     
     newL <- bestL#;browser()
     #gpc$delete() # This deletes the laGP C side part, don't do it
     rm(gpc, bestL, Xnewone, Znewone)#;browser()
     newL
+  },
+  
+  int_werror_after_adding = function(Xnew=NULL, Znew=NULL, Xnew_Xoptsrow=NULL, 
+                                     n=1e4, int_points=NULL, 
+                                     seed=NULL,
+                                     ...
+                                     ) {#browser()
+    #browser()
+    if (!is.null(seed)) {set.seed(seed)}
+    if (is.null(int_points)) {
+      int_points = simple.LHS(n=n, d=self$D)
+    }
+    if (is.null(Xnew)) {
+      if (!is.null(Xnew_Xoptsrow)) {
+        Xnew <- self$Xopts[Xnew_Xoptsrow, ]
+      } else {
+        return("Need to give Xnew or Xnew_Xoptsrow")
+      }
+    }
+    if (is.null(Znew)) {
+      Znew = self$mod$predict(Xnew)
+    }
+    mod <- UGP::IGP(X=rbind(self$X, Xnew), Z=c(self$Z, Znew), 
+                    package = "GauPro",
+                    theta=self$mod$theta(), param.est=FALSE,
+                    set.nugget=self$mod$nugget(), estimate.nugget=FALSE)
+    mn <- mean(self$werror_func(XX=int_points, mod=mod, ...))
+    mn
   },
   add_newL_points_to_design = function(newL=NULL, use_X0=FALSE) {
     if (length(newL) != self$b) { 
@@ -937,6 +992,10 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
   werror_func = function(..., XX, mod=self$mod, des_func=self$des_func, alpha=self$alpha_des, weight_const=self$weight_const, weight_func=self$weight_func) {#browser()
     #browser()
     err <- mod$predict.se(XX)
+    if (exists("use_true_for_error") && use_true_for_error) {
+      if (runif(1) < .01) print("Using true error #9258332")
+      err <- abs(mod$predict(XX) - self$func(XX))
+    }
     err * weight_func(XX=XX, mod=mod, des_func=des_func, alpha=alpha,weight_const=weight_const)
   },
   intwerror_func = function(..., XX=NULL, N=1e4, mod=self$mod, des_func=self$des_func, alpha=self$alpha_des, weight_const=self$weight_const, weight_func=self$weight_func){
@@ -1045,7 +1104,7 @@ if (F) {
   a$run(20, plotl=T)
   
   # grad cont
-  cf::cf_func(a$mod$grad_norm)
+  cf_func(a$mod$grad_norm)
   
   # test run times
   a <- adapt.concept2.sFFLHD.R6(D=2,L=3,func=gaussian1, obj="grad", n0=0)
@@ -1078,8 +1137,8 @@ if (F) {
   
   # quad_peaks <- function(XX) {.2+.015*TestFunctions::add_zoom(TestFunctions::rastrigin, scale_low = c(.4,.4), scale_high = c(.6,.6))(XX)^.9}
   # quad_peaks_slant <- TestFunctions::add_linear_terms(function(XX) {.2+.015*TestFunctions::add_zoom(TestFunctions::rastrigin, scale_low = c(.4,.4), scale_high = c(.6,.6))(XX)^.9}, coeffs = c(.01,.01))
-  cf::cf(quad_peaks)
-  cf::cf(quad_peaks_slant)
+  cf(quad_peaks)
+  cf(quad_peaks_slant)
   a <- adapt.concept2.sFFLHD.R6$new(D=2,L=5,func=quad_peaks_slant, obj="desirability", des_func=des_func_relmax, alpha_des=1e3, n0=22, take_until_maxpvar_below=.9, package="laGP", design='sFFLHD', selection_method="max_des_red")
   # The following shows laGP giving awful picks but GauPro being good if you change package
   set.seed(0); csa(); a <- adapt.concept2.sFFLHD.R6$new(D=2,L=5,func=quad_peaks_slant, obj="desirability", des_func=get_des_func_quantile(threshold=.75), alpha_des=1e2, n0=32, take_until_maxpvar_below=.9, package="laGP", design='sFFLHD', selection_method="max_des_red"); a$run(1)
@@ -1100,7 +1159,7 @@ if (F) {
   csa(); a <- adapt.concept2.sFFLHD.R6$new(D=2,L=3,func=table_func1, obj="desirability", des_func=des_func_relmax, alpha_des=3, n0=40, take_until_maxpvar_below=.9, package="GauPro", design='sFFLHD', selection_method="max_des_red_all"); a$run(1)
   
   # banana with 75% quantile
-  set.seed(0); csa(); a <- adapt.concept2.sFFLHD.R6$new(D=2,L=3,func=banana, obj="desirability", des_func=get_des_func_quantile(threshold=.75), alpha_des=1e2, n0=20, take_until_maxpvar_below=.9, package="laGP_GauPro", design='sFFLHD', selection_method="max_des_red_all_best"); a$run(1)
+  set.seed(0); csa(); a <- adapt.concept2.sFFLHD.R6$new(D=2,L=3,func=banana, obj="desirability", des_func=get_des_func_quantile(threshold=.75), alpha_des=1e2, n0=30, take_until_maxpvar_below=.9, package="laGP_GauPro", design='sFFLHD', selection_method="max_des_red_all_best"); a$run(1)
   # SMED
   set.seed(0); csa(); a <- adapt.concept2.sFFLHD.R6$new(D=2,L=3,func=banana, obj="desirability", des_func=get_des_func_quantile(threshold=.75), alpha_des=1e2, n0=20, take_until_maxpvar_below=.9, package="laGP_GauPro", design='sFFLHD', selection_method="SMED"); a$run(1)
   # SMED_true with relmax, shows that SMED is working correctly
