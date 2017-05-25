@@ -461,6 +461,26 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
     },
     plot1 = function() {#browser()
      if (self$D == 2) {
+       twoplot <- TRUE
+       if (twoplot) { # Only plot pred surface and pred error
+         split.screen(matrix(c(0,.5,0,1,.5,1,0,1),byrow=T, ncol=4))
+         screen(1)
+         cf_func(self$mod$predict,batchmax=500, pretitle="Predicted Surface ", #pts=X)
+                 afterplotfunc=function(){points(self$X,pch=19)
+                   if (self$iteration > 1) {points(self$X[(nrow(self$X)-self$b+1):nrow(self$X),],col='yellow',pch=19, cex=.5)} # plot last L separately
+                 }
+         )
+         screen(2)
+         cf_func(self$mod$predict.var,batchmax=500, pretitle="Predicted Error ", #pts=X)
+                 afterplotfunc=function(){points(self$X,pch=19)
+                   if (self$iteration > 1) {points(self$X[(nrow(self$X)-self$b+1):nrow(self$X),],col='yellow',pch=19, cex=.5)} # plot last L separately
+                   points(self$Xopts, col=2); # add points not selected
+                 }
+         )
+         close.screen(all=TRUE)
+         return()
+       }
+       
        #par(mfrow=c(2,1))
        ln <- 5 # number of lower plots
        split.screen(matrix(
@@ -701,17 +721,31 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
     }
     Xopts_to_consider <- 1:nrow(self$Xopts) #sample(1:nrow(self$Xopts),min(10,nrow(self$Xopts)),F)
     if (self$D == 2) {
-      split.screen(matrix(
-        #c(0,.5,.25,1,  .5,1,.25,1,  0,1/3,0,.25, 1/3,2/3,0,.25, 2/3,1,0,.25),
-        c(0,1/3,0,1, 1/3,2/3,0,1, 2/3,1,0,1),#  .5,1,.25,1,  0,1/ln,0,.25, 1/ln,2/ln,0,.25, 2/ln,3/ln,0,.25, 3/ln,4/ln,0,.25, 4/ln,1,0,.25),
-        ncol=4,byrow=T))
-      screen(1)
-      cf(self$mod$predict, batchmax=Inf, pts=self$X)
-      screen(2)
-      # cf(function(X)self$desirability_func(gpc, X), batchmax=5e3, afterplotfunc=function(){points(self$X, col=3, pch=2);points(self$Xopts[-Xopts_to_consider,], col=4,pch=3);points(self$Xopts[Xopts_to_consider,])})
-      # browser()
-      cf(function(X)self$werror_func(mod=gpc, XX=X), batchmax=5e3, afterplotfunc=function(){points(self$X, col=3, pch=2);points(self$Xopts[-Xopts_to_consider,], col=4,pch=3);text(self$Xopts[Xopts_to_consider,])})
-      #browser()
+      dontplotfunc <- TRUE
+      if (dontplotfunc) {
+        split.screen(matrix(
+          c(0,1/2,0,1, 1/2,1,0,1),
+          ncol=4,byrow=T))
+        screen(1)
+        cf(function(X) {self$werror_func(mod=gpc, XX=X)}, 
+           batchmax=Inf, 
+           afterplotfunc=function(){
+             points(self$X, col=3, pch=2);
+             points(self$Xopts[-Xopts_to_consider,], col=4,pch=3);
+             text(self$Xopts[Xopts_to_consider,])
+           },
+           main=expression(omega(x)*hat(delta)(x) * "  before")
+         )
+      } else {
+        split.screen(matrix(
+          c(0,1/3,0,1, 1/3,2/3,0,1, 2/3,1,0,1),
+          ncol=4,byrow=T))
+        screen(1)
+        cf(self$mod$predict, batchmax=Inf, pts=self$X)
+        screen(2)
+        # cf(function(X)self$desirability_func(gpc, X), batchmax=5e3, afterplotfunc=function(){points(self$X, col=3, pch=2);points(self$Xopts[-Xopts_to_consider,], col=4,pch=3);points(self$Xopts[Xopts_to_consider,])})
+        cf(function(X)self$werror_func(mod=gpc, XX=X), batchmax=Inf, afterplotfunc=function(){points(self$X, col=3, pch=2);points(self$Xopts[-Xopts_to_consider,], col=4,pch=3);text(self$Xopts[Xopts_to_consider,])})
+      }
     }
     if (exists("browser_max_des")) {if (browser_max_des) {browser()}}
     
@@ -839,7 +873,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       # csa(); plot(pvs, pvs2); lmp <- lm(pvs2~pvs); lmp
      
       # Reduce the number to consider if large
-      if (T) {
+      if (F) {
         if (ell < self$b) {
          numtokeep <- if (ell==1) 30 else if (ell==2) 25 else if (ell==3) 20 else if (ell>=4) {15} else NA
          Xopts_to_consider <- order(int_werror_vals,decreasing = F)[1:min(length(int_werror_vals), numtokeep)]
@@ -862,6 +896,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       } else { # if starting with L and replacing as go
        bestL[ell] <- r_star
       }
+      
       #bestL <- c(bestL, r_star)
       if (ell < self$b || TRUE) { # REMOVE THIS FOR SPEED
         Xnewone <- self$Xopts[r_star, , drop=FALSE]
@@ -899,14 +934,31 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
            gpc$update(Xall=X_with_bestL, Zall=Z_with_bestL, restarts=0, no_update=TRUE)
           }
         }
-        print(Xnewone);print(Znewone);#cf(function(xx) self$desirability_func(gpc, xx), batchmax=1e3, pts=self$Xopts)
+        #print(Xnewone);
+        cat(r_star, Xnewone, Znewone, "\n");
+        #cf(function(xx) self$desirability_func(gpc, xx), batchmax=1e3, pts=self$Xopts)
         #gpc$update(Xall=X_with_bestL, Zall=Z_with_bestL, restarts=0)
       }
     }
+    cat("Selected:", bestL)
     if (self$D == 2) {
-      screen(3)
-      cf(function(X)self$werror_func(mod=gpc, XX=X), batchmax=5e3, afterplotfunc=function(){points(self$X, col=3, pch=2);points(self$Xopts[-Xopts_to_consider,], col=4,pch=3);points(self$Xopts[Xopts_to_consider,]);points(self$Xopts[bestL,], col=1,pch=19, cex=2);text(self$Xopts[bestL,], col=2,pch=19, cex=2)})
-      # browser()
+      if (dontplotfunc) {
+        screen(2)
+        cf(function(X) {self$werror_func(mod=gpc, XX=X)}, 
+           batchmax=Inf, 
+           afterplotfunc=function(){
+             points(self$X, col=3, pch=2);
+             points(self$Xopts[-Xopts_to_consider,], col=4,pch=3);
+             points(self$Xopts[Xopts_to_consider,]);
+             points(self$Xopts[bestL,], col=1,pch=19, cex=2);
+             text(self$Xopts[bestL,], col=2,pch=19, cex=2)
+           },
+           main=expression(omega(x)*hat(delta)(x) * "  after")
+         )
+      } else {
+        screen(3)
+        cf(function(X)self$werror_func(mod=gpc, XX=X), batchmax=Inf, afterplotfunc=function(){points(self$X, col=3, pch=2);points(self$Xopts[-Xopts_to_consider,], col=4,pch=3);points(self$Xopts[Xopts_to_consider,]);points(self$Xopts[bestL,], col=1,pch=19, cex=2);text(self$Xopts[bestL,], col=2,pch=19, cex=2)})
+      }
       close.screen(all=TRUE)
     }
     if (exists("browser_max_des")) {
@@ -1164,4 +1216,8 @@ if (F) {
   set.seed(0); csa(); a <- adapt.concept2.sFFLHD.R6$new(D=2,L=3,func=banana, obj="desirability", des_func=get_des_func_quantile(threshold=.75), alpha_des=1e2, n0=20, take_until_maxpvar_below=.9, package="laGP_GauPro", design='sFFLHD', selection_method="SMED"); a$run(1)
   # SMED_true with relmax, shows that SMED is working correctly
   set.seed(0); csa(); a <- adapt.concept2.sFFLHD.R6$new(D=2,L=3,func=banana, obj="desirability", des_func=des_func_relmax, alpha_des=1e2, n0=12, take_until_maxpvar_below=1, package="laGP_GauPro", design='sFFLHD', selection_method="SMED_true", Xopts=lhs::randomLHS(n=1e3,k=2)); a$run(1)
+  
+  # banana
+  set.seed(1); csa(); a <- adapt.concept2.sFFLHD.R6$new(D=2,L=3,func=banana, obj="desirability", des_func=des_func_relmax, alpha_des=1e2, n0=30, take_until_maxpvar_below=.9, package="laGP_GauPro", design='sFFLHD', selection_method="max_des_red_all_best"); a$run(1)
+  
 }
