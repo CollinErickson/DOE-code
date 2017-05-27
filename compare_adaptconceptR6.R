@@ -6,6 +6,7 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
     func = NULL, 
     D = NULL, 
     L = NULL, 
+    b = NULL,
     batches = NULL, 
     reps = NULL, 
     obj = NULL,#=c("nonadapt", "grad"), 
@@ -35,7 +36,7 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
     actual_des_func=NULL,
     number_runs = NULL,
     completed_runs = NULL,
-    initialize = function(func, D, L, batches=10, reps=5, 
+    initialize = function(func, D, L, b=NULL, batches=10, reps=5, 
                           obj=c("nonadapt", "grad"), 
                           #plot_after=c(), plot_every=c(),
                           #forces=c("old"),force_vals=c(0),
@@ -47,10 +48,14 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
                           selection_method='SMED',
                           des_func=NA, alpha_des=NaN,
                           actual_des_func=NULL,
-                          ...) {
+                          ...) {#browser()
       self$func <- func
       self$D <- D
       self$L <- L
+      if (is.null(b)) {
+        b <- L
+      }
+      self$b <- b
       self$batches <- batches
       self$reps <- reps
       self$obj <- obj
@@ -69,7 +74,7 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
       #browser()
       if (is.null(func_string)) {
         if (is.character(func)) {func_string <- func}
-        else if (length(func) == 1){func_string <- deparse(substitute(func))}
+        else if (length(func) == 1){func_string <- paste0(deparse(substitute(func)), collapse='')}
         else if (length(func) > 1) {func_string <- paste0('func',1:length(func))}
         else {stop("Function error 325932850")}
       }
@@ -78,13 +83,12 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
       if (any(is.function(func))) {
         
       }
-      
       #browser()
       self$rungrid <- reshape::expand.grid.df(
                    data.frame(
-                     func=deparse(substitute(func)), func_string=func_string, func_num=1:length(func)
+                     func=func_string, func_string=func_string, func_num=1:length(func)
                    ),
-                   data.frame(D),data.frame(L),
+                   data.frame(D),data.frame(L), data.frame(b),
                    data.frame(repl=1:reps, seed=if(!is.null(seed_start)) seed_start+1:reps-1 else NA),
                    data.frame(reps),
                    data.frame(batches),
@@ -102,7 +106,7 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
       group_names <- c()
       
       #browser()
-      for (i_input in c('func_string', 'D', 'L', 'reps', 'batches', 'obj', 'force_old', 'force_pvar', 'n0','package', 'selection_method')) {
+      for (i_input in c('func_string', 'D', 'L', 'b', 'reps', 'batches', 'obj', 'force_old', 'force_pvar', 'n0','package', 'selection_method')) {
         if (length(eval(parse(text=i_input))) > 1) {
           #self$rungrid$Group <- paste(self$rungrid$Group, self$rungrid[,i_input])
           group_names <- c(group_names, i_input)
@@ -123,7 +127,7 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
       folderTime <- gsub(":","-", folderTime0)
       #t1 <- c(self$func_string,"_D=",self$D,"_L=",self$L,"_B=",self$batches,"_R=",self$reps,"_n0=",self$n0,
       #        "_F=",c(rbind(self$forces,"-",self$force_vals)))
-      t1 <- c(self$func_string,"_D=",self$D,"_L=",self$L,"_B=",self$batches,"_R=",self$reps,"_n0=",self$n0,
+      t1 <- c(self$func_string,"_D=",self$D,"_L=",self$L,"_b=",self$b,"_B=",self$batches,"_R=",self$reps,"_n0=",self$n0,
               "_Fold=",self$force_old,"_Fpvar=",self$force_pvar)
       if (!is.null(self$seed_start)) {t1 <- c(t1,"_","S=",self$seed_start)}
       self$folderName <- if (timestamp) {paste0(c(t1,"_",folderTime), collapse = "")} else {t1}
@@ -222,17 +226,18 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
                            #force_old=row_grid$force_old, force_pvar=row_grid$force_pvar,
                            force2=paste0(row_grid$force_old, '_', row_grid$force_pvar),
                            
-                           row.names=NULL
+                           row.names=NULL,
+                           stringsAsFactors = FALSE
       )
       newdf1 <- cbind(row_grid, newdf0, row.names=NULL)
-      if (browsernow) {browser()}
+      #if (browsernow) {browser()}
       #self$outdf <- rbind(self$outdf, newdf1)
       if (nrow(self$outrawdf) == 0) { # If outrawdf not yet created, created blank df with correct names and size
         self$outrawdf <- as.data.frame(matrix(data=NA, nrow=nrow(self$rungrid) * self$batches, ncol=ncol(newdf1)))
         colnames(self$outrawdf) <- colnames(newdf1)
       }
       self$outrawdf[((irow-1)*self$batches+1):(irow*self$batches), ] <- newdf1
-      stop("Here it is adding some columns wrong, force2 should be 0_0 and I think it is as newdf0, but it shows up as 1 in final df")
+      #stop("Here it is adding some columns wrong, force2 should be 0_0 and I think it is as newdf0, but it shows up as 1 in final df")
       if (save_output) {
         if (file.exists(paste0(self$folder_path,"/data_cat.csv"))) { # append new row
           write.table(x=newdf1, file=paste0(self$folder_path,"/data_cat.csv"),append=T, sep=",", col.names=F)
@@ -252,7 +257,7 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
       # Want to get mean of these columns across replicates
       meanColNames <- c("mse","pvar","pamv","rmse","prmse","actual_intwerror")
       # Use these as ID, exclude repl, seed, and num and time
-      splitColNames <- c("func","func_string","func_num","D","L",
+      splitColNames <- c("func","func_string","func_num","D","L","b",
                          "reps","batches",
                          "force_old","force_pvar","force2",
                          "n0","obj", "batch", "Group","package", "actual_des_func_num", "alpha_des")
@@ -374,5 +379,8 @@ if (F) {
   ca1 <- compare.adaptR6$new(func=banana, D=2, L=4, n0=20, obj=c("func","desirability"), selection_method=c('SMED', 'max_des_red'), des_func=c('NA', 'des_func_relmax'), alpha_des=1e3, actual_des_func=c('NA', get_actual_des_func_relmax(f=banana, fmin=0, fmax=1)), package="laGP")$run_all()$plot()
   ca1 <- compare.adaptR6$new(func=banana, reps=3, batches=3, D=2, L=4, n0=20, obj=c("func","desirability"), selection_method=c('SMED', 'max_des_red'), des_func=c('NA', 'des_func_relmax'), alpha_des=1e3, actual_des_func=c(get_actual_des_func_relmax(f=banana, fmin=0, fmax=1)), package="laGP")$run_all()$plot()
   ca1 <- compare.adaptR6$new(func=banana, reps=10, batches=10, D=2, L=4, n0=20, obj=c("func","desirability"), selection_method=c('SMED', 'max_des_red'), des_func=c('NA', 'des_func_relmax'), alpha_des=1e3, actual_des_func=c(get_actual_des_func_relmax(f=banana, fmin=0, fmax=1)), package="laGP")$run_all()$plot()
+  ca1 <- compare.adaptR6$new(func=banana, reps=2, batches=5, D=2, L=4, n0=20, obj=c("func","desirability"), selection_method=c('SMED', 'max_des_red'), des_func=c('NA', 'des_func_relmax'), alpha_des=1e3, actual_des_func=c(get_actual_des_func_relmax(f=banana, fmin=0, fmax=1)), package="laGP_GauPro")$run_all()$plot()
+  ca1 <- compare.adaptR6$new(func=borehole, reps=2, batches=5, D=8, b=4, L=8, n0=20, obj=c("func","desirability"), selection_method=c('SMED', 'max_des_red'), des_func=c('NA', 'des_func_relmax'), alpha_des=1e2, actual_des_func=c(actual_des_func_relmax_borehole), package="laGP_GauPro")$run_all()$plot()
+  ca1 <- compare.adaptR6$new(func_string='otl',func=OTL_Circuit, reps=2, batches=5, D=6, b=4, L=8, n0=20, obj=c("func","desirability"), selection_method=c('SMED', 'max_des_red'), des_func=c('NA', 'des_func_relmax'), alpha_des=1e3, actual_des_func=NULL, package="laGP_GauPro")$run_all()$plot()
   ca1$plot_awe_over_batch()
 }

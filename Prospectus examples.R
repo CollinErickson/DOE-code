@@ -9,17 +9,19 @@ height <- 600 * scl
 png(filename = "C://Users//cbe117//School//Prospectus//Images//zoombanana//zoombanana01.png", width = width, height=height)
 set.seed(1); csa(); a <- adapt.concept2.sFFLHD.R6$new(D=2,L=3,func=add_zoom(banana,c(0,.4), c(1,1)), obj="desirability", des_func=des_func_relmax, alpha_des=1e2, n0=30, take_until_maxpvar_below=.9, package="laGP_GauPro", design='sFFLHD', selection_method="max_des_red_all_best"); a$run(1)
 dev.off()
-if (F) { # Will mess up random seed, so if run this, then start over to get rest
+#if (F) { # Will mess up random seed, so if run this, then start over to get rest
   png(filename = "C://Users//cbe117//School//Prospectus//Images//zoombanana//zoombanana01b.png", width = width, height=height)
   split.screen(matrix(c(0,1/3,0,1, 1/3,2/3,0,1, 2/3,1,0,1), ncol=4,byrow=T))
   screen(1)
-  cf(a$mod$predict.se, pts=a$X)
+  cf(a$mod$predict.se, pts=a$X)#, main=expression(hat(sigma)(x)))
   screen(2)
-  cf(function(xx) a$weight_func(XX = xx), batchmax=Inf, pts=a$X)
+  cf(function(xx) a$weight_func(XX = xx), batchmax=Inf, pts=a$X)#, main=expression(omega(x)))
   screen(3)
-  cf(function(xx) a$werror_func(XX=xx), batch=Inf, pts=a$X)
+  cf(function(xx) a$werror_func(XX=xx), batch=Inf, pts=a$X)#, main=expression(omega(x)*hat(sigma)(x)))
+  csa()
   dev.off()
-}
+#}
+set.seed(2)
 png(filename = "C://Users//cbe117//School//Prospectus//Images//zoombanana//zoombanana02.png", width = width, height=height)
 a$run(1, noplot = TRUE)
 dev.off()
@@ -57,6 +59,17 @@ dev.off()
 png(filename = "C://Users//cbe117//School//Prospectus//Images//zoombananagrad//zoombananagrad01.png", width = width, height=height)
 set.seed(1); csa(); a <- adapt.concept2.sFFLHD.R6$new(D=2,L=3,func=add_zoom(banana,c(0,.4), c(1,1)), obj="desirability", des_func=des_func_relmaxgrad, alpha_des=1e2, n0=30, take_until_maxpvar_below=.9, package="laGP_GauPro", design='sFFLHD', selection_method="max_des_red_all_best"); a$run(1)
 dev.off()
+png(filename = "C://Users//cbe117//School//Prospectus//Images//zoombananagrad//zoombananagrad01b.png", width = width, height=height)
+split.screen(matrix(c(0,1/3,0,1, 1/3,2/3,0,1, 2/3,1,0,1), ncol=4,byrow=T))
+screen(1)
+cf(a$mod$predict.se, pts=a$X)#, main=expression(hat(sigma)(x)))
+screen(2)
+cf(function(xx) a$weight_func(XX = xx), batchmax=Inf, pts=a$X)#, main=expression(omega(x)))
+screen(3)
+cf(function(xx) a$werror_func(XX=xx), batch=Inf, pts=a$X)#, main=expression(omega(x)*hat(sigma)(x)))
+csa()
+dev.off()
+set.seed(2)
 png(filename = "C://Users//cbe117//School//Prospectus//Images//zoombananagrad//zoombananagrad02.png", width = width, height=height)
 a$run(1, noplot = TRUE)
 dev.off()
@@ -107,7 +120,7 @@ a$run(1)
 png(filename = "C://Users//cbe117//School//Prospectus//Images//gausspeaksquants//gausspeaksquants01.png", width = width, height=height)
 set.seed(2); csa();a <- adapt.concept2.sFFLHD.R6$new(D=2,L=3,func=gausspeaks, obj="desirability", des_func=function(mod,XX) des_func_quantile_lowhigh(mod,XX,c(.1,.9)), alpha_des=1e2, n0=32, take_until_maxpvar_below=.9, package="laGP_GauPro", design='sFFLHD', selection_method="max_des_red_all_best"); a$run(1)
 dev.off()
-if (F) { # Will mess up random seed, so if run this, then start over to get rest
+#if (F) { # Will mess up random seed, so if run this, then start over to get rest
   png(filename = "C://Users//cbe117//School//Prospectus//Images//gausspeaksquants//gausspeaksquants01b.png", width = width, height=height)
   split.screen(matrix(c(0,1/3,0,1, 1/3,2/3,0,1, 2/3,1,0,1), ncol=4,byrow=T))
   screen(1)
@@ -117,7 +130,8 @@ if (F) { # Will mess up random seed, so if run this, then start over to get rest
   screen(3)
   cf(function(xx) a$werror_func(XX=xx), batch=Inf, pts=a$X)
   dev.off()
-}
+#}
+set.seed(3)
 png(filename = "C://Users//cbe117//School//Prospectus//Images//gausspeaksquants//gausspeaksquants02.png", width = width, height=height)
 a$run(1, noplot = TRUE)
 dev.off()
@@ -148,7 +162,8 @@ png(filename = "C://Users//cbe117//School//Prospectus//Images//gausspeaksquants/
 cf(gausspeaks)
 dev.off()
 
-
+curve(Vectorize(function(x){max(0, (x-.9)/.1, (.1-x)/.1)}))
+curve(pmax(0, (x-.9)/.1, (.1-x)/.1), ylab=expression(delta(hat(q)(x))), xlab=expression(hat(q)(x)))
 
 
 # gaussian grad

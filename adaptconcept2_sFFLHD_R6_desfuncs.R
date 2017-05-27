@@ -167,6 +167,34 @@ get_des_func_quantile <- function(threshold=0, power=1, return_se=F) {
   }
 }
 
+des_func_quantile_lowhigh <- function(mod, XX, threshold=c(.5, .5), power=1, return_se=F, N_add=1e3) {
+  D <- if (is.matrix(XX)) ncol(XX) else length(XX)
+  pred <- mod$predict(XX, return_se=F)
+  pred2 <- mod$predict(matrix(runif(N_add*D), ncol=D), return_se=return_se)
+  if (return_se) {
+    se_toreturn <- pred2$se
+    pred2 <- pred2$fit
+  }
+  predall <- c(pred, pred2)
+  maxpred <- max(predall)
+  minpred <- min(predall)
+  # des <- (pred - minpred) / (maxpred - minpred)
+  quants <- sapply(pred, function(pp) {sum(pp > pred2) / N_add})
+  thresh_quants <- pmax(0, (quants - threshold[2]) / (1-threshold[2]), (threshold[1] - quants) / (threshold[1]))
+  if (power == 1) {
+    pow_thresh_quants <- thresh_quants
+  } else if (power == 0) {
+    pow_thresh_quants <- ceiling(thresh_quants)
+  } else {
+    pow_thresh_quants <- thresh_quants^power
+  }
+  
+  if (return_se) {
+    return(data.frame(des=des, se=se_toreturn))
+  }
+  pow_thresh_quants
+}
+
 
 
 # Test desirability functions
