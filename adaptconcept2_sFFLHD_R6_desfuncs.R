@@ -223,3 +223,44 @@ des_func_relmaxgrad <- function(mod, XX, return_se=F, N_add=1e3) {
   if (any(is.na(des))) {browser()}
   des
 }
+
+# Test desirability functions
+# A des func for finding plateau
+#' @param return_se whether the se prediction should be returned along with
+#'   the des, all will be returned in data.frame, this will save
+#'   time if calculating the werror function since it is faster
+#'   to predict both at once instead of separately
+des_func_plateau <- function(mod, XX, return_se=F, N_add=1e2) {
+  D <- if (is.matrix(XX)) ncol(XX) else length(XX)
+  #browser()
+  
+  maxeig <- function(x) {max(abs(eigen(numDeriv::hessian(func = mod$predict, x = x))$values))}
+  maxeigs <- apply(XX, 1, maxeig)
+  ZZ <- mod$predict(XX)
+  plateauness <- 1/(.01+maxeigs) * (ZZ > .1)
+  
+  UU <- matrix(runif(N_add*D), ncol=D)
+  maxeigs2 <- apply(UU, 1, maxeig)
+  VV <- mod$predict(UU)
+  plateauness2 <- 1/(.01+maxeigs2) * (VV > .1)
+  
+  
+  
+  pred <- plateauness # mod$grad_norm(XX)
+  pred2 <- plateauness2  # mod$grad_norm(matrix(runif(N_add*D), ncol=D))
+  if (return_se) {
+    stop("Not implemented #923857")
+    se_toreturn <- pred2$se
+    pred2 <- pred2$fit
+  }
+  predall <- c(pred, pred2)
+  maxpred <- max(predall)
+  minpred <- min(predall)
+  des <- (pred - minpred) / (maxpred - minpred)
+  if (return_se) {
+    return(data.frame(des=des, se=se_toreturn))
+  }
+  if (any(is.nan(des))) {browser()}
+  if (any(is.na(des))) {browser()}
+  des
+}
