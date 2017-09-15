@@ -290,6 +290,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       # newL will be the L points selected from Xopts
       #   to add to the design
       newL <- NULL
+      reason <- NA
       
       # First check to see if X hasn't been initialized yet
       if (nrow(self$X) == 0 ) {
@@ -304,15 +305,17 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
         
         # 3/9/17 Trying to move this above out
         if (!is.null(self$X0)) { # If X0, use it
-          add_newL_points_to_design(newL=NULL, use_X0=TRUE)
+          add_newL_points_to_design(newL=NULL, use_X0=TRUE, reason="X0 given")
           return()
         } else if (!is.null(self$n0) && self$n0 > 0) { # Take first batches up to n0 and use it
           
           self$add_new_batches_to_Xopts(num_batches_to_take = ceiling(self$n0/self$L))
           newL <- 1:self$n0
+          reason <- "Taking first n0 from Xopts since X is empty"
         } else { # no X0 or n0, so take first L
           self$add_new_batches_to_Xopts(num_batches_to_take = 1)
           newL <- 1:self$b
+          reason <- "Taking first b from Xopts since X is empty"
         }
         #return()
       }#;browser()
@@ -327,6 +330,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
         
         self$add_new_batches_to_Xopts(num_batches_to_take = 1)
         newL <- 1:self$b
+        reason <- "Taking next b since nonadapt"
         
         
         
@@ -367,6 +371,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
             newL <- c(newL, whichmaxmin)
             Xdesign <- rbind(Xdesign, self$Xopts[whichmaxmin,])
           }
+          reason <- "pvar high so taking maximin dist"
           # self$add_newL_points_to_design(newL = newL)
           # return()
         }
@@ -386,17 +391,21 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       # Returns NULL if not selecting, otherwise the L indices
       if (is.null(newL)) {
         newL <- self$select_new_points_from_old_or_pvar()
+        if (!is.null(newL)) {reason <- "Taking from old or pvar"}
       }
       
       # if nothing forced, run SMED_select
       if (is.null(newL)) { #browser()
         if (self$selection_method %in% c("SMED","SMED_true")) {# standard min energy
           newL <- self$select_new_points_from_SMED()
+          reason <- "SMED"
         } else if (self$selection_method == "max_des") { # take point with max desirability, update model, requires using se or pvar so adding a point goes to zero
           #browser()
           newL <- self$select_new_points_from_max_des()
+          reason <- "max_des"
         } else if (self$selection_method %in% c("max_des_red", "max_des_red_all", "max_des_red_all_best")) { # take maximum reduction, update model, requires using se or pvar so adding a point goes to zero
           newL <- self$select_new_points_from_max_des_red()
+          reason <- "max_des_red or _all or _all_best"
         }
       }
       
@@ -417,7 +426,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       #        else if (rand1 < force_old + force_pvar) {order(mod$predict.var(Xopts), decreasing=T)[1:L]}
       #        else {bestL}#{print(paste('first L',iteration));1:L}
       
-      self$add_newL_points_to_design(newL = newL)
+      self$add_newL_points_to_design(newL = newL, reason=reason)
     },
     update_obj_nu = function(Xnew, Znew) {#browser()
       if (is.null(self$mod$X)) {return(rep(NA, nrow(Xnew)))}
@@ -1025,7 +1034,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
     mn <- mean(self$werror_func(XX=int_points, mod=mod, ...))
     mn
   },
-  add_newL_points_to_design = function(newL=NULL, use_X0=FALSE) {
+  add_newL_points_to_design = function(newL=NULL, use_X0=FALSE, reason) {
     if (length(newL) != self$b) { 
       if (length(newL) != self$n0  || nrow(self$X)!=0) {
         browser()
@@ -1052,7 +1061,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       time_added_to_opts=removed_tracker_rows$time_added,
       iteration_added = self$iteration,
       time_added = Sys.time(),
-      Z=Znew, Zpred=pred$fit, sepred=pred$se.fit, t=(Znew-pred$fit)/pred$se.fit)
+      Z=Znew, Zpred=pred$fit, sepred=pred$se.fit, t=(Znew-pred$fit)/pred$se.fit, reason=reason)
     self$X_tracker <- rbind(self$X_tracker, tracker_rows)
     
     self$update_obj_nu(Xnew=Xnew, Znew=Znew)
