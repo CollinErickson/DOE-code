@@ -7,10 +7,10 @@ library(TestFunctions, lib.loc = lib.loc)
 library(ContourFunctions, lib.loc = lib.loc)
 library(SMED, lib.loc = lib.loc)
 library(sFFLHD, lib.loc = lib.loc)
-library(UGP, lib.loc = lib.loc)
+library(IGP, lib.loc = lib.loc)
 library(magrittr)
 # csa <- function() close.screen(all.screens = TRUE)
-#setOldClass("UGP")
+#setOldClass("IGP")
 
 
 #' Class providing object with methods for adapt.concept2
@@ -57,10 +57,11 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
     new_batches_per_batch = NULL,
     g = NULL, # "numeric", # g not used but I'll leave it for now
     X = NULL, # "matrix", Z = "numeric", Xopts = "matrix",
+    X_tracker = NULL, # tracks points that are in X
     X0 = NULL,
     Xopts = NULL,
     Xopts_tracker = NULL, # Keep track of data about candidate points
-    batch.tracker = NULL, # tracks when Xoptss were added
+    batch.tracker = NULL, # tracks when Xopts were added
     Xopts_removed = NULL,
     Z = NULL,
     s = NULL, # "sFFLHD" an object with $get.batch to get batch of points
@@ -151,7 +152,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       #mod$initialize(package = "mlegp")
       if(is.null(package)) {self$package <- "laGP"}
       else {self$package <- package}
-      #self$mod <- UGP$new(package = self$package)
+      #self$mod <- IGP$new(package = self$package)
       self$mod <- IGP(package = self$package, estimate.nugget=FALSE, set.nugget=nugget)
       self$stats <- list(iteration=c(),n=c(),pvar=c(),mse=c(), ppu=c(), minbatch=c(), pamv=c(), actual_intwerror=c(), intwerror=c())
       self$iteration <- 1
@@ -332,8 +333,23 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
         # If variance is too high across surface, take points
       } else if (!is.null(self$take_until_maxpvar_below) && 
           self$mod$prop.at.max.var(val=self$take_until_maxpvar_below) > 0.1) {
-        print(paste("Taking until pvar lower: ", 
-                    self$mod$prop.at.max.var(val=self$take_until_maxpvar_below)))
+        #print(paste("Taking until pvar lower: ", 
+        #            self$mod$prop.at.max.var(val=self$take_until_maxpvar_below)))
+        if (self$package == 'GauPro') {
+          cat(paste("Taking until pvar lower: ", 
+                    self$mod$prop.at.max.var(val=self$take_until_maxpvar_below),
+                    "   avg t_LOO: ", mean(abs(self$mod$mod$pred_LOO(se.fit=T)$t)),
+                    '\n'))
+        } else if (self$package == 'laGP_GauPro') {
+          cat(paste("Taking until pvar lower: ", 
+                    self$mod$prop.at.max.var(val=self$take_until_maxpvar_below),
+                    "   avg t_LOO: ", mean(abs(self$mod$mod.extra$GauPro$mod$pred_LOO(se.fit=T)$t)),
+                    '\n'))
+        } else {
+          cat(paste("Taking until pvar lower: ", 
+                    self$mod$prop.at.max.var(val=self$take_until_maxpvar_below),
+                    '\n'))
+        }
         if (FALSE) {
           Xnew <- self$s$get.batch()
           Znew <- apply(Xnew, 1, self$func)
@@ -642,7 +658,13 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       self$Xopts_tracker <- rbind(self$Xopts_tracker, Xnewdf)
     },
     Xopts_tracker_remove = function(newL) {
+      # newL is index of pt to remove from Xopts
+      # Remove from Xopts_tracker, add to X_tracker
+      removed_rows <- self$Xopts_tracker[newL,, drop=FALSE]
+      #Zp <- self$predict(newX, se.fit=TRUE)
+      # self$X_tracker <- rbind(self$X_tracker, newX)
       self$Xopts_tracker <- self$Xopts_tracker[-newL,, drop=FALSE]
+      removed_rows
     },
     select_new_points_from_old_or_pvar = function() {
      newL <- NULL
@@ -691,7 +713,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
     },
    select_new_points_from_max_des = function() {#browser()
      # take point with max desirability, update model, requires using se or pvar so adding a point goes to zero
-     gpc <- self$mod$clone()
+     gpc <- self$mod$clone(deep=TRUE)
      bestL <- c()
      for (ell in 1:self$b) {
        # objall <- self$obj_func(rbind(self$X, self$Xopts))
@@ -715,9 +737,11 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
    },
   select_new_points_from_max_des_red = function() {#browser()
     if (self$package == 'laGP') {
-     gpc <- UGP::IGP(X = self$X, Z=self$Z, package='laGP', d=1/self$mod$theta(), g=self$mod$nugget(), no_update=TRUE)
+      gpc <- IGP::IGP(X = self$X, Z=self$Z, package='laGP', d=1/self$mod$theta(), g=self$mod$nugget(), no_update=TRUE)
+    } else if (self$package == 'laGP_GauPro') {
+      gpc <- self$mod$mod.extra$GauPro$clone(deep=TRUE)
     } else {
-     gpc <- self$mod$clone(deep=TRUE)
+      gpc <- self$mod$clone(deep=TRUE)
     }
     Xopts_to_consider <- 1:nrow(self$Xopts) #sample(1:nrow(self$Xopts),min(10,nrow(self$Xopts)),F)
     if (self$D == 2) {
@@ -802,7 +826,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
           Z_with_bestL <- c(Z_with_bestL, Znotrun_preds[bestL])
           if (self$package == 'laGP') {
             gpc$delete()
-            gpc <- UGP::IGP(X=X_with_bestL, Z=Z_with_bestL, theta=self$mod$theta(), nugget=self$mod$nugget(), package="laGP", no_update=TRUE)
+            gpc <- IGP::IGP(X=X_with_bestL, Z=Z_with_bestL, theta=self$mod$theta(), nugget=self$mod$nugget(), package="laGP", no_update=TRUE)
           } else {
             gpc$update(Xall=X_with_bestL, Zall=Z_with_bestL, restarts=0, no_update=TRUE)
           }
@@ -825,7 +849,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
         if (ell == 3 && max(abs(self$Xopts[r,] - c(.2159992,.9280008)))<.0001) {browser()}
         if (self$package == 'laGP') {
           gpc$delete()
-          gpc <- UGP::IGP(X=rbind(X_with_bestL, self$Xopts[r, ,drop=F]), 
+          gpc <- IGP::IGP(X=rbind(X_with_bestL, self$Xopts[r, ,drop=F]), 
                          Z=c(Z_with_bestL, Znotrun_preds[r]), 
                theta=self$mod$theta(), nugget=self$mod$nugget(), package="laGP", no_update=TRUE)
         } else {
@@ -916,7 +940,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
           if (T) { # REMOVE THIS FOR SPEED
            if (self$package =='laGP') {
              gpc$delete()
-             gpc <- UGP::IGP(X=X_with_bestL, Z=Z_with_bestL, package='laGP', theta=self$mod$theta(), nugget=self$mod$nugget(), no_update=TRUE)
+             gpc <- IGP::IGP(X=X_with_bestL, Z=Z_with_bestL, package='laGP', theta=self$mod$theta(), nugget=self$mod$nugget(), no_update=TRUE)
            } else {
              gpc$update(Xall=X_with_bestL, Zall=Z_with_bestL, restarts=0, no_update=TRUE)
            }
@@ -929,7 +953,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
           Z_with_bestL <- c(Z_with_bestL, Znotrun_preds[r_star])
           if (self$package == 'laGP') {
            gpc$delete()
-           gpc <- UGP::IGP(X=X_with_bestL, Z=Z_with_bestL, theta=self$mod$theta(), nugget=self$mod$nugget(), no_update=TRUE)
+           gpc <- IGP::IGP(X=X_with_bestL, Z=Z_with_bestL, theta=self$mod$theta(), nugget=self$mod$nugget(), no_update=TRUE)
           } else {
            gpc$update(Xall=X_with_bestL, Zall=Z_with_bestL, restarts=0, no_update=TRUE)
           }
@@ -994,7 +1018,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
     if (is.null(Znew)) {
       Znew = self$mod$predict(Xnew)
     }
-    mod <- UGP::IGP(X=rbind(self$X, Xnew), Z=c(self$Z, Znew), 
+    mod <- IGP::IGP(X=rbind(self$X, Xnew), Z=c(self$Z, Znew), 
                     package = "GauPro",
                     theta=self$mod$theta(), param.est=FALSE,
                     set.nugget=self$mod$nugget(), estimate.nugget=FALSE)
@@ -1008,7 +1032,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
         stop("Selected newL not of length L #84274")
       }
     }
-    self$Xopts_tracker_remove(newL=newL)
+    removed_tracker_rows <- self$Xopts_tracker_remove(newL=newL)
     Xnew <- self$Xopts[newL,]
     self$Xopts <- self$Xopts[-newL, , drop=FALSE]
     self$batch.tracker <- self$batch.tracker[-newL]
@@ -1016,6 +1040,21 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
     if (any(duplicated(rbind(self$X,Xnew)))) {browser()}
     self$X <- rbind(self$X,Xnew)
     self$Z <- c(self$Z,Znew)
+    
+    # Track points added
+    pred <- if (nrow(self$X) == length(newL)) { # Model not fit yet
+              data.frame(fit=rep(NA, length(newL)), se.fit=rep(NA, length(newL)))
+            } else{
+              self$mod$predict(Xnew, se.fit=TRUE)
+            }
+    tracker_rows <- data.frame(
+      iteration_added_to_opts=removed_tracker_rows$iteration_added, 
+      time_added_to_opts=removed_tracker_rows$time_added,
+      iteration_added = self$iteration,
+      time_added = Sys.time(),
+      Z=Znew, Zpred=pred$fit, sepred=pred$se.fit, t=(Znew-pred$fit)/pred$se.fit)
+    self$X_tracker <- rbind(self$X_tracker, tracker_rows)
+    
     self$update_obj_nu(Xnew=Xnew, Znew=Znew)
   },
   calculate_Z = function(X) {#browser()
@@ -1126,7 +1165,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
 
 if (F) {
   library(sFFLHD)
-  library(UGP)
+  library(IGP)
   source("adaptconcept_helpers.R")
   require(mlegp)
   require(GPfit)
@@ -1219,5 +1258,12 @@ if (F) {
   
   # banana
   set.seed(1); csa(); a <- adapt.concept2.sFFLHD.R6$new(D=2,L=3,func=banana, obj="desirability", des_func=des_func_relmax, alpha_des=1e2, n0=30, take_until_maxpvar_below=.9, package="laGP_GauPro", design='sFFLHD', selection_method="max_des_red_all_best"); a$run(1)
+  # same but nonadapt
+  set.seed(1); csa(); a <- adapt.concept2.sFFLHD.R6$new(D=2,L=3,func=banana, obj="desirability", des_func=des_func_relmax, alpha_des=1e2, n0=30, take_until_maxpvar_below=.9, package="laGP_GauPro", design='sFFLHD', selection_method="nonadapt"); a$run(1)
+  
+  
+  # Trying plateau des func
+  a <- adapt.concept2.sFFLHD.R6$new(D=2,L=2,func=banana, obj="desirability", des_func=des_func_plateau, alpha_des = 100, n0=24, take_until_maxpvar_below=.9, package="GauPro", design='sFFLHD', selection_method="max_des_red")
+  a$run(1)  
   
 }
