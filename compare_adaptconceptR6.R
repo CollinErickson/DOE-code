@@ -19,7 +19,7 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
     n0 = NULL,#=0,
     save_output = NULL,#=F, 
     func_string = NULL,
-    seed_start = NULL,
+    seed_start = 0, # Start with seed to make comparisons much better
     folder_created = FALSE,
     outdf = data.frame(),
     outrawdf = data.frame(),
@@ -207,7 +207,7 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
       }
       #browser()
       row_grid <- self$rungrid[irow, ] #rungrid row for current run
-      if (!is.na(row_grid$seed)) {set.seed(seed)}
+      if (!is.na(row_grid$seed)) {set.seed(row_grid$seed)}
       #browser()
       #if (is.function(row_grid$func)) {}#funci <- self$func}
       #else if (row_grid$func == "RFF") {row_grid$func <- RFF_get(D=self$D)}
@@ -382,5 +382,6 @@ if (F) {
   ca1 <- compare.adaptR6$new(func=banana, reps=2, batches=5, D=2, L=4, n0=20, obj=c("func","desirability"), selection_method=c('SMED', 'max_des_red'), des_func=c('NA', 'des_func_relmax'), alpha_des=1e3, actual_des_func=c(get_actual_des_func_relmax(f=banana, fmin=0, fmax=1)), package="laGP_GauPro")$run_all()$plot()
   ca1 <- compare.adaptR6$new(func=borehole, reps=2, batches=5, D=8, b=4, L=8, n0=20, obj=c("func","desirability"), selection_method=c('SMED', 'max_des_red'), des_func=c('NA', 'des_func_relmax'), alpha_des=1e2, actual_des_func=c(actual_des_func_relmax_borehole), package="laGP_GauPro")$run_all()$plot()
   ca1 <- compare.adaptR6$new(func_string='otl',func=OTL_Circuit, reps=2, batches=5, D=6, b=4, L=8, n0=20, obj=c("func","desirability"), selection_method=c('SMED', 'max_des_red'), des_func=c('NA', 'des_func_relmax'), alpha_des=1e3, actual_des_func=NULL, package="laGP_GauPro")$run_all()$plot()
+  ca1 <- compare.adaptR6$new(func=banana, reps=5, batches=5, D=2, L=2, n0=15, obj=c("nonadapt","func","desirability"), selection_method=c("nonadapt",'SMED', 'max_des_red'), des_func=c('NA','NA', 'des_func_relmax'), alpha_des=1e3, actual_des_func=c(get_actual_des_func_relmax(f=banana, fmin=0, fmax=1)), package="laGP_GauPro", seed=33123)$run_all()$plot()
   ca1$plot_awe_over_batch()
 }
