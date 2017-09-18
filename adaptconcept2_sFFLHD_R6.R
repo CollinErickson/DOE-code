@@ -484,116 +484,174 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
         NaN
       }
     },
-    plot1 = function() {#browser()
-     if (self$D == 2) {
-       twoplot <- TRUE
-       if (twoplot) { # Only plot pred surface and pred error
-         split.screen(matrix(c(0,.5,0,1,.5,1,0,1),byrow=T, ncol=4))
-         screen(1)
-         cf_func(self$mod$predict,batchmax=500, pretitle="Predicted Surface ", #pts=X)
-                 afterplotfunc=function(){points(self$X,pch=19)
-                   if (self$iteration > 1) {points(self$X[(nrow(self$X)-self$b+1):nrow(self$X),],col='yellow',pch=19, cex=.5)} # plot last L separately
-                 }
-         )
-         screen(2)
-         cf_func(self$mod$predict.var,batchmax=500, pretitle="Predicted Error ", #pts=X)
-                 afterplotfunc=function(){points(self$X,pch=19)
-                   if (self$iteration > 1) {points(self$X[(nrow(self$X)-self$b+1):nrow(self$X),],col='yellow',pch=19, cex=.5)} # plot last L separately
-                   points(self$Xopts, col=2); # add points not selected
-                 }
-         )
-         close.screen(all=TRUE)
-         return()
-       }
-       
-       #par(mfrow=c(2,1))
-       ln <- 5 # number of lower plots
-       split.screen(matrix(
-         #c(0,.5,.25,1,  .5,1,.25,1,  0,1/3,0,.25, 1/3,2/3,0,.25, 2/3,1,0,.25),
-         c(0,.5,.25,1,  .5,1,.25,1,  0,1/ln,0,.25, 1/ln,2/ln,0,.25, 2/ln,3/ln,0,.25, 3/ln,4/ln,0,.25, 4/ln,1,0,.25),
-         ncol=4,byrow=T))
-       screen(1)
-       #xlim <- lims[1,]
-       #ylim <- lims[2,]
-       cf_func(self$mod$predict,batchmax=500, pretitle="Predicted Surface ", #pts=X)
-              afterplotfunc=function(){points(self$X,pch=19)
-                                       if (self$iteration > 1) {points(self$X[(nrow(self$X)-self$b+1):nrow(self$X),],col='yellow',pch=19, cex=.5)} # plot last L separately
+    plot_mean = function(cex=1) {
+      cf_func(self$mod$predict,batchmax=500, pretitle="Predicted Mean ", #pts=X)
+              cex=cex,
+              afterplotfunc=function(){
+                points(self$X,pch=19)
+                if (self$iteration > 1) { # Add points just chosen with yellow
+                  points(self$X[(nrow(self$X)-self$b+1):nrow(self$X),],col='yellow',pch=19, cex=.5)} # plot last L separately
               }
-       )
-       ###points(Xopts, col=2)
-       #rect(xlim[1],ylim[1],xlim[2],ylim[2],lwd=5)
-       #abline(v=xlim[1] + 1:(g-1)/g * (xlim[2]-xlim[1]),h=ylim[1] + 1:(g-1)/g * (ylim[2]-ylim[1]))
-       #segments(x0=xlim[1] + 1:(g-1)/g * (xlim[2]-xlim[1]), y0=ylim[1], y1=ylim[2], col=1)
-       #segments(x0=xlim[1], x1=xlim[2], y0=ylim[1] + 1:(g-1)/g * (ylim[2]-ylim[1]), col=1)
-       #if (will_dive) {
-      #   lims.next <- get_mses_out$lims.next
-      #   lims.nextsecond <- get_mses_out$lims.nextsecond
-      #   rect(lims.nextsecond[1,1],lims.nextsecond[2,1],lims.nextsecond[1,2],lims.nextsecond[2,2],lwd=2,border='black')
-      #   rect(lims.next[1,1],lims.next[2,1],lims.next[1,2],lims.next[2,2],lwd=5,border='red')
-      #   rect(lims.next[1,1],lims.next[2,1],lims.next[1,2],lims.next[2,2],col=1,angle=45,density=6+2*level^2)
-      # } else {
-      #   lims.up <- get_mses_out$lims.maxmse.levelup
-      #   rect(lims.up[1,1],lims.up[2,1],lims.up[1,2],lims.up[2,2],lwd=2,border='red')
-      # }
-       # Plot s2 predictions
-       screen(2)
-       cf_func(self$mod$predict.var,batchmax=500, pretitle="Predicted Error ", #pts=X)
-               afterplotfunc=function(){points(self$X,pch=19)
-                 if (self$iteration > 1) {points(self$X[(nrow(self$X)-self$b+1):nrow(self$X),],col='yellow',pch=19, cex=.5)} # plot last L separately
-                 points(self$Xopts, col=2); # add points not selected
-               }
-       )
-       ###points(Xopts, col=2)
-       #rect(xlim[1],ylim[1],xlim[2],ylim[2],lwd=5)
-       #abline(v=xlim[1] + 1:(g-1)/g * (xlim[2]-xlim[1]),h=ylim[1] + 1:(g-1)/g * (ylim[2]-ylim[1]))
-       #segments(x0=xlim[1] + 1:(g-1)/g * (xlim[2]-xlim[1]), y0=ylim[1], y1=ylim[2], col=1)
-       #segments(x0=xlim[1], x1=xlim[2], y0=ylim[1] + 1:(g-1)/g * (ylim[2]-ylim[1]), col=1)
-       #if (will_dive) {
-      #   rect(lims.nextsecond[1,1],lims.nextsecond[2,1],lims.nextsecond[1,2],lims.nextsecond[2,2],lwd=2,border='black')
-      #   rect(lims.next[1,1],lims.next[2,1],lims.next[1,2],lims.next[2,2],lwd=5,border='red')
-      #   rect(lims.next[1,1],lims.next[2,1],lims.next[1,2],lims.next[2,2],col=1,angle=45,density=6+2*level^2)
-      # } else {
-      #   rect(lims.up[1,1],lims.up[2,1],lims.up[1,2],lims.up[2,2],lwd=2,border='red')
-       #}
-       if (self$func_fast) { # Only plot true func if fast
-         screen(3) # actual squared error plot
-         par(mar=c(2,2,0,0.5)) # 5.1 4.1 4.1 2.1 BLTR
-         cf_func(self$func, n = 20, mainminmax_minmax = F, pretitle="Actual ")
-       }
-       if (self$iteration >= 2) {#browser()
-         statsdf <- as.data.frame(self$stats)
-         screen(4) # MSE plot
-         par(mar=c(2,2,0,0.5)) # 5.1 4.1 4.1 2.1 BLTR
-         plot(rep(statsdf$iter,2), c(statsdf$mse,statsdf$pvar), 
-              type='o', log="y", col="white",
-              xlab="Iteration", ylab=""
-         )
-         legend("topright",legend=c("MSE","PVar"),fill=c(1,2))
-         points(statsdf$iter, statsdf$mse, type='o', pch=19)
-         points(statsdf$iter, statsdf$pvar, type='o', pch = 19, col=2)
-         
-         screen(5) # level plot
-         #par(mar=c(2,2,0,0.5)) # 5.1 4.1 4.1 2.1 BLTR
-         #plot(statsdf$iter, statsdf$minbatch, type='o', pch=19,
-         #     xlab="Iteration")#, ylab="Level")
-         #legend('bottomright',legend="Batch not run",fill=1)
-         if (self$plot_grad) { # Option to not plot if it is slow
-           cf_func(self$mod$grad_norm, n=20, mainminmax_minmax = F, pretitle="Grad ")
-         }
-         
-         screen(6) # % of pts used plot 
-         par(mar=c(2,2,0,0.5)) # 5.1 4.1 4.1 2.1 BLTR
-         plot(statsdf$iter, statsdf$ppu, type='o', pch=19,
-              xlab="Iteration")#, ylab="Level")
-         legend('bottomleft',legend="% pts",fill=1)
-       }
-       if (self$func_fast) {
-         screen(7) # actual squared error plot
-         par(mar=c(2,2,0,0.5)) # 5.1 4.1 4.1 2.1 BLTR
-         cf_func(function(xx){(self$mod$predict(xx) - self$func(xx))^2},
-                            n = 20, mainminmax_minmax = F, pretitle="SqErr ")
-       }       
-       close.screen(all = TRUE)
+      )
+    },
+    plot_se = function(cex=1) {
+      cf_func(self$mod$predict.se,batchmax=500, pretitle="Predicted SE ", #pts=X)
+              cex=cex,
+              afterplotfunc=function(){
+                points(self$X,pch=19)
+                if (self$iteration > 1) { # Plot last L separately
+                  points(self$X[(nrow(self$X)-self$b+1):nrow(self$X),],col='yellow',pch=19, cex=.5)
+                }
+                points(self$Xopts, col=2); # add points not selected
+              }
+      )
+    },
+    plot_abserr = function(cex=1) {
+      cf_func(function(xx){sqrt((self$mod$predict(xx) - self$func(xx))^2)},
+              n = 20, mainminmax_minmax = F, pretitle="AbsErr ", batchmax=Inf,
+              cex=cex)
+    },
+    plot_mse = function(statsdf, cex=cex) {
+      par(mar=c(2,2,0,0.5)) # 5.1 4.1 4.1 2.1 BLTR
+      if (missing(statsdf)) {
+        print("missing statsdf in plot_mse")
+        statsdf <- as.data.frame(self$stats)
+      }
+      plot(rep(statsdf$iter,2), c(statsdf$mse,statsdf$pvar), 
+           type='o', log="y", col="white",
+           xlab="Iteration", ylab=""
+      )
+      legend("topright",legend=c("MSE","PVar"),fill=c(1,2), cex=cex)
+      points(statsdf$iter, statsdf$mse, type='o', pch=19)
+      points(statsdf$iter, statsdf$pvar, type='o', pch = 19, col=2)
+    },
+    plot_ppu = function(statsdf, cex) {
+      # Plot percentage of points used over iteration
+      if (missing(statsdf)) {
+        print("missing statsdf in plot_ppu")
+        statsdf <- as.data.frame(self$stats)
+      }
+      par(mar=c(2,2,0,0.5)) # 5.1 4.1 4.1 2.1 BLTR
+      plot(statsdf$iter, statsdf$ppu, type='o', pch=19,
+           xlab="Iteration")
+      legend('bottomleft',legend="% pts",fill=1, cex=cex)
+    },
+    plot_des_v_acc = function() {
+      Xplot <- matrix(runif(self$D*100), ncol=self$D)
+      Xplot_grad <- pmax(1e-8, self$mod$grad_norm(Xplot))#;browser()
+      Xplot_se <- pmax(1e-8, self$mod$predict.se(Xplot))
+      #if (any(Xplot_se <= 0)) {browser()}
+      #if (any(Xplot_grad < 0)) {browser()}
+      
+      Xplot_des <- self$des_func(XX=self$X, mod=self$mod)
+      Xplot_se <- self$mod$predict.se(Xplot)
+      
+      plot(Xplot_se, Xplot_grad, pch=19, xlab='SE', ylab='Grad', log='xy')
+    },
+    plot_y_acc = function() {#browser()
+      # Plot predicted vs actual with error bars
+      
+      # If func_fast, then get for other random points
+      if (self$func_fast) { # Only do these if fast
+        Xplot <- matrix(runif(self$D*50), ncol=self$D)
+        Zplot.pred.all <- self$mod$predict(Xplot, se.fit=TRUE)
+        Zplot.pred <- Zplot.pred.all$fit
+        Zplot.se <- Zplot.pred.all$se
+        Zplot.act <- apply(Xplot,1, self$func)
+      } else {
+        Zplot.pred <- c()
+        Zplot.act <- c()
+      }
+      
+      # Get predictions for points in design
+      Zused.pred.all <- self$mod$predict(self$X, se.fit=TRUE)
+      Zused.pred <- Zused.pred.all$fit
+      Zused.se <- Zused.pred.all$se
+      
+      # Blank plot with right values
+      plot(NULL, xlim=c(min(self$Z, Zplot.act), max(self$Z, Zplot.act)), 
+           ylim=c(min(Zused.pred, Zplot.pred), max(Zused.pred, Zplot.pred)))
+      legend(x = 'topleft', legend=c("Z", "ZZ"), col = c(2,1), pch=19)
+      
+      # If fast, then plot values for random points
+      if (self$func_fast) {
+        for (i in 1:length(Zplot.se)) {
+          lines(c(Zplot.act[i],Zplot.act[i]), Zplot.pred[i] + 2 * Zplot.se[i] * c(1, -1), col=3)
+        }
+      }
+      for (i in 1:length(Zused.se)) {
+        lines(c(self$Z[i],self$Z[i]), Zused.pred[i] + 2 * Zused.se[i] * c(1, -1), col=4)
+      }
+      abline(a = 0, b = 1)
+      if (self$func_fast) {points(Zplot.act, Zplot.pred, xlab="Z", ylab="Predicted", pch=19)}
+      points(self$Z, Zused.pred, col=2, pch=19)
+    },
+    plot_2D = function(twoplot = FALSE, cex=1) {
+      cex_small = .55 * cex
+      # twoplot only plots mean and se
+      # twoplot <- TRUE
+      if (twoplot) { # Only plot pred surface and pred error
+        split.screen(matrix(c(0,.5,0,1,.5,1,0,1),byrow=T, ncol=4))
+        screen(1)
+        self$plot_mean(cex=cex)
+        screen(2)
+        self$plot_se(cex=cex)
+        close.screen(all=TRUE)
+        return()
+      }
+      
+      #par(mfrow=c(2,1))
+      ln <- 5 # number of lower plots
+      split.screen(matrix(
+        #c(0,.5,.25,1,  .5,1,.25,1,  0,1/3,0,.25, 1/3,2/3,0,.25, 2/3,1,0,.25),
+        c(0,.5,.25,1,  .5,1,.25,1,  0,1/ln,0,.25, 1/ln,2/ln,0,.25, 2/ln,3/ln,0,.25, 3/ln,4/ln,0,.25, 4/ln,1,0,.25),
+        ncol=4,byrow=T))
+      
+      # Plot mean
+      screen(1)
+      self$plot_mean(cex=cex)
+      
+      # Plot se predictions
+      screen(2)
+      self$plot_se(cex=cex)
+      
+      # Only plot true func if func_fast
+      if (self$func_fast) {
+        screen(3) # Actual func
+        par(mar=c(2,2,0,0.5)) # 5.1 4.1 4.1 2.1 BLTR
+        cf_func(self$func, n = 20, mainminmax_minmax = F, pretitle="Actual ", cex=cex_small)
+      }
+      
+      # Plot MSE if past iteration 1
+      if (self$iteration >= 2) {#browser()
+        statsdf <- as.data.frame(self$stats)
+        screen(4) # MSE plot
+        self$plot_mse(statsdf=statsdf, cex=cex_small)
+        
+        screen(5) # plot grad
+        # if (self$plot_grad) { # Option to not plot if it is slow
+        #   cf_func(self$mod$grad_norm, n=20, mainminmax_minmax = F, pretitle="Grad ", cex=cex_small)
+        # }
+        if (self$plot_grad) { # Option to not plot if it is slow
+          cf_func(function(XX) {self$des_func(XX=XX, mod=self$mod)}, 
+                  n=20, mainminmax_minmax = F, pretitle="Des ", 
+                  cex=cex_small, batchmax=Inf)
+        }
+        
+        screen(6) # % of pts used plot 
+        par(mar=c(2,2,0,0.5)) # 5.1 4.1 4.1 2.1 BLTR
+        self$plot_ppu(statsdf=statsdf, cex=cex_small)
+      }
+      if (self$func_fast) {
+        screen(7) # actual squared error plot
+        # par(mar=c(2,2,0,0.5)) # 5.1 4.1 4.1 2.1 BLTR
+        self$plot_abserr(cex=.55*cex)
+      }       
+      close.screen(all = TRUE)
+    },
+    plot1 = function(twoplot=FALSE, cex=1) {#browser()
+     if (self$D == 2) {
+       self$plot_2D(twoplot=twoplot, cex=cex)
      } else { # D != 2 
        par(mfrow=c(2,2))
        par(mar=c(2,2,0,0.5)) # 5.1 4.1 4.1 2.1 BLTR
@@ -605,42 +663,17 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
        #)
        if (self$iteration >= 2) {
          # 1 mse plot
-         plot(rep(statsdf$iter,2), c(statsdf$mse,statsdf$pvar), 
-              type='o', log="y", col="white",
-              xlab="Iteration", ylab=""
-         )
-         legend("topright",legend=c("MSE","PVar"),fill=c(1,2))
-         points(statsdf$iter, statsdf$mse, type='o', pch=19)
-         points(statsdf$iter, statsdf$pvar, type='o', pch = 19, col=2)
-         # 2 level plot
-         #plot(statsdf$iter, statsdf$level, type='o', pch=19)
-         #legend('topleft',legend="Level",fill=1)
-         Xplot <- matrix(runif(self$D*50), ncol=self$D)
-         if (self$func_fast) { # Only do these if fast
-           Zplot.pred <- self$mod$predict(Xplot)
-           Zplot.act <- apply(Xplot,1, self$func)
-         } else {
-           Zplot.pred <- c()
-           Zplot.act <- c()
-         }
-         Zplot.se <- self$mod$predict.se(Xplot)
-         Zused.pred <- self$mod$predict(self$X)
-         plot(NULL, xlim=c(min(self$Z, Zplot.act), max(self$Z, Zplot.act)), 
-              ylim=c(min(Zused.pred, Zplot.pred), max(Zused.pred, Zplot.pred)))
-         abline(a = 0, b = 1)
-         if (self$func_fast) {points(Zplot.act, Zplot.pred, xlab="Z", ylab="Predicted")}
-         points(self$Z, Zused.pred, col=2)
+         self$plot_mse(statsdf=statsdf)
+         
+         
+         # 2 yhat vs y plot
+         self$plot_y_acc()
+         
          # 3 % pts used plot
-         plot(statsdf$iter, statsdf$ppu, type='o', pch=19,
-              xlab="Iteration")#, ylab="Level")
-         legend('bottomleft',legend="% pts",fill=1)
+         self$plot_ppu(statsdf=statsdf)
+         
          # 4 grad vs pvar
-         Xplot <- matrix(runif(self$D*100), ncol=self$D)
-         Xplot_grad <- pmax(1e-8, self$mod$grad_norm(Xplot))#;browser()
-         Xplot_se <- pmax(1e-8, self$mod$predict.se(Xplot))
-         #if (any(Xplot_se <= 0)) {browser()}
-         #if (any(Xplot_grad < 0)) {browser()}
-         plot(Xplot_se, Xplot_grad, pch=19, xlab='SE', ylab='Grad', log='xy')
+         self$plot_des_v_acc()
        }
      }
     },
@@ -1272,7 +1305,7 @@ if (F) {
   
   
   # Trying plateau des func
-  a <- adapt.concept2.sFFLHD.R6$new(D=2,L=2,func=banana, obj="desirability", des_func=des_func_plateau, alpha_des = 100, n0=24, take_until_maxpvar_below=.9, package="GauPro", design='sFFLHD', selection_method="max_des_red")
+  a <- adapt.concept2.sFFLHD.R6$new(D=2,L=2,func=banana, obj="desirability", des_func=des_func_plateau, alpha_des = 100, n0=24, take_until_maxpvar_below=.9, package="laGP_GauPro", design='sFFLHD', selection_method="max_des_red", func_fast=FALSE)
   a$run(1)  
   
 }
