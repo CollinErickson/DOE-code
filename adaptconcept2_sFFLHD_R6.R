@@ -81,6 +81,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
     #desirability_func = NULL, # args are mod and XX, this was the full weighted error function, poorly named
     #actual_desirability_func = NULL, # 
     des_func = NULL, # desirability function: args are mod and XX, should be the delta desirability function, output from 0 to 1
+    des_func_fast = NULL, # If des func is slow (using model, not true), then it won't be plotted for other points, eg contour plot
     alpha_des = NULL,
     actual_des_func = NULL,
     actual_werror_func = NULL,
@@ -88,14 +89,14 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
     weight_const = 1,
     #werror_func = NULL, # weighted error function: sigmahat * (1+alpha_des*des_func())
     selection_method = NULL, # string
-    plot_grad = NULL,
     
     parallel = NULL, # Should the new values be calculated in parallel? Not for the model, for getting actual new Z values
     parallel_cores = NULL, # Number of cores used for parallel
     parallel_cluster = NULL, # The object for the cluster currently running
     
     options = NULL, # A list for holding other things that aren't worth giving own variable
- 
+    verbose = NULL, # 0 prints only essential, 2 prints a lot
+    
     initialize = function(D,L,b=NULL, package=NULL, obj=NULL, n0=0, 
                          force_old=0, force_pvar=0,
                          useSMEDtheta=F, 
@@ -103,9 +104,11 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
                          take_until_maxpvar_below=NULL,
                          design="sFFLHD",
                          selection_method, X0=NULL, Xopts=NULL,
-                         plot_grad=TRUE, new_batches_per_batch=5,
+                         des_func, des_func_fast=TRUE, alpha_des,
+                         new_batches_per_batch=5,
                          parallel=FALSE, parallel_cores="detect",
                          nugget=1e-8,
+                         verbose = 2,
                          #optio
                          ...) {#browser()
       self$D <- D
@@ -119,7 +122,8 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       self$force_pvar <- force_pvar
       self$take_until_maxpvar_below <- take_until_maxpvar_below
       self$selection_method <- selection_method
-      self$plot_grad <- plot_grad
+      self$des_func_fast <- des_func_fast
+      self$verbose <- verbose
       
       
       #if (any(length(D)==0, length(L)==0, length(g)==0)) {
@@ -192,10 +196,15 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       } else if (self$obj == "nonadapt") {
         # use next batch only #obj_func <<- NULL
       } else if (self$obj %in% c("desirability", "des")) {#browser()
-        self$obj_func <- function(XX) {list(...)$des_func(mod=self$mod, XX=XX)}
-        self$des_func <- list(...)$des_func
-        self$alpha_des <- list(...)$alpha_des
-        if (is.null(self$alpha_des)) {stop("alpha_des must be given in")}
+        self$obj <- "desirability"
+        if (missing(des_func)) {stop("Must give in des_func when using desirability")}
+        # self$obj_func <- function(XX) {list(...)$des_func(mod=self$mod, XX=XX)}
+        self$obj_func <- function(XX) {des_func(mod=self$mod, XX=XX)}
+        self$des_func <- des_func
+        # self$alpha_des <- list(...)$alpha_des
+        # if (is.null(self$alpha_des)) {stop("alpha_des must be given in")}
+        if (missing(alpha_des)) {stop("alpha_des must be given in")}
+        self$alpha_des <- alpha_des
         if (is.character(self$des_func)) {
           if (self$des_func == "des_funcse") {#browser()
             stop("don't use des_funcse anymore")
@@ -216,8 +225,11 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       if ('actual_intwerror_func' %in% names(list(...))) { #browser()
         self$actual_intwerror_func <- list(...)$actual_intwerror_func
       }
-      if ('alpha_des' %in% names(list(...))) { #browser()
-        self$alpha_des <- list(...)$alpha_des
+      # if ('alpha_des' %in% names(list(...))) { #browser()
+      #   self$alpha_des <- list(...)$alpha_des
+      # }
+      if (!is.null(self$alpha_des) && !missing(alpha_des)){# %in% names(list(...))) { #browser()
+        self$alpha_des <- alpha_des
       }
       
       self$n0 <- n0
@@ -484,9 +496,9 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
         NaN
       }
     },
-    plot_mean = function(cex=1) {
+    plot_mean = function(cex=1, plot.axes=TRUE) {
       cf_func(self$mod$predict,batchmax=500, pretitle="Predicted Mean ", #pts=X)
-              cex=cex,
+              cex=cex, plot.axes=plot.axes,
               afterplotfunc=function(){
                 points(self$X,pch=19)
                 if (self$iteration > 1) { # Add points just chosen with yellow
@@ -494,9 +506,9 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
               }
       )
     },
-    plot_se = function(cex=1) {
+    plot_se = function(cex=1, plot.axes=TRUE) {
       cf_func(self$mod$predict.se,batchmax=500, pretitle="Predicted SE ", #pts=X)
-              cex=cex,
+              cex=cex, plot.axes=plot.axes,
               afterplotfunc=function(){
                 points(self$X,pch=19)
                 if (self$iteration > 1) { # Plot last L separately
@@ -506,10 +518,10 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
               }
       )
     },
-    plot_abserr = function(cex=1) {
+    plot_abserr = function(cex=1, plot.axes=TRUE) {
       cf_func(function(xx){sqrt((self$mod$predict(xx) - self$func(xx))^2)},
               n = 20, mainminmax_minmax = F, pretitle="AbsErr ", batchmax=Inf,
-              cex=cex)
+              cex=cex, plot.axes=plot.axes)
     },
     plot_mse = function(statsdf, cex=cex) {
       par(mar=c(2,2,0,0.5)) # 5.1 4.1 4.1 2.1 BLTR
@@ -525,6 +537,20 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       points(statsdf$iter, statsdf$mse, type='o', pch=19)
       points(statsdf$iter, statsdf$pvar, type='o', pch = 19, col=2)
     },
+    plot_iwe = function(statsdf, cex=cex) {
+      par(mar=c(2,2,0,0.5)) # 5.1 4.1 4.1 2.1 BLTR
+      if (missing(statsdf)) {
+        print("missing statsdf in plot_iwe")
+        statsdf <- as.data.frame(self$stats)
+      }
+      plot(rep(statsdf$iter,2), c(statsdf$mse,statsdf$pvar), 
+           type='o', log="y", col="white",
+           xlab="Iteration", ylab=""
+      )
+      legend("topright",legend=c("IWE","PIWE"),fill=c(1,2), cex=cex)
+      points(statsdf$iter, statsdf$actual_intwerror, type='o', pch=19)
+      points(statsdf$iter, statsdf$intwerrir, type='o', pch = 19, col=2)
+    },
     plot_ppu = function(statsdf, cex) {
       # Plot percentage of points used over iteration
       if (missing(statsdf)) {
@@ -536,17 +562,24 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
            xlab="Iteration")
       legend('bottomleft',legend="% pts",fill=1, cex=cex)
     },
-    plot_des_v_acc = function() {
+    plot_des_v_acc = function(cex, cex.axis) {#browser()
       Xplot <- matrix(runif(self$D*100), ncol=self$D)
-      Xplot_grad <- pmax(1e-8, self$mod$grad_norm(Xplot))#;browser()
-      Xplot_se <- pmax(1e-8, self$mod$predict.se(Xplot))
-      #if (any(Xplot_se <= 0)) {browser()}
-      #if (any(Xplot_grad < 0)) {browser()}
-      
-      Xplot_des <- self$des_func(XX=self$X, mod=self$mod)
+      Xplot_des <- self$des_func(XX=Xplot, mod=self$mod)
       Xplot_se <- self$mod$predict.se(Xplot)
       
-      plot(Xplot_se, Xplot_grad, pch=19, xlab='SE', ylab='Grad', log='xy')
+      # If func_fast plot des vs se and des vs abserror
+      if (self$func_fast) {
+        Xplot_abserror <- abs(self$mod$predict(Xplot) - self$func(Xplot))
+        plot(NULL, xlim=c(min(Xplot_des), max(Xplot_des)), 
+             ylim=c(min(Xplot_abserror, Xplot_se), max(Xplot_abserror, Xplot_se)),
+             pch=19, xlab='SE', ylab='Des', cex.axis=cex.axis)#, log='xy')
+        legend(x = 'topright', legend=c('SE', 'AbsErr'), fill=c(1,2), cex=cex)
+        points(Xplot_des, Xplot_se, pch=19, col=1)
+        points(Xplot_des, Xplot_abserror, pch=19, col=2)
+      } else { # Only plot des vs se
+        plot(Xplot_des, Xplot_se, pch=19, xlab='SE', ylab='Grad', 
+             cex.axis=cex.axis)#, log='xy')
+      }
     },
     plot_y_acc = function() {#browser()
       # Plot predicted vs actual with error bars
@@ -619,7 +652,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       if (self$func_fast) {
         screen(3) # Actual func
         par(mar=c(2,2,0,0.5)) # 5.1 4.1 4.1 2.1 BLTR
-        cf_func(self$func, n = 20, mainminmax_minmax = F, pretitle="Actual ", cex=cex_small)
+        cf_func(self$func, n = 20, mainminmax_minmax = F, pretitle="Actual ", cex=cex_small, plot.axes=FALSE)
       }
       
       # Plot MSE if past iteration 1
@@ -627,25 +660,31 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
         statsdf <- as.data.frame(self$stats)
         screen(4) # MSE plot
         self$plot_mse(statsdf=statsdf, cex=cex_small)
-        
-        screen(5) # plot grad
-        # if (self$plot_grad) { # Option to not plot if it is slow
-        #   cf_func(self$mod$grad_norm, n=20, mainminmax_minmax = F, pretitle="Grad ", cex=cex_small)
-        # }
-        if (self$plot_grad) { # Option to not plot if it is slow
+      }
+      
+      if (self$des_func_fast) {
+        screen(5) # plot des
+        if (self$des_func_fast && !is.null(self$des_func)) { # Option to not plot if it is slow
           cf_func(function(XX) {self$des_func(XX=XX, mod=self$mod)}, 
                   n=20, mainminmax_minmax = F, pretitle="Des ", 
-                  cex=cex_small, batchmax=Inf)
+                  cex=cex_small, plot.axes=FALSE, batchmax=Inf)
         }
+      }
         
+      if (self$iteration >= 2) {
         screen(6) # % of pts used plot 
         par(mar=c(2,2,0,0.5)) # 5.1 4.1 4.1 2.1 BLTR
-        self$plot_ppu(statsdf=statsdf, cex=cex_small)
+        if (self$des_func_fast && self$obj == "desirability") {
+          self$plot_des_v_acc(cex=cex_small, cex.axis = cex_small)
+        } else {
+          self$plot_ppu(statsdf=statsdf, cex=cex_small)
+        }
+        
       }
       if (self$func_fast) {
         screen(7) # actual squared error plot
         # par(mar=c(2,2,0,0.5)) # 5.1 4.1 4.1 2.1 BLTR
-        self$plot_abserr(cex=.55*cex)
+        self$plot_abserr(cex=.55*cex, plot.axes=FALSE)
       }       
       close.screen(all = TRUE)
     },
@@ -888,7 +927,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       # pvs2 <- rep(NA, nrow(self$Xopts))
 
       for (r in setdiff(Xopts_to_consider, bestL)) {
-        if (ell == 3 && max(abs(self$Xopts[r,] - c(.2159992,.9280008)))<.0001) {browser()}
+        # if (ell == 3 && max(abs(self$Xopts[r,] - c(.2159992,.9280008)))<.0001) {browser()}
         if (self$package == 'laGP') {
           gpc$delete()
           gpc <- IGP::IGP(X=rbind(X_with_bestL, self$Xopts[r, ,drop=F]), 
