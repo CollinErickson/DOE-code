@@ -136,6 +136,8 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
         #self$s <- sFFLHD::sFFLHDmm(D=D, L=L, maximin=F)
         # Try maximin 
         self$s <- sFFLHD::sFFLHD(D=D, L=L, maximin=T)
+      } else if (self$design == "sFFLHD_Lflex") {
+          self$s <- sFFLHD::sFFLHD_Lflex$new(D=D, L=L, maximin=T)
       } else if (self$design == "random") {
         self$s <- random_design$new(D=D, L=L, use_lhs=FALSE)
       } else if (self$design == "lhd") {
@@ -526,7 +528,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
               n = 20, mainminmax_minmax = F, pretitle="AbsErr ", batchmax=Inf,
               cex=cex, plot.axes=plot.axes)
     },
-    plot_mse = function(statsdf, cex=cex) { # Plot MSE and PVar over iterations
+    plot_mse = function(statsdf, cex=1) { # Plot MSE and PVar over iterations
       par(mar=c(2,2,0,0.5)) # 5.1 4.1 4.1 2.1 BLTR
       if (missing(statsdf)) {
         print("missing statsdf in plot_mse")
@@ -540,7 +542,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       points(statsdf$iter, statsdf$mse, type='o', pch=19)
       points(statsdf$iter, statsdf$pvar, type='o', pch = 19, col=2)
     },
-    plot_iwe = function(statsdf, cex=cex) {
+    plot_iwe = function(statsdf, cex=1) {
       par(mar=c(2,2,0,0.5)) # 5.1 4.1 4.1 2.1 BLTR
       if (missing(statsdf)) {
         print("missing statsdf in plot_iwe")

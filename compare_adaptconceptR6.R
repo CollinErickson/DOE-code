@@ -19,7 +19,8 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
     n0 = NULL,#=0,
     save_output = NULL,#=F, 
     func_string = NULL,
-    seed_start = 0, # Start with seed to make comparisons much better
+    seed_start = NULL, # Start with seed to make comparisons much better, 
+                       #  default is to use Sys.time() to get seed.
     folder_created = FALSE,
     outdf = data.frame(),
     outrawdf = data.frame(),
@@ -44,7 +45,7 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
                           force_old=c(0), force_pvar=c(0),
                           n0=0,
                           save_output=F, func_string = NULL,
-                          seed_start=NULL,
+                          seed_start=as.numeric(Sys.time()),
                           package="laGP",
                           selection_method='SMED',
                           design='sFFLHD',
@@ -111,7 +112,8 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
       
       #browser()
       for (i_input in c('func_string', 'D', 'L', 'b', 'reps', 'batches', 'obj', 'force_old', 'force_pvar', 'n0','package', 'selection_method', 'design')) {
-        if (length(eval(parse(text=i_input))) > 1) {
+        evalparsei <- eval(parse(text=i_input))
+        if (length(evalparsei) > 1 && !all(evalparsei == evalparsei[1])) {
           #self$rungrid$Group <- paste(self$rungrid$Group, self$rungrid[,i_input])
           group_names <- c(group_names, i_input)
         }
@@ -223,6 +225,7 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
       #browser()
       newdf0 <- data.frame(batch=u$stats$iteration, mse=u$stats$mse, 
                            pvar=u$stats$pvar, pamv=u$stats$pamv,
+                           pred_intwerror=u$stats$intwerror,
                            actual_intwerror=u$stats$actual_intwerror,
                            #obj=row_grid$obj, 
                            num=paste0(row_grid$obj,row_grid$repl),
@@ -259,7 +262,7 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
       self$outdf$prmse <- sqrt(ifelse(self$outdf$pvar>=0, self$outdf$pvar, 1e-16))
       self$enddf <- self$outdf[self$outdf$batch == self$batches,]
       # Want to get mean of these columns across replicates
-      meanColNames <- c("mse","pvar","pamv","rmse","prmse","actual_intwerror")
+      meanColNames <- c("mse","pvar","pamv","rmse","prmse","pred_intwerror","actual_intwerror")
       # Use these as ID, exclude repl, seed, and num and time
       splitColNames <- c("func","func_string","func_num","D","L","b",
                          "reps","batches",
@@ -310,13 +313,28 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
           geom_line() +
           geom_line(inherit.aes = F, data=self$meanlogdf, aes(x=batch, y=actual_intwerror, colour = Group, size=3, alpha=.5)) +
           geom_point() + 
-          scale_y_log10() + 
+          # scale_y_log10(breaks = base_breaks()) + #pretty(self$outdf$actual_intwerror, n=5)) + 
+          scale_y_continuous(trans="log", breaks = base_breaks()) + #pretty(self$outdf$actual_intwerror, n=5)) + 
           xlab("Batch") + ylab("actual_intwerror") + guides(size=FALSE, alpha=FALSE)
       )
       if (save_output) {dev.off()}
       invisible(self)
     },
-    
+    plot_awe_over_group = function(save_output = self$save_output) {
+      
+      if (save_output) {
+        png(filename = paste0(self$folder_path,"/plot_actual_intwerror_boxplot.png"),
+            width = 480, height = 480)
+      }
+      print(
+        p1 <- ggplot(data=ca1$enddf, 
+                     aes(x=Group, y=actual_intwerror, colour = Group)
+        ) + 
+          geom_boxplot() + geom_jitter(width=.2)
+      )
+      if (save_output) {dev.off()}
+      invisible(self)
+    },
     plot_MSE_PVar = function(save_output = self$save_output) {#browser()
       if (save_output) {
         png(filename = paste0(self$folder_path,"/plotMSEPVar.png"),
