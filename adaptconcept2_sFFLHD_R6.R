@@ -137,11 +137,13 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
         # Try maximin 
         self$s <- sFFLHD::sFFLHD(D=D, L=L, maximin=T)
       } else if (self$design == "random") {
-        self$s <- random_design$new(D=D, L=L)
+        self$s <- random_design$new(D=D, L=L, use_lhs=FALSE)
+      } else if (self$design == "lhd") {
+        self$s <- random_design$new(D=D, L=L, use_lhs=TRUE)
       } else if (self$design == "given") { # This means Xopts is given in and no new points will be added to design
         self$s <- NULL
       } else {
-        stop("No design 3285729")
+        stop(paste("Design <", self$design,"> isn't recognized #3285729"))
       }
       self$X0 <- X0
       self$X <- matrix(NA,0,D)
@@ -157,6 +159,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       if(is.null(package)) {self$package <- "laGP"}
       else {self$package <- package}
       #self$mod <- IGP$new(package = self$package)
+      # browser()
       self$mod <- IGP(package = self$package, estimate.nugget=FALSE, set.nugget=nugget)
       self$stats <- list(iteration=c(),n=c(),pvar=c(),mse=c(), ppu=c(), minbatch=c(), pamv=c(), actual_intwerror=c(), intwerror=c())
       self$iteration <- 1
@@ -199,8 +202,8 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
         self$obj <- "desirability"
         if (missing(des_func)) {stop("Must give in des_func when using desirability")}
         # self$obj_func <- function(XX) {list(...)$des_func(mod=self$mod, XX=XX)}
-        self$obj_func <- function(XX) {des_func(mod=self$mod, XX=XX)}
         self$des_func <- des_func
+        self$obj_func <- function(XX) {self$des_func(mod=self$mod, XX=XX)}
         # self$alpha_des <- list(...)$alpha_des
         # if (is.null(self$alpha_des)) {stop("alpha_des must be given in")}
         if (missing(alpha_des)) {stop("alpha_des must be given in")}
@@ -228,7 +231,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       # if ('alpha_des' %in% names(list(...))) { #browser()
       #   self$alpha_des <- list(...)$alpha_des
       # }
-      if (!is.null(self$alpha_des) && !missing(alpha_des)){# %in% names(list(...))) { #browser()
+      if (is.null(self$alpha_des) && !missing(alpha_des)){# %in% names(list(...))) { #browser()
         self$alpha_des <- alpha_des
       }
       
@@ -314,7 +317,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
         # }
         # self$Z <- c(self$Z,apply(self$X, 1, self$func))
         # return()
-        
+
         # 3/9/17 Trying to move this above out
         if (!is.null(self$X0)) { # If X0, use it
           add_newL_points_to_design(newL=NULL, use_X0=TRUE, reason="X0 given")
@@ -333,7 +336,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       }#;browser()
       
       # If nonadaptive, just take first L from design
-      else if (self$obj %in% c("nonadapt", "noadapt")) {
+      else if (self$selection_method %in% c("nonadapt", "noadapt")) { #browser()
         # Xnew <- self$s$get.batch()
         # Znew <- apply(Xnew, 1, self$func)
         # self$X <- rbind(self$X, Xnew)
@@ -523,7 +526,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
               n = 20, mainminmax_minmax = F, pretitle="AbsErr ", batchmax=Inf,
               cex=cex, plot.axes=plot.axes)
     },
-    plot_mse = function(statsdf, cex=cex) {
+    plot_mse = function(statsdf, cex=cex) { # Plot MSE and PVar over iterations
       par(mar=c(2,2,0,0.5)) # 5.1 4.1 4.1 2.1 BLTR
       if (missing(statsdf)) {
         print("missing statsdf in plot_mse")
@@ -702,17 +705,17 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
        #)
        if (self$iteration >= 2) {
          # 1 mse plot
-         self$plot_mse(statsdf=statsdf)
+         self$plot_mse(statsdf=statsdf, cex=cex)
          
          
          # 2 yhat vs y plot
          self$plot_y_acc()
          
          # 3 % pts used plot
-         self$plot_ppu(statsdf=statsdf)
+         self$plot_ppu(statsdf=statsdf, cex=cex)
          
          # 4 grad vs pvar
-         self$plot_des_v_acc()
+         self$plot_des_v_acc(cex=cex, cex.axis=cex)
        }
      }
     },
@@ -889,7 +892,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
     Znotrun_preds <- gpc$predict(self$Xopts) # Need to use the predictions before each is added
     #browser()
     for (ell in 1:self$b) {
-      print(paste(c('starting iter', ell, 'considering', length(Xopts_to_consider), 'bestL is', bestL), collapse = ' '))
+      cat(paste0('starting iter ', ell, ', considering ', length(Xopts_to_consider), "/", nrow(self$Xopts), ', bestL is ', paste0(bestL, collapse = ' '), '\n'))
       
       # The surrogate values
       if (exists("use_true_for_surrogates") && use_true_for_surrogates) {print("cheating")
@@ -970,7 +973,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
         }
         int_werror_vals[r] <- int_werror_vals_r
       }
-      print("Here are int_werror_vals")
+      # print("Here are int_werror_vals")
       print(cbind(1:length(int_werror_vals), int_werror_vals))
       
       # browser()

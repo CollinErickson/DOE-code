@@ -34,6 +34,7 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
     des_func=NULL,
     alpha_des = NULL,
     actual_des_func=NULL,
+    design = NULL,
     number_runs = NULL,
     completed_runs = NULL,
     initialize = function(func, D, L, b=NULL, batches=10, reps=5, 
@@ -46,6 +47,7 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
                           seed_start=NULL,
                           package="laGP",
                           selection_method='SMED',
+                          design='sFFLHD',
                           des_func=NA, alpha_des=NaN,
                           actual_des_func=NULL,
                           ...) {#browser()
@@ -68,6 +70,7 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
       self$seed_start <- seed_start
       self$package <- package
       self$selection_method <- selection_method
+      self$design <- self$design
       self$des_func <- des_func
       self$alpha_des <- alpha_des
       self$actual_des_func <- actual_des_func
@@ -94,6 +97,7 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
                    data.frame(batches),
                    data.frame(obj, selection_method, des_func, alpha_des,
                               actual_des_func=deparse(substitute(actual_des_func)), actual_des_func_num=1:length(actual_des_func),
+                              design,
                               stringsAsFactors = F),
                    #data.frame(forces=forces,force_vals=force_vals),
                    data.frame(force_old,force_pvar),
@@ -106,7 +110,7 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
       group_names <- c()
       
       #browser()
-      for (i_input in c('func_string', 'D', 'L', 'b', 'reps', 'batches', 'obj', 'force_old', 'force_pvar', 'n0','package', 'selection_method')) {
+      for (i_input in c('func_string', 'D', 'L', 'b', 'reps', 'batches', 'obj', 'force_old', 'force_pvar', 'n0','package', 'selection_method', 'design')) {
         if (length(eval(parse(text=i_input))) > 1) {
           #self$rungrid$Group <- paste(self$rungrid$Group, self$rungrid[,i_input])
           group_names <- c(group_names, i_input)
@@ -212,7 +216,7 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
       #if (is.function(row_grid$func)) {}#funci <- self$func}
       #else if (row_grid$func == "RFF") {row_grid$func <- RFF_get(D=self$D)}
       #else {stop("No function given")}
-      #browser()
+      # browser()
       u <- do.call(adapt.concept2.sFFLHD.R6$new, lapply(self$rungridlist, function(x)x[[irow]]))
       #browser()
       systime <- system.time(u$run(row_grid$batches,noplot=F))
@@ -382,6 +386,6 @@ if (F) {
   ca1 <- compare.adaptR6$new(func=banana, reps=2, batches=5, D=2, L=4, n0=20, obj=c("func","desirability"), selection_method=c('SMED', 'max_des_red'), des_func=c('NA', 'des_func_relmax'), alpha_des=1e3, actual_des_func=c(get_actual_des_func_relmax(f=banana, fmin=0, fmax=1)), package="laGP_GauPro")$run_all()$plot()
   ca1 <- compare.adaptR6$new(func=borehole, reps=2, batches=5, D=8, b=4, L=8, n0=20, obj=c("func","desirability"), selection_method=c('SMED', 'max_des_red'), des_func=c('NA', 'des_func_relmax'), alpha_des=1e2, actual_des_func=c(actual_des_func_relmax_borehole), package="laGP_GauPro")$run_all()$plot()
   ca1 <- compare.adaptR6$new(func_string='otl',func=OTL_Circuit, reps=2, batches=5, D=6, b=4, L=8, n0=20, obj=c("func","desirability"), selection_method=c('SMED', 'max_des_red'), des_func=c('NA', 'des_func_relmax'), alpha_des=1e3, actual_des_func=NULL, package="laGP_GauPro")$run_all()$plot()
-  ca1 <- compare.adaptR6$new(func=banana, reps=5, batches=5, D=2, L=2, n0=15, obj=c("nonadapt","func","desirability"), selection_method=c("nonadapt",'SMED', 'max_des_red'), des_func=c('NA','NA', 'des_func_relmax'), alpha_des=1e3, actual_des_func=c(get_actual_des_func_relmax(f=banana, fmin=0, fmax=1)), package="laGP_GauPro", seed=33123)$run_all()$plot()
+  ca1 <- compare.adaptR6$new(func=banana, reps=2, batches=2, D=2, L=2, n0=15, obj=c("nonadapt","func","desirability"), selection_method=c("nonadapt",'SMED', 'max_des_red'), des_func=c('NA','NA', 'des_func_relmax'), alpha_des=1e3, actual_des_func=c(get_actual_des_func_relmax(f=banana, fmin=0, fmax=1)), package="laGP_GauPro", seed=33123)$run_all()$plot()
   ca1$plot_awe_over_batch()
 }
