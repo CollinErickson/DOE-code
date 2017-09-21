@@ -44,14 +44,14 @@ get_actual_intwerror_func_relmax <- function (alpha, f, fmin, fmax) {
 }
 
 # A func that calculated the actual value of int (weight * |y-hat|) dx
-actual_des_func_relmax <- function(..., XX, mod, f, fmin, fmax) {#browser()
+actual_des_func_relmax <- function(..., XX, f, fmin, fmax) {#browser()
   # TODO LATER have this return ZZ so it isn't recalculated later
   # D <- ncol(mod$X)
   # N <- 1e5
   # XX <- matrix(runif(D*N),ncol=D)
-  ZZ <- mod$predict(XX)
+  # ZZ <- mod$predict(XX)
   ZZ.actual <- apply(XX, 1, f)
-  abserr <- abs(ZZ - ZZ.actual)
+  # abserr <- abs(ZZ - ZZ.actual)
   des <- (ZZ.actual - fmin) / (fmax - fmin)
   # weight <- 1 + alpha*des
   # mean(weight*abserr)
@@ -165,6 +165,67 @@ get_des_func_quantile <- function(threshold=0, power=1, return_se=F) {
   function(XX, mod) {
     des_func_quantile(XX=XX, mod=mod, threshold=threshold, power=power, return_se=return_se)
   }
+}
+
+
+actual_des_func_quantile <- function(XX, f, threshold=0, power=1, expcdf) {
+  # Get actual func value
+  if (is.matrix(XX)) {
+    ZZ.actual <- apply(XX, 1, f)
+  } else {
+    ZZ.actual <- f(XX)
+  }
+  # Find quantiles using expcdf, then apply threshold and power
+  quants <- expcdf(ZZ.actual)
+  thresh_quants <- pmax(0, quants - threshold) / (1-threshold)
+  if (power == 1) {
+    pow_thresh_quants <- thresh_quants
+  } else if (power == 0) {
+    pow_thresh_quants <- ceiling(thresh_quants)
+  } else {
+    pow_thresh_quants <- thresh_quants^power
+  }
+  
+  pow_thresh_quants
+}
+
+
+get_actual_des_func_quantile <- function (f, n=1e5, D, threshold=0, power=1) {
+  XX <- matrix(runif(D * n), ncol=D, nrow=n)
+  ZZ <- apply(XX, 1, f)
+  excdf <- ecdf(x=ZZ)
+  function(XX) {
+    actual_des_func_quantile(XX=XX, f=f, expcdf=excdf, threshold=threshold, power=power)
+  }
+}
+
+if (FALSE) {
+  tx <- runif(1e4)^2
+  hist(tx, freq = F)
+  quantile(tx)
+  tc <- ecdf(tx)
+  tc(.1)
+  curve(tc, add=T)
+  curve(x^.5, add=T, col=2)
+  
+  # Test it out on banana func
+  dfqb <- get_actual_des_func_quantile(f=banana, D=2)
+  
+  X <- matrix(runif(2*50),ncol=2)
+  Z <- banana(X)
+  gpb <- IGP(X=X, Z=Z, package='laGP')
+  dfqb(XX=matrix(runif(2*100), ncol=2))
+  # curve(dfqb(XX=matrix(runif(2*100), ncol=2)))
+  print(system.time(dfqb(XX=matrix(runif(2*100), ncol=2))))
+  
+  # 10x slower to use 10x points for single eval
+  microbenchmark::microbenchmark(get_actual_des_func_quantile(f=banana, D=2)(XX=matrix(runif(2*100), ncol=2)), get_actual_des_func_quantile(f=banana, D=2, n=1e3)(XX=matrix(runif(2*100), ncol=2)), times=20)
+  
+  # But same speed to evaluate even for 1e5 (or 1e6) vs 1e3, so okay to use bigger n, just takes longer to first get item
+  dfqb1 <- get_actual_des_func_quantile(f=banana, D=2, n=1e6)
+  dfqb2 <- get_actual_des_func_quantile(f=banana, D=2, n=1e3)
+  microbenchmark::microbenchmark(dfqb1(XX=matrix(runif(2*100), ncol=2)), dfqb2(XX=matrix(runif(2*100), ncol=2)), times=20)
+  cf(dfqb1, batchmax=Inf)
 }
 
 des_func_quantile_lowhigh <- function(mod, XX, threshold=c(.5, .5), power=1, return_se=F, N_add=1e3) {
