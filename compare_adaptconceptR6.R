@@ -21,6 +21,7 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
     func_string = NULL,
     seed_start = NULL, # Start with seed to make comparisons much better, 
                        #  default is to use Sys.time() to get seed.
+    design_seed_start = NULL,
     folder_created = FALSE,
     outdf = data.frame(),
     outrawdf = data.frame(),
@@ -46,6 +47,7 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
                           n0=0,
                           save_output=F, func_string = NULL,
                           seed_start=as.numeric(Sys.time()),
+                          design_seed_start=as.numeric(Sys.time()),
                           package="laGP",
                           selection_method='SMED',
                           design='sFFLHD',
@@ -69,6 +71,7 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
       self$n0 <- n0
       self$save_output <- save_output
       self$seed_start <- seed_start
+      self$design_seed_start <- design_seed_start
       self$package <- package
       self$selection_method <- selection_method
       self$design <- self$design
@@ -93,7 +96,8 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
                      func=func_string, func_string=func_string, func_num=1:length(func)
                    ),
                    data.frame(D),data.frame(L), data.frame(b),
-                   data.frame(repl=1:reps, seed=if(!is.null(seed_start)) seed_start+1:reps-1 else NA),
+                   data.frame(repl=1:reps, seed=if(!is.null(seed_start)) seed_start+1:reps-1 else NA,
+                              design_seed=if(!is.null(design_seed_start)) design_seed_start+(1:reps-1)*1e5 else NA),
                    data.frame(reps),
                    data.frame(batches),
                    data.frame(obj, selection_method, des_func, alpha_des,
@@ -212,6 +216,7 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
         warning("irow already run, will run again anyways")
       }
       #browser()
+      cat("Running ", irow, ", completed ", sum(self$completed_runs),"/",length(self$completed_runs), " ", format(Sys.time(), "%a %b %d %X %Y"), "\n", sep="")
       row_grid <- self$rungrid[irow, ] #rungrid row for current run
       if (!is.na(row_grid$seed)) {set.seed(row_grid$seed)}
       #browser()
@@ -320,18 +325,17 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
       if (save_output) {dev.off()}
       invisible(self)
     },
-    plot_awe_over_group = function(save_output = self$save_output) {
+    plot_awe_over_group = function(save_output = self$save_output, boxpl=TRUE) {
       
       if (save_output) {
         png(filename = paste0(self$folder_path,"/plot_actual_intwerror_boxplot.png"),
             width = 480, height = 480)
       }
-      print(
-        p1 <- ggplot(data=ca1$enddf, 
-                     aes(x=Group, y=actual_intwerror, colour = Group)
-        ) + 
-          geom_boxplot() + geom_jitter(width=.2)
-      )
+      p1 <- ggplot(data=self$enddf, 
+                   aes(x=Group, y=actual_intwerror, colour = Group)
+      ) +  geom_jitter(width=.1)
+      if (boxpl) {p1 <- p1 + geom_boxplot()}
+      print(p1)
       if (save_output) {dev.off()}
       invisible(self)
     },
@@ -406,4 +410,6 @@ if (F) {
   ca1 <- compare.adaptR6$new(func_string='otl',func=OTL_Circuit, reps=2, batches=5, D=6, b=4, L=8, n0=20, obj=c("func","desirability"), selection_method=c('SMED', 'max_des_red'), des_func=c('NA', 'des_func_relmax'), alpha_des=1e3, actual_des_func=NULL, package="laGP_GauPro")$run_all()$plot()
   ca1 <- compare.adaptR6$new(func=banana, reps=2, batches=2, D=2, L=2, n0=15, obj=c("nonadapt","func","desirability"), selection_method=c("nonadapt",'SMED', 'max_des_red'), des_func=c('NA','NA', 'des_func_relmax'), alpha_des=1e3, actual_des_func=c(get_actual_des_func_relmax(f=banana, fmin=0, fmax=1)), package="laGP_GauPro", seed=33123)$run_all()$plot()
   ca1$plot_awe_over_batch()
+  # Show summary of actual_intwerror
+  plyr::ddply(ca1$enddf, .(Group), function(grp) {summary(grp$actual_intwerror)})
 }

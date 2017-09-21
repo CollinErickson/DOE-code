@@ -109,6 +109,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
                          parallel=FALSE, parallel_cores="detect",
                          nugget=1e-8,
                          verbose = 2,
+                         design_seed=numeric(0),
                          #optio
                          ...) {#browser()
       self$D <- D
@@ -135,13 +136,13 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       if (self$design == "sFFLHD") {
         #self$s <- sFFLHD::sFFLHDmm(D=D, L=L, maximin=F)
         # Try maximin 
-        self$s <- sFFLHD::sFFLHD(D=D, L=L, maximin=T)
+        self$s <- sFFLHD::sFFLHD(D=D, L=L, maximin=T, seed=design_seed)
       } else if (self$design == "sFFLHD_Lflex") {
-          self$s <- sFFLHD::sFFLHD_Lflex$new(D=D, L=L, maximin=T)
+          self$s <- sFFLHD::sFFLHD_Lflex$new(D=D, L=L, maximin=T, seed=design_seed)
       } else if (self$design == "random") {
-        self$s <- random_design$new(D=D, L=L, use_lhs=FALSE)
+        self$s <- random_design$new(D=D, L=L, use_lhs=FALSE, seed=design_seed)
       } else if (self$design == "lhd") {
-        self$s <- random_design$new(D=D, L=L, use_lhs=TRUE)
+        self$s <- random_design$new(D=D, L=L, use_lhs=TRUE, seed=design_seed)
       } else if (self$design == "given") { # This means Xopts is given in and no new points will be added to design
         self$s <- NULL
       } else {
@@ -894,7 +895,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
     Znotrun_preds <- gpc$predict(self$Xopts) # Need to use the predictions before each is added
     #browser()
     for (ell in 1:self$b) {
-      cat(paste0('starting iter ', ell, ', considering ', length(Xopts_to_consider), "/", nrow(self$Xopts), ', bestL is ', paste0(bestL, collapse = ' '), '\n'))
+      cat(paste0('starting iter ', ell,'/',self$b, ', considering ', length(Xopts_to_consider), "/", nrow(self$Xopts), ', bestL is ', paste0(bestL, collapse = ' '), '\n'))
       
       # The surrogate values
       if (exists("use_true_for_surrogates") && use_true_for_surrogates) {print("cheating")
@@ -1050,7 +1051,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
         #gpc$update(Xall=X_with_bestL, Zall=Z_with_bestL, restarts=0)
       }
     }
-    cat("Selected:", bestL)
+    cat("Selected:", bestL, "\n")
     if (self$D == 2) {
       if (dontplotfunc) {
         screen(2)
