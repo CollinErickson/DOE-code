@@ -206,21 +206,21 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
         if (missing(des_func)) {stop("Must give in des_func when using desirability")}
         # self$obj_func <- function(XX) {list(...)$des_func(mod=self$mod, XX=XX)}
         self$des_func <- des_func
-        self$obj_func <- function(XX) {self$des_func(mod=self$mod, XX=XX)}
+        self$obj_func <- function(XX) {stop("Do I use this ever?"); self$des_func(mod=self$mod, XX=XX)}
         # self$alpha_des <- list(...)$alpha_des
         # if (is.null(self$alpha_des)) {stop("alpha_des must be given in")}
         if (missing(alpha_des)) {stop("alpha_des must be given in")}
         self$alpha_des <- alpha_des
         if (is.character(self$des_func)) {
-          if (self$des_func == "des_funcse") {#browser()
-            stop("don't use des_funcse anymore")
-            self$des_func <- des_funcse
-          }
-        }
-        if (is.character(self$des_func)) {
-          if (self$des_func == "des_func_relmax") {#browser()
-            self$des_func <- des_func_relmax
-          }
+          # if (self$des_func == "des_func_relmax") {#browser()
+          #   self$des_func <- des_func_relmax
+          # } else {
+            if (grepl(pattern="\\(", x=self$des_func)) { # If parentheses, then
+              self$des_func <- eval(parse(text=self$des_func))
+            } else { # Just a function name in quote, eg "des_func_relmax"
+              self$des_func <- get(self$des_func)
+            }
+          # }
         }
       }
       
@@ -417,11 +417,14 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
         if (self$selection_method %in% c("SMED","SMED_true")) {# standard min energy
           newL <- self$select_new_points_from_SMED()
           reason <- "SMED"
-        } else if (self$selection_method == "max_des") { # take point with max desirability, update model, requires using se or pvar so adding a point goes to zero
+        } else if (self$selection_method == "max_des" || self$selection_method == "ALM") { # take point with max desirability, update model, requires using se or pvar so adding a point goes to zero
           #browser()
           newL <- self$select_new_points_from_max_des()
           reason <- "max_des"
-        } else if (self$selection_method %in% c("max_des_red", "max_des_red_all", "max_des_red_all_best")) { # take maximum reduction, update model, requires using se or pvar so adding a point goes to zero
+        } else if (self$selection_method %in% 
+                     c("max_des_red", "max_des_red_all", "max_des_red_all_best",
+                       "ALC", "ALC_all", "ALC_all_best")
+                   ) { # take maximum reduction, update model, requires using se or pvar so adding a point goes to zero
           newL <- self$select_new_points_from_max_des_red()
           reason <- "max_des_red or _all or _all_best"
         }
@@ -805,7 +808,12 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
      for (ell in 1:self$b) {
        # objall <- self$obj_func(rbind(self$X, self$Xopts))
        # objall <- self$desirability_func(gpc, rbind(self$X, self$Xopts))
-       objall <- self$werror_func(mod=gpc, XX=rbind(self$X, self$Xopts))
+       # Adding option
+       if (self$selection_method == "ALM") {#browser()
+         objall <- self$mod$predict.se(mod=gpc, XX=rbind(self$X, self$Xopts))
+       } else {
+         objall <- self$werror_func(mod=gpc, XX=rbind(self$X, self$Xopts))
+       }
        objopt <- objall[(nrow(self$X)+1):length(objall)]
        objopt[bestL] <- -Inf # ignore the ones just selected
        bestopt <- which.max(objopt)
@@ -861,12 +869,17 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
     if (exists("browser_max_des")) {if (browser_max_des) {browser()}}
     
     # Can start with none and select one at time, or start with random and replace
-    if (self$selection_method == "max_des_red") {
+    if (self$selection_method %in% c("max_des_red", "ALC")) {
       bestL <- c() # Start with none
-    } else if (self$selection_method == "max_des_red_all") { # Start with L and replace
+    } else if (self$selection_method %in% c("max_des_red_all", "ALC_all")) { # Start with L and replace
       bestL <- sample(Xopts_to_consider, size = self$b, replace = FALSE)
-    } else if (self$selection_method == "max_des_red_all_best") { #browser() # Start with best L and replace
-      Xotc_werrors <- self$werror_func(XX = self$Xopts[Xopts_to_consider,])
+    } else if (self$selection_method %in% c("max_des_red_all_best", "ALC_all_best")) { #browser() # Start with best L and replace
+      if (self$selection_method %in% c("ALC_all_best")) {print("using ALC_all_best")
+        Xotc_werrors <- self$werror_func(XX = self$Xopts[Xopts_to_consider,], 
+                                         des_func=function(XX, mod){rep(0, nrow(XX))}, alpha=0, weight_const=1) #, weight_func=self$weight_func)
+      } else {
+        Xotc_werrors <- self$werror_func(XX = self$Xopts[Xopts_to_consider,])
+      }
       bestL <- order(Xotc_werrors, decreasing = TRUE)[self$b:1] # Make the biggest last so it is least likely to be replaced
     } else {
       browser("Selection method doesn't match up #92352583")
@@ -875,19 +888,31 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
     int_points <- simple.LHS(1e4, self$D)
     # int_des_weight_func <- function() {mean(self$desirability_func(gpc,int_points))}
     
-    reuse_int_points_des_values <- TRUE
-    if (reuse_int_points_des_values) {
-      # There can be alot of variability in calculating the desirability
-      #   when it involves sampling stuff, so the intwerror values will
-      #   fluctuate if you recalculate each time. And that is slower.
-      int_points_numdes <- self$des_func(XX=int_points, mod=gpc)
-      int_werror_func <- function() {#browser()
-        mean(self$werror_func(XX=int_points, mod=gpc, des_func=int_points_numdes))
-      }
-    } else {
+    # Make separate int_werror_func for ALC
+    if (substr(self$selection_method, 1, 3) == "ALC") {print("Using ALC")
+      # 
       int_werror_func <- function() {
         #browser();
-        mean(self$werror_func(XX=int_points, mod=gpc))
+        mean(
+          self$werror_func(XX=int_points, mod=gpc, 
+                           des_func=function(XX, mod){rep(0, nrow(XX))}, alpha=0, weight_const=1)
+        )
+      }
+    } else { # Not ALC, so max_des_red
+      reuse_int_points_des_values <- TRUE
+      if (reuse_int_points_des_values) {
+        # There can be alot of variability in calculating the desirability
+        #   when it involves sampling stuff, so the intwerror values will
+        #   fluctuate if you recalculate each time. And that is slower.
+        int_points_numdes <- self$des_func(XX=int_points, mod=gpc)
+        int_werror_func <- function() {#browser()
+          mean(self$werror_func(XX=int_points, mod=gpc, des_func=int_points_numdes))
+        }
+      } else {
+        int_werror_func <- function() {
+          #browser();
+          mean(self$werror_func(XX=int_points, mod=gpc))
+        }
       }
     }
     X_with_bestL <- self$X#, self$Xopts[bestL, ,drop=F])
@@ -1352,5 +1377,11 @@ if (F) {
   # Trying plateau des func
   a <- adapt.concept2.sFFLHD.R6$new(D=2,L=2,func=banana, obj="desirability", des_func=des_func_plateau, alpha_des = 100, n0=24, take_until_maxpvar_below=.9, package="laGP_GauPro", design='sFFLHD', selection_method="max_des_red", func_fast=FALSE)
   a$run(1)  
+  
+  # Testing ALM and ALC
+  set.seed(1); csa(); a <- adapt.concept2.sFFLHD.R6$new(D=2,L=3,func=banana, obj="desirability", des_func=des_func_relmax, alpha_des=1e2, n0=30, take_until_maxpvar_below=.9, package="laGP_GauPro", design='sFFLHD', selection_method="ALM"); a$run(1)
+  set.seed(1); csa(); a <- adapt.concept2.sFFLHD.R6$new(D=2,L=3,func=banana, obj="desirability", des_func=des_func_relmax, alpha_des=1e2, n0=30, take_until_maxpvar_below=.9, package="laGP_GauPro", design='sFFLHD', selection_method="ALC"); a$run(1)
+  set.seed(1); csa(); a <- adapt.concept2.sFFLHD.R6$new(D=2,L=3,func=banana, obj="desirability", des_func=des_func_relmax, alpha_des=1e2, n0=30, take_until_maxpvar_below=.9, package="laGP_GauPro", design='sFFLHD', selection_method="ALC_all"); a$run(1)
+  set.seed(1); csa(); a <- adapt.concept2.sFFLHD.R6$new(D=2,L=3,func=banana, obj="desirability", des_func=des_func_relmax, alpha_des=1e2, n0=30, take_until_maxpvar_below=.9, package="laGP_GauPro", design='sFFLHD', selection_method="ALC_all_best"); a$run(1)
   
 }

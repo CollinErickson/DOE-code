@@ -44,7 +44,7 @@ get_actual_intwerror_func_relmax <- function (alpha, f, fmin, fmax) {
 }
 
 # A func that calculated the actual value of int (weight * |y-hat|) dx
-actual_des_func_relmax <- function(..., XX, f, fmin, fmax) {#browser()
+actual_des_func_relmax <- function(..., XX, mod, f, fmin, fmax) {#browser()
   # TODO LATER have this return ZZ so it isn't recalculated later
   # D <- ncol(mod$X)
   # N <- 1e5
@@ -168,7 +168,7 @@ get_des_func_quantile <- function(threshold=0, power=1, return_se=F) {
 }
 
 
-actual_des_func_quantile <- function(XX, f, threshold=0, power=1, expcdf) {
+actual_des_func_quantile <- function(XX, mod, f, threshold=0, power=1, expcdf) {
   # Get actual func value
   if (is.matrix(XX)) {
     ZZ.actual <- apply(XX, 1, f)
@@ -194,8 +194,8 @@ get_actual_des_func_quantile <- function (f, n=1e5, D, threshold=0, power=1) {
   XX <- matrix(runif(D * n), ncol=D, nrow=n)
   ZZ <- apply(XX, 1, f)
   excdf <- ecdf(x=ZZ)
-  function(XX) {
-    actual_des_func_quantile(XX=XX, f=f, expcdf=excdf, threshold=threshold, power=power)
+  function(XX, mod) {
+    actual_des_func_quantile(XX=XX, mod=mod, f=f, expcdf=excdf, threshold=threshold, power=power)
   }
 }
 

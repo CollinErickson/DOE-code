@@ -1,6 +1,10 @@
 source("adaptconcept2_sFFLHD_R6.R")
 library(ggplot2)
-
+base_breaks <- function(n = 10){
+  function(x) {
+    axisTicks(log10(range(x, na.rm = TRUE)), log = TRUE, n = n)
+  }
+}
 compare.adaptR6 <- R6::R6Class("compare.adaptR6",
   public=list(
     func = NULL, 
@@ -292,7 +296,7 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
       
       invisible(self)
     },
-    plot_over_batch = function(save_output = self$save_output) {
+    plot_MSE_over_batch = function(save_output = self$save_output) {
       if (save_output) {
         png(filename = paste0(self$folder_path,"/plotMSE.png"),
             width = 480, height = 480)
@@ -302,13 +306,13 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
           geom_line() +
           geom_line(inherit.aes = F, data=self$meanlogdf, aes(x=batch, y=mse, colour = Group, size=3, alpha=.5)) +
           geom_point() + 
-          scale_y_log10() + 
+          scale_y_continuous(trans="log", breaks = base_breaks()) + #scale_y_log10() + 
           xlab("Batch") + ylab("MSE") + guides(size=FALSE, alpha=FALSE)
       )
       if (save_output) {dev.off()}
       invisible(self)
     },
-    plot_awe_over_batch = function(save_output = self$save_output) {
+    plot_AWE_over_batch = function(save_output = self$save_output) {
       if (save_output) {
         png(filename = paste0(self$folder_path,"/plot_actual_intwerror.png"),
             width = 480, height = 480)
@@ -325,7 +329,7 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
       if (save_output) {dev.off()}
       invisible(self)
     },
-    plot_awe_over_group = function(save_output = self$save_output, boxpl=TRUE) {
+    plot_AWE_over_group = function(save_output = self$save_output, boxpl=TRUE) {
       
       if (save_output) {
         png(filename = paste0(self$folder_path,"/plot_actual_intwerror_boxplot.png"),
@@ -333,8 +337,9 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
       }
       p1 <- ggplot(data=self$enddf, 
                    aes(x=Group, y=actual_intwerror, colour = Group)
-      ) +  geom_jitter(width=.1)
+            )# +  geom_jitter(width=.1)
       if (boxpl) {p1 <- p1 + geom_boxplot()}
+      p1 <- p1 + geom_jitter(width=.1)
       print(p1)
       if (save_output) {dev.off()}
       invisible(self)
@@ -378,7 +383,8 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
     plot = function(save_output = self$save_output) {
       self$plot_MSE_PVar(save_output=save_output)
       self$plot_RMSE_PRMSE(save_output=save_output)
-      self$plot_over_batch(save_output=save_output)
+      self$plot_MSE_over_batch(save_output=save_output)
+      self$plot_AWE_over_batch(save_output=save_output)
       invisible(self)
     },
     save = function() {}, # Do I want to save an R object?
@@ -409,7 +415,7 @@ if (F) {
   ca1 <- compare.adaptR6$new(func=borehole, reps=2, batches=5, D=8, b=4, L=8, n0=20, obj=c("func","desirability"), selection_method=c('SMED', 'max_des_red'), des_func=c('NA', 'des_func_relmax'), alpha_des=1e2, actual_des_func=c(actual_des_func_relmax_borehole), package="laGP_GauPro")$run_all()$plot()
   ca1 <- compare.adaptR6$new(func_string='otl',func=OTL_Circuit, reps=2, batches=5, D=6, b=4, L=8, n0=20, obj=c("func","desirability"), selection_method=c('SMED', 'max_des_red'), des_func=c('NA', 'des_func_relmax'), alpha_des=1e3, actual_des_func=NULL, package="laGP_GauPro")$run_all()$plot()
   ca1 <- compare.adaptR6$new(func=banana, reps=2, batches=2, D=2, L=2, n0=15, obj=c("nonadapt","func","desirability"), selection_method=c("nonadapt",'SMED', 'max_des_red'), des_func=c('NA','NA', 'des_func_relmax'), alpha_des=1e3, actual_des_func=c(get_actual_des_func_relmax(f=banana, fmin=0, fmax=1)), package="laGP_GauPro", seed=33123)$run_all()$plot()
-  ca1$plot_awe_over_batch()
+  ca1$plot_AWE_over_batch()
   # Show summary of actual_intwerror
   plyr::ddply(ca1$enddf, .(Group), function(grp) {summary(grp$actual_intwerror)})
 }
