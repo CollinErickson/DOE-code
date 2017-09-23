@@ -94,7 +94,7 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
       if (any(is.function(func))) {
         
       }
-      #browser()
+      # browser()
       self$rungrid <- reshape::expand.grid.df(
                    data.frame(
                      func=func_string, func_string=func_string, func_num=1:length(func)
@@ -105,7 +105,8 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
                    data.frame(reps),
                    data.frame(batches),
                    data.frame(obj, selection_method, des_func, alpha_des,
-                              actual_des_func=deparse(substitute(actual_des_func)), actual_des_func_num=1:length(actual_des_func),
+                              actual_des_func, #=deparse(substitute(actual_des_func)), 
+                              actual_des_func_num=1:length(actual_des_func),
                               design,
                               stringsAsFactors = F),
                    #data.frame(forces=forces,force_vals=force_vals),
@@ -126,7 +127,7 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
           group_names <- c(group_names, i_input)
         }
       }
-      #browser()
+      # browser()
       group_cols <- sapply(group_names, function(gg){paste0(gg,'=',self$rungrid[,gg])})
       self$rungrid$Group <- apply(group_cols, 1, function(rr){paste(rr, collapse=',')})
       self$rungridlist <- as.list(self$rungrid[, !(colnames(self$rungrid) %in% c("func_string", "func_num", "repl","reps","batches","seed","Group", "actual_des_func_num"))])
@@ -197,7 +198,7 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
       invisible(self)        
     },
     run_all = function(redo = FALSE) {
-      if (redo) {
+      if (!redo) { # Only run ones that haven't been run yet
         to_run <- which(self$completed_runs == FALSE)
       } else {
         to_run <- 1:self$number_runs
@@ -227,7 +228,7 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
       #if (is.function(row_grid$func)) {}#funci <- self$func}
       #else if (row_grid$func == "RFF") {row_grid$func <- RFF_get(D=self$D)}
       #else {stop("No function given")}
-      # browser()
+      #browser()
       u <- do.call(adapt.concept2.sFFLHD.R6$new, lapply(self$rungridlist, function(x)x[[irow]]))
       #browser()
       systime <- system.time(u$run(row_grid$batches,noplot=F))

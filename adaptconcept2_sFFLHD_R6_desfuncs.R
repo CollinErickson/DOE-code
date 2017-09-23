@@ -133,7 +133,7 @@ werror_func14 <- function(mod, XX, split_speed=T) {#browser()
 #'   the des, all will be returned in data.frame, this will save
 #'   time if calculating the werror function since it is faster
 #'   to predict both at once instead of separately
-des_func_quantile <- function(mod, XX, threshold=0, power=1, return_se=F, N_add=1e3) {
+des_func_quantile <- function(mod, XX, threshold=0, power=1, return_se=F, N_add=1e3, threshold_jump=0) {
   D <- if (is.matrix(XX)) ncol(XX) else length(XX)
   pred <- mod$predict(XX, return_se=F)
   pred2 <- mod$predict(matrix(runif(N_add*D), ncol=D), return_se=return_se)
@@ -154,21 +154,24 @@ des_func_quantile <- function(mod, XX, threshold=0, power=1, return_se=F, N_add=
   } else {
     pow_thresh_quants <- thresh_quants^power
   }
-  
+
+  # Use threshold_jump
+  pow_thresh_quants <- threshold_jump + (1-threshold_jump) * pow_thresh_quants
+    
   if (return_se) {
     return(data.frame(des=des, se=se_toreturn))
   }
   pow_thresh_quants
 }
 
-get_des_func_quantile <- function(threshold=0, power=1, return_se=F) {
+get_des_func_quantile <- function(threshold=0, power=1, return_se=F, threshold_jump=0) {
   function(XX, mod) {
-    des_func_quantile(XX=XX, mod=mod, threshold=threshold, power=power, return_se=return_se)
+    des_func_quantile(XX=XX, mod=mod, threshold=threshold, power=power, return_se=return_se, threshold_jump=threshold_jump)
   }
 }
 
 
-actual_des_func_quantile <- function(XX, mod, f, threshold=0, power=1, expcdf) {
+actual_des_func_quantile <- function(XX, mod, f, threshold=0, power=1, expcdf, threshold_jump=0) {#browser()
   # Get actual func value
   if (is.matrix(XX)) {
     ZZ.actual <- apply(XX, 1, f)
@@ -186,16 +189,19 @@ actual_des_func_quantile <- function(XX, mod, f, threshold=0, power=1, expcdf) {
     pow_thresh_quants <- thresh_quants^power
   }
   
+  # Use threshold_jump
+  pow_thresh_quants <- threshold_jump + (1-threshold_jump) * pow_thresh_quants
+  
   pow_thresh_quants
 }
 
 
-get_actual_des_func_quantile <- function (f, n=1e5, D, threshold=0, power=1) {
+get_actual_des_func_quantile <- function (f, n=1e5, D, threshold=0, power=1, threshold_jump=0) {#browser()
   XX <- matrix(runif(D * n), ncol=D, nrow=n)
   ZZ <- apply(XX, 1, f)
   excdf <- ecdf(x=ZZ)
   function(XX, mod) {
-    actual_des_func_quantile(XX=XX, mod=mod, f=f, expcdf=excdf, threshold=threshold, power=power)
+    actual_des_func_quantile(XX=XX, mod=mod, f=f, expcdf=excdf, threshold=threshold, power=power, threshold_jump=threshold_jump)
   }
 }
 

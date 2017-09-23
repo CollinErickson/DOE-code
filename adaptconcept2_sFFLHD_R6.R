@@ -206,7 +206,9 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
         if (missing(des_func)) {stop("Must give in des_func when using desirability")}
         # self$obj_func <- function(XX) {list(...)$des_func(mod=self$mod, XX=XX)}
         self$des_func <- des_func
-        self$obj_func <- function(XX) {stop("Do I use this ever?"); self$des_func(mod=self$mod, XX=XX)}
+        # obj_func is used by SMED, give it the weight function
+        # self$obj_func <- function(XX) {stop("Do I use this ever?"); self$des_func(mod=self$mod, XX=XX)}
+        self$obj_func <- function(XX) {self$weight_func(mod=self$mod, XX=XX)}
         # self$alpha_des <- list(...)$alpha_des
         # if (is.null(self$alpha_des)) {stop("alpha_des must be given in")}
         if (missing(alpha_des)) {stop("alpha_des must be given in")}
@@ -227,9 +229,17 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       # This can be used even when not using desirability in order to make comparisons
       if ('actual_des_func' %in% names(list(...))) { #browser()
         self$actual_des_func <- list(...)$actual_des_func
+        if (is.character(self$actual_des_func)) {
+          if (grepl(pattern="\\(", x=self$actual_des_func)) { # If parentheses, then
+            self$actual_des_func <- eval(parse(text=self$actual_des_func))
+          } else { # Just a function name in quote, eg "des_func_relmax"
+            self$actual_des_func <- get(self$actual_des_func)
+          }
+        }
       }
       if ('actual_intwerror_func' %in% names(list(...))) { #browser()
-        self$actual_intwerror_func <- list(...)$actual_intwerror_func
+        stop("Don't do it like this")
+        # self$actual_intwerror_func <- list(...)$actual_intwerror_func
       }
       # if ('alpha_des' %in% names(list(...))) { #browser()
       #   self$alpha_des <- list(...)$alpha_des
@@ -590,7 +600,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
              cex.axis=cex.axis)#, log='xy')
       }
     },
-    plot_y_acc = function() {#browser()
+    plot_y_acc = function(residual=FALSE) {#browser()
       # Plot predicted vs actual with error bars
       
       # If func_fast, then get for other random points
@@ -610,9 +620,17 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       Zused.pred <- Zused.pred.all$fit
       Zused.se <- Zused.pred.all$se
       
+      # Make it residuals if residual
+      if (residual) {
+        Zused.pred <- Zused.pred - self$Z
+        if (self$func_fast) {Zplot.pred <- Zplot.pred - Zplot.act}
+      }
+      
       # Blank plot with right values
       plot(NULL, xlim=c(min(self$Z, Zplot.act), max(self$Z, Zplot.act)), 
-           ylim=c(min(Zused.pred, Zplot.pred), max(Zused.pred, Zplot.pred)))
+           ylim=c(min(Zused.pred-2*Zused.se, Zplot.pred-2*Zplot.se), 
+                  max(Zused.pred+2*Zused.se, Zplot.pred+2*Zplot.se)),
+           xlab="Z actual", ylab="Z predicted 95%")
       legend(x = 'topleft', legend=c("Z", "ZZ"), col = c(2,1), pch=19)
       
       # If fast, then plot values for random points
@@ -624,7 +642,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       for (i in 1:length(Zused.se)) {
         lines(c(self$Z[i],self$Z[i]), Zused.pred[i] + 2 * Zused.se[i] * c(1, -1), col=4)
       }
-      abline(a = 0, b = 1)
+      if (residual) {abline(a=0, b=0)} else {abline(a = 0, b = 1)}
       if (self$func_fast) {points(Zplot.act, Zplot.pred, xlab="Z", ylab="Predicted", pch=19)}
       points(self$Z, Zused.pred, col=2, pch=19)
     },
@@ -711,11 +729,11 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
        #)
        if (self$iteration >= 2) {
          # 1 mse plot
-         self$plot_mse(statsdf=statsdf, cex=cex)
+         self$plot_iwe(statsdf=statsdf, cex=cex)
          
          
          # 2 yhat vs y plot
-         self$plot_y_acc()
+         self$plot_y_acc(residual=TRUE)
          
          # 3 % pts used plot
          self$plot_ppu(statsdf=statsdf, cex=cex)
@@ -1076,6 +1094,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
         #gpc$update(Xall=X_with_bestL, Zall=Z_with_bestL, restarts=0)
       }
     }
+    #browser()
     cat("Selected:", bestL, "\n")
     if (self$D == 2) {
       if (dontplotfunc) {
