@@ -197,13 +197,13 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
       
       invisible(self)        
     },
-    run_all = function(redo = FALSE) {
+    run_all = function(redo = FALSE, noplot=FALSE) {
       if (!redo) { # Only run ones that haven't been run yet
         to_run <- which(self$completed_runs == FALSE)
       } else {
         to_run <- 1:self$number_runs
       }
-      sapply(to_run,function(ii){self$run_one(ii)})
+      sapply(to_run,function(ii){self$run_one(ii, noplot=noplot)})
       self$postprocess_outdf()
       invisible(self)
     },
