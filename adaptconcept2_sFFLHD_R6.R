@@ -562,13 +562,13 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
         print("missing statsdf in plot_iwe")
         statsdf <- as.data.frame(self$stats)
       }
-      plot(rep(statsdf$iter,2), c(statsdf$mse,statsdf$pvar), 
+      plot(rep(statsdf$iter,2), c(statsdf$actual_intwerror,statsdf$intwerror), 
            type='o', log="y", col="white",
            xlab="Iteration", ylab=""
       )
       legend("topright",legend=c("IWE","PIWE"),fill=c(1,2), cex=cex)
       points(statsdf$iter, statsdf$actual_intwerror, type='o', pch=19)
-      points(statsdf$iter, statsdf$intwerrir, type='o', pch = 19, col=2)
+      points(statsdf$iter, statsdf$intwerror, type='o', pch = 19, col=2)
     },
     plot_ppu = function(statsdf, cex) {
       # Plot percentage of points used over iteration

@@ -207,7 +207,7 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
       self$postprocess_outdf()
       invisible(self)
     },
-    run_one = function(irow=NULL, save_output=self$save_output) {#browser()
+    run_one = function(irow=NULL, save_output=self$save_output, noplot=FALSE) {#browser()
       if (is.null(irow)) { # If irow not given, set to next not run
         if (any(self$completed_runs == FALSE)) {
           irow <- which(self$completed_runs == 0)[1]
@@ -231,7 +231,7 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
       #browser()
       u <- do.call(adapt.concept2.sFFLHD.R6$new, lapply(self$rungridlist, function(x)x[[irow]]))
       #browser()
-      systime <- system.time(u$run(row_grid$batches,noplot=F))
+      systime <- system.time(u$run(row_grid$batches,noplot=noplot))
       #browser()
       newdf0 <- data.frame(batch=u$stats$iteration, mse=u$stats$mse, 
                            pvar=u$stats$pvar, pamv=u$stats$pamv,
@@ -388,7 +388,9 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
       self$plot_AWE_over_batch(save_output=save_output)
       invisible(self)
     },
-    save = function() {}, # Do I want to save an R object?
+    saveRDS = function(filename) {
+      saveRDS(self, file = filename)
+    }, # Do I want to save an R object?
     load = function() {
       self$outdf = read.csv()
       self$postprocess_outdf()
@@ -415,7 +417,7 @@ if (F) {
   ca1 <- compare.adaptR6$new(func=banana, reps=2, batches=5, D=2, L=4, n0=20, obj=c("func","desirability"), selection_method=c('SMED', 'max_des_red'), des_func=c('NA', 'des_func_relmax'), alpha_des=1e3, actual_des_func=c(get_actual_des_func_relmax(f=banana, fmin=0, fmax=1)), package="laGP_GauPro")$run_all()$plot()
   ca1 <- compare.adaptR6$new(func=borehole, reps=2, batches=5, D=8, b=4, L=8, n0=20, obj=c("func","desirability"), selection_method=c('SMED', 'max_des_red'), des_func=c('NA', 'des_func_relmax'), alpha_des=1e2, actual_des_func=c(actual_des_func_relmax_borehole), package="laGP_GauPro")$run_all()$plot()
   ca1 <- compare.adaptR6$new(func_string='otl',func=OTL_Circuit, reps=2, batches=5, D=6, b=4, L=8, n0=20, obj=c("func","desirability"), selection_method=c('SMED', 'max_des_red'), des_func=c('NA', 'des_func_relmax'), alpha_des=1e3, actual_des_func=NULL, package="laGP_GauPro")$run_all()$plot()
-  ca1 <- compare.adaptR6$new(func=banana, reps=2, batches=2, D=2, L=2, n0=15, obj=c("nonadapt","func","desirability"), selection_method=c("nonadapt",'SMED', 'max_des_red'), des_func=c('NA','NA', 'des_func_relmax'), alpha_des=1e3, actual_des_func=c(get_actual_des_func_relmax(f=banana, fmin=0, fmax=1)), package="laGP_GauPro", seed=33123)$run_all()$plot()
+  ca1 <- compare.adaptR6$new(func=banana, reps=2, batches=2, D=2, L=2, n0=15, obj=c("nonadapt","func","desirability"), selection_method=c("nonadapt",'SMED', 'max_des_red'), des_func=c('NA','NA', 'des_func_relmax'), alpha_des=1e3, actual_des_func='get_actual_des_func_relmax(f=banana, fmin=0, fmax=1)', package="laGP_GauPro", seed=33123)$run_all()$plot()
   ca1$plot_AWE_over_batch()
   # Show summary of actual_intwerror
   plyr::ddply(ca1$enddf, .(Group), function(grp) {summary(grp$actual_intwerror)})
