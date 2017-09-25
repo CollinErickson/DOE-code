@@ -28,6 +28,7 @@ library(magrittr)
 #' @field X Design matrix
 #' @field Z Responses
 #' @field b batch size
+#' @field func Actual function to get experiment values from
 #' @field nb Number of batches, if you know before starting how many there will be
 #' @field D Dimension of data
 #' @field Xopts Available points
@@ -35,7 +36,45 @@ library(magrittr)
 #' @field package Which GP package to use in IGP
 #' @field stats List of tracked stats
 #' @field iteration Which iteration
-#' @field mod The GP model from IGP
+#' @field mod The GP model from 
+#' @field func_run_together Whether points should be passed to func separately
+#'          as vectors or all together as a matrix whose rows are the points.
+#' @field func_fast If the function is fast. If TRUE then full plots are made.
+#'          In practice this is alway FALSE.
+#' @field new_batches_per_batch How many batches of candidate points are added
+#'          for each batch taken.
+#' @field X_tracker data.frame tracking the points of X, such as when they were
+#'          selected.
+#' @field X0 An initial matrix of points to be used.
+#' @field Xopts A matrix of candidate (option) points.
+#' @field Xopts_tracker A data.frame tracking the points of Xopts.
+#' @field batch.tracker Tracks when points were added to Xopts.
+#' @field Xopts_removed A matrix of points removed from Xopts.
+#' @field s The design object for generating candidate points.
+#' @field design A string saying which design object should be used.
+#' @field stats A data.frame giving stats for each iteration.
+#' @field iteration The current iteration.
+#' @field obj A string saying what the objective is.
+#' @field obj_func A function for the objective.
+#' @field n0 The initial number of points to be selected.
+#' @field take_until_maxpvar_below A number, if the proportion of points near 
+#'          the maximum variance of the GP model, then it will take 
+#'          space-filling points.
+#' @field package Which GP package should be used by IGP.
+#' @field force_old A number saying how often the oldest candidate points
+#'          should be forced into the design.
+#' @field force_pvar A number saying how often the points with the highest
+#'          predictive variance should be forced into the design.
+#' @field des_func The desirability function.
+#' @field des_func_fast Whether the des_func is fast for candidate points.
+#' @field alpha_des The alpha constant for the weight function.
+#' @field actual_des_func The true des func used to evaluate the model,
+#' not known in practice
+#' @field weight_const The weight constant in the weight function, usually 1.
+#' @field selection_method What the selection method should be.
+#' @field parallel Should new values be calculated in parallel?
+#' @field verbose How much detail should be printed to the console. 0 is
+#'          minimal, 1 is medium, 2 is a lot.
 #' @section Methods:
 #' \describe{
 #'   \item{Documentation}{For full documentation of each method go to https://github.com/CollinErickson/bSMED}
