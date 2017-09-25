@@ -330,7 +330,7 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
       if (save_output) {dev.off()}
       invisible(self)
     },
-    plot_AWE_over_group = function(save_output = self$save_output, boxpl=TRUE) {
+    plot_AWE_over_group = function(save_output = self$save_output, boxpl=TRUE, logy=TRUE) {
       
       if (save_output) {
         png(filename = paste0(self$folder_path,"/plot_actual_intwerror_boxplot.png"),
@@ -341,6 +341,10 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
             )# +  geom_jitter(width=.1)
       if (boxpl) {p1 <- p1 + geom_boxplot()}
       p1 <- p1 + geom_jitter(width=.1)
+      if (logy) {
+        p1 <- p1 + #scale_y_log10() + 
+          scale_y_continuous(trans="log", breaks = base_breaks())
+      }
       print(p1)
       if (save_output) {dev.off()}
       invisible(self)
