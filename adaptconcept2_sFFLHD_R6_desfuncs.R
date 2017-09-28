@@ -331,3 +331,19 @@ des_func_plateau <- function(mod, XX, return_se=F, N_add=1e2) {
   if (any(is.na(des))) {browser()}
   des
 }
+
+
+# Test desirability functions
+# A des func for finding large gradient
+#' @param return_se whether the se prediction should be returned along with
+#'   the des, all will be returned in data.frame, this will save
+#'   time if calculating the werror function since it is faster
+#'   to predict both at once instead of separately
+des_func_grad_norm2_mean <- function(mod, XX, return_se=F) {
+  D <- if (is.matrix(XX)) ncol(XX) else length(XX)
+  # browser()
+  if ("GauPro_kernel_model" %in% class(mod$mod)) {stop("grad_norm2 only works with GauPro_kernel_model")}
+  
+  des <- mod$mod$grad_norm2_dist(XX=XX)$mean
+  des
+}
