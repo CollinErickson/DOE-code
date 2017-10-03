@@ -782,7 +782,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
        }
      }
     },
-    add_new_batches_to_Xopts = function(num_batches_to_take=self$new_batches_per_batch) {
+    add_new_batches_to_Xopts = function(num_batches_to_take=self$new_batches_per_batch) {#browser()
       if (is.null(self$s)) { # If all options are given by user, don't add new points
         return()
       }
@@ -932,10 +932,10 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       bestL <- sample(Xopts_to_consider, size = self$b, replace = FALSE)
     } else if (self$selection_method %in% c("max_des_red_all_best", "ALC_all_best")) { #browser() # Start with best L and replace
       if (self$selection_method %in% c("ALC_all_best")) {print("using ALC_all_best")
-        Xotc_werrors <- self$werror_func(XX = self$Xopts[Xopts_to_consider,], 
+        Xotc_werrors <- self$werror_func(XX = self$Xopts[Xopts_to_consider, , drop=FALSE], 
                                          des_func=function(XX, mod){rep(0, nrow(XX))}, alpha=0, weight_const=1) #, weight_func=self$weight_func)
       } else {
-        Xotc_werrors <- self$werror_func(XX = self$Xopts[Xopts_to_consider,])
+        Xotc_werrors <- self$werror_func(XX = self$Xopts[Xopts_to_consider, , drop=FALSE])
       }
       bestL <- order(Xotc_werrors, decreasing = TRUE)[self$b:1] # Make the biggest last so it is least likely to be replaced
     } else {
@@ -1039,8 +1039,8 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
           pda <- pdiff #abs(pdiff)
           summary(pda)
           which.max(pda)
-          rbind(xxx[which.max(pda),], self$Xopts[r, ])
-          xxxdists <- sqrt(rowSums(sweep(xxx,2,self$Xopts[r,])^2))
+          rbind(xxx[which.max(pda),], self$Xopts[r, , drop=FALSE])
+          xxxdists <- sqrt(rowSums(sweep(xxx,2,self$Xopts[r,, drop=FALSE])^2))
           plot(xxxdists, pda)
         }
         
@@ -1203,7 +1203,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       }
     }
     removed_tracker_rows <- self$Xopts_tracker_remove(newL=newL)
-    Xnew <- self$Xopts[newL,]
+    Xnew <- self$Xopts[newL, , drop=FALSE]
     self$Xopts <- self$Xopts[-newL, , drop=FALSE]
     self$batch.tracker <- self$batch.tracker[-newL]
     Znew <- self$calculate_Z(Xnew) #apply(Xnew,1,self$func) # This is where the simulations are run, will probably have to put this out to be parallelizable and sent out as jobs
@@ -1442,6 +1442,7 @@ if (F) {
   set.seed(1); csa(); a <- adapt.concept2.sFFLHD.R6$new(D=2,L=3,func=banana, obj="desirability", des_func=des_func_relmax, alpha_des=1e2, n0=30, take_until_maxpvar_below=.9, package="laGP_GauPro", design='sFFLHD', selection_method="ALC_all"); a$run(1)
   set.seed(1); csa(); a <- adapt.concept2.sFFLHD.R6$new(D=2,L=3,func=banana, obj="desirability", des_func=des_func_relmax, alpha_des=1e2, n0=30, take_until_maxpvar_below=.9, package="laGP_GauPro", design='sFFLHD', selection_method="ALC_all_best"); a$run(1)
   
-  set.seed(1); csa(); a <- adapt.concept2.sFFLHD.R6$new(D=2,L=3,func=banana, obj="desirability", des_func=des_func_grad_norm2_mean, alpha_des=1e2, n0=30, take_until_maxpvar_below=.9, package="GauPro_kernel", design='sFFLHD', selection_method="max_des_red_all_best"); a$run(1)
+  # Use GauPro_kernel and grad_norm2_mean des func
+  set.seed(2); csa(); a <- adapt.concept2.sFFLHD.R6$new(D=2,L=3,func=banana, obj="desirability", des_func=des_func_grad_norm2_mean, alpha_des=1e2, n0=30, take_until_maxpvar_below=.9, package="GauPro_kernel", design='sFFLHD', selection_method="max_des_red_all_best"); a$run(1)
   
 }
