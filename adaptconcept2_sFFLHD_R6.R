@@ -689,16 +689,30 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       x <- matrix(seq(0,1,l=300), ncol=1)
       preds <- self$mod$predict(x, se=T)
       ylim <- c(min(preds$fit-2*preds$se), max(preds$fit+2*preds$se))
-      plot(x, preds$fit, ylim=ylim, type='l', col='white')
+      plot(x, preds$fit, ylim=ylim, type='l', col='white', ylab="Z")
+      multicolor.title(c("Actual ","Pred ", "95% ", "Weight ", "Weight*sd"), c(3,1,2,6,"cyan"))
+      if (self$des_func_fast) {
+        xdes <- self$des_func(mod=self$mod, XX=x)
+        xdes2 <- ((xdes-min(xdes))/(max(xdes)-min(xdes))) * (ylim[2]-ylim[1])*.2 + ylim[1] - .04*diff(ylim)
+        xwd <- xdes * preds$se
+        xwd2 <- ((xwd-min(xwd))/(max(xwd)-min(xwd))) * (ylim[2]-ylim[1])*.2 + ylim[1] - .04*diff(ylim)
+        points(x, xdes2, type='l', col=6, lwd=.5)
+        points(x, xwd2, type='l', col="cyan", lwd=.5)
+      }
       points(x, preds$fit-2*preds$se, type='l', col=2, lwd=2)
       points(x, preds$fit+2*preds$se, type='l', col=2, lwd=2)
       points(x, preds$fit, type='l', col=1, lwd=3)
       if (self$func_fast) {
+        Zopts <- apply(self$Xopts, 1, self$func)
+        points(self$Xopts, Zopts, col=4, pch=19)
         points(x, self$func(x), type='l', col=3, lwd=3)
       }
       points(self$X, self$Z, pch=19, cex=2)
-      
-      
+      if (self$iteration > 1) { # Plot last L separately
+        points(self$X[(nrow(self$X)-self$b+1):nrow(self$X),], 
+               self$Z[(nrow(self$X)-self$b+1):nrow(self$X)],
+               col='yellow',pch=19, cex=.5)
+      }
     },
     plot_2D = function(twoplot = FALSE, cex=1) {
       cex_small = .55 * cex
