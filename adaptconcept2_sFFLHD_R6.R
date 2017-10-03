@@ -685,6 +685,21 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       if (self$func_fast) {points(Zplot.act, Zplot.pred, xlab="Z", ylab="Predicted", pch=19)}
       points(self$Z, Zused.pred, col=2, pch=19)
     },
+    plot_1D = function() {
+      x <- matrix(seq(0,1,l=300), ncol=1)
+      preds <- self$mod$predict(x, se=T)
+      ylim <- c(min(preds$fit-2*preds$se), max(preds$fit+2*preds$se))
+      plot(x, preds$fit, ylim=ylim, type='l', col='white')
+      points(x, preds$fit-2*preds$se, type='l', col=2, lwd=2)
+      points(x, preds$fit+2*preds$se, type='l', col=2, lwd=2)
+      points(x, preds$fit, type='l', col=1, lwd=3)
+      if (self$func_fast) {
+        points(x, self$func(x), type='l', col=3, lwd=3)
+      }
+      points(self$X, self$Z, pch=19, cex=2)
+      
+      
+    },
     plot_2D = function(twoplot = FALSE, cex=1) {
       cex_small = .55 * cex
       # twoplot only plots mean and se
@@ -755,32 +770,38 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       close.screen(all = TRUE)
     },
     plot1 = function(twoplot=FALSE, cex=1) {#browser()
-     if (self$D == 2) {
-       self$plot_2D(twoplot=twoplot, cex=cex)
-     } else { # D != 2 
-       par(mfrow=c(2,2))
-       par(mar=c(2,2,0,0.5)) # 5.1 4.1 4.1 2.1 BLTR
-       statsdf <- as.data.frame(self$stats)
-       #print(ggplot(statsdf, aes(x=iteration, y=mse, col=level)) + geom_line())
-       #print(ggplot() + 
-       #        geom_line(data=statsdf, aes(x=iteration, y=mse, col="red")) + 
-       #        geom_line(data=statsdf, aes(x=iteration, y=pvar, col="blue"))
-       #)
-       if (self$iteration >= 2) {
-         # 1 mse plot
-         self$plot_iwe(statsdf=statsdf, cex=cex)
-         
-         
-         # 2 yhat vs y plot
-         self$plot_y_acc(residual=TRUE)
-         
-         # 3 % pts used plot
-         self$plot_ppu(statsdf=statsdf, cex=cex)
-         
-         # 4 grad vs pvar
-         self$plot_des_v_acc(cex=cex, cex.axis=cex)
-       }
-     }
+      if (self$D == 1) {
+        self$plot_1D()
+      } else if (self$D == 2) {
+        self$plot_2D(twoplot=twoplot, cex=cex)
+      } else { # D != 2 
+        oparmar <- par('mar')
+        oparmfrow <- par('mfrow')
+        par(mfrow=c(2,2))
+        par(mar=c(2,2,0,0.5)) # 5.1 4.1 4.1 2.1 BLTR
+        statsdf <- as.data.frame(self$stats)
+        #print(ggplot(statsdf, aes(x=iteration, y=mse, col=level)) + geom_line())
+        #print(ggplot() + 
+        #        geom_line(data=statsdf, aes(x=iteration, y=mse, col="red")) + 
+        #        geom_line(data=statsdf, aes(x=iteration, y=pvar, col="blue"))
+        #)
+        if (self$iteration >= 2) {
+          # 1 mse plot
+          self$plot_iwe(statsdf=statsdf, cex=cex)
+          
+          
+          # 2 yhat vs y plot
+          self$plot_y_acc(residual=TRUE)
+          
+          # 3 % pts used plot
+          self$plot_ppu(statsdf=statsdf, cex=cex)
+          
+          # 4 grad vs pvar
+          self$plot_des_v_acc(cex=cex, cex.axis=cex)
+        }
+        par(mar=oparmar)
+        par(mfrow=oparmfrow)
+      }
     },
     add_new_batches_to_Xopts = function(num_batches_to_take=self$new_batches_per_batch) {#browser()
       if (is.null(self$s)) { # If all options are given by user, don't add new points
@@ -1445,4 +1466,6 @@ if (F) {
   # Use GauPro_kernel and grad_norm2_mean des func
   set.seed(2); csa(); a <- adapt.concept2.sFFLHD.R6$new(D=2,L=3,func=banana, obj="desirability", des_func=des_func_grad_norm2_mean, alpha_des=1e2, n0=30, take_until_maxpvar_below=.9, package="GauPro_kernel", design='sFFLHD', selection_method="max_des_red_all_best"); a$run(1)
   
+  # 1D test
+  set.seed(2); csa(); a <- adapt.concept2.sFFLHD.R6$new(D=1,L=3,func=RFF_get(D=1), obj="desirability", des_func=des_func_relmax, alpha_des=1e2, n0=8, take_until_maxpvar_below=.9, package="GauPro_kernel", design='sFFLHD', selection_method="max_des_red_all"); a$run(1)
 }
