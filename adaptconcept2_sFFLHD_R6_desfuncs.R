@@ -6,8 +6,8 @@
 #'   to predict both at once instead of separately
 des_func_relmax <- function(mod, XX, return_se=F, N_add=1e3) {
   D <- if (is.matrix(XX)) ncol(XX) else length(XX)
-  pred <- mod$predict(XX, return_se=F)
-  pred2 <- mod$predict(matrix(runif(N_add*D), ncol=D), return_se=return_se)
+  pred <- mod$predict(XX, se=return_se)
+  pred2 <- mod$predict(matrix(runif(N_add*D), ncol=D), se=return_se)
   if (return_se) {
     se_toreturn <- pred2$se
     pred2 <- pred2$fit
@@ -135,8 +135,8 @@ werror_func14 <- function(mod, XX, split_speed=T) {#browser()
 #'   to predict both at once instead of separately
 des_func_quantile <- function(mod, XX, threshold=0, power=1, return_se=F, N_add=1e3, threshold_jump=0) {
   D <- if (is.matrix(XX)) ncol(XX) else length(XX)
-  pred <- mod$predict(XX, return_se=F)
-  pred2 <- mod$predict(matrix(runif(N_add*D), ncol=D), return_se=return_se)
+  pred <- mod$predict(XX, se=return_se)
+  pred2 <- mod$predict(matrix(runif(N_add*D), ncol=D), se=return_se)
   if (return_se) {
     se_toreturn <- pred2$se
     pred2 <- pred2$fit
@@ -236,8 +236,8 @@ if (FALSE) {
 
 des_func_quantile_lowhigh <- function(mod, XX, threshold=c(.5, .5), power=1, return_se=F, N_add=1e3) {
   D <- if (is.matrix(XX)) ncol(XX) else length(XX)
-  pred <- mod$predict(XX, return_se=F)
-  pred2 <- mod$predict(matrix(runif(N_add*D), ncol=D), return_se=return_se)
+  pred <- mod$predict(XX, se=return_se)
+  pred2 <- mod$predict(matrix(runif(N_add*D), ncol=D), se=return_se)
   if (return_se) {
     se_toreturn <- pred2$se
     pred2 <- pred2$fit
@@ -346,4 +346,33 @@ des_func_grad_norm2_mean <- function(mod, XX, return_se=F) {
   
   des <- mod$mod$grad_norm2_dist(XX=XX)$mean
   des
+}
+des_func_grad_norm2_meaninv <- function(mod, XX, return_se=F) {
+  D <- if (is.matrix(XX)) ncol(XX) else length(XX)
+  # browser()
+  if ("GauPro_kernel_model" %in% class(mod$mod)) {stop("grad_norm2 only works with GauPro_kernel_model")}
+  
+  des <- 1/mod$mod$grad_norm2_dist(XX=XX)$mean
+  des
+}
+des_func_grad_norm2_meaninv_plateau <- function(mod, XX, thresh_perc=.5, N_add=1e3, return_se=F) {#browser()
+  D <- if (is.matrix(XX)) ncol(XX) else length(XX)
+  # browser()
+  if ("GauPro_kernel_model" %in% class(mod$mod)) {stop("grad_norm2 only works with GauPro_kernel_model")}
+  
+  pred <- mod$predict(XX, se=T)
+  pred2 <- mod$predict(matrix(runif(N_add*D), ncol=D), se=T)
+  # if (return_se) {
+  #   se_toreturn <- pred2$se
+  #   pred2 <- pred2$fit
+  # }
+  # predall <- c(pred$fit, pred2$fit)
+  maxpred <- max(max(pred$fit), max(pred2$fit))
+  minpred <- min(min(pred$fit), min(pred2$fit))
+  thresh <- minpred + thresh_perc * (maxpred - minpred)
+  thresh_prob <- pnorm(thresh, mean = pred$fit, sd = pred$se, lower.tail = F)
+  
+  
+  des <- 1/mod$mod$grad_norm2_dist(XX=XX)$mean
+  des * thresh_prob
 }
