@@ -1,0 +1,200 @@
+---
+title: "Meeting"
+author: "Collin Erickson"
+date: "October 3, 2017"
+output: ioslides_presentation
+---
+
+```{r setup, include=FALSE}
+setwd("..//")
+knitr::opts_chunk$set(cache = TRUE)
+# source("../compare_adaptconcept.R")
+# getwd()
+# source("C://Users//cbe117//Documents//GitHub//DOE-code//compare_adaptconcept.R")
+source("adaptconcept2_sFFLHD_R6.R")
+# opts_chunk$set(cache=FALSE)
+library(magrittr)
+```
+
+## Progress since last week
+
+* D=1 works
+* Calculated/implemented gradient distribution
+
+
+## A 1-D function with plateau and areas with large gradient
+
+```{r cars, echo=F}
+
+logistic <- function(x, offset, scl) {1 / (1 + exp(-scl*(x-offset)))}
+logistic_plateau <- function(x) {logistic(x[1], .15, 15) - logistic(x[1], .85,15)};
+curve(Vectorize(logistic_plateau)(x)); #cf(logistic_plateau)
+
+# dir()
+# getwd()
+# summary(cars)
+```
+
+
+
+## Focus on large gradient norm
+
+```{r, D1run, echo=F, message=FALSE}
+set.seed(2)
+csa(silent=T)
+temp <- capture.output(a <- adapt.concept2.sFFLHD.R6$new(D=1,L=3,func=Vectorize(logistic_plateau), obj="desirability", des_func=des_func_grad_norm2_mean, alpha_des=1e2, n0=4, take_until_maxpvar_below=1, package="GauPro_kernel", design='sFFLHD', selection_method="max_des_red_all"))
+a$run(1)
+```
+
+## Batch 2
+
+```{r bat2, echo=FALSE}
+tmp <- capture.output(a$run(1))
+```
+
+## Batch 3
+
+```{r bat3, echo=FALSE}
+tmp <- capture.output(a$run(1))
+```
+
+## Batch 4
+
+```{r bat4, echo=FALSE}
+tmp <- capture.output(a$run(1))
+```
+
+## Batch 5
+
+```{r bat5, echo=FALSE}
+tmp <- capture.output(a$run(1))
+```
+
+## Batch 6
+
+```{r bat6, echo=FALSE}
+tmp <- capture.output(a$run(1))
+```
+
+## Batch 7
+
+```{r bat7, echo=FALSE}
+tmp <- capture.output(a$run(1))
+```
+
+## Why doesn't it focus more on curves?
+
+* Maybe the nugget is large enough so that the SE can't be reduced further
+
+```{r}
+a$mod$nugget()
+```
+
+
+```{r}
+a$mod$predict.se(a$X) %>% summary
+```
+
+```{r}
+a$mod$predict.se(a$Xopts) %>% summary 
+```
+
+## Finding plateau
+
+* Use inverse of mean of grad norm squared
+
+* Multiply by probability of being at least 50% of the way from min to max
+
+
+
+## Focus on plateau
+
+```{r, D1run2, echo=F, message=FALSE}
+set.seed(2)
+csa(silent=T)
+temp <- capture.output(a2 <- adapt.concept2.sFFLHD.R6$new(D=1,L=3,func=Vectorize(logistic_plateau), obj="desirability", des_func=des_func_grad_norm2_meaninv_plateau, alpha_des=1e2, n0=4, take_until_maxpvar_below=1, package="GauPro_kernel", design='sFFLHD', selection_method="max_des_red_all"))
+a2$run(1)
+```
+
+## Batch 2
+
+```{r bat22, echo=FALSE}
+tmp <- capture.output(a2$run(1))
+```
+
+## Batch 3
+
+```{r bat23, echo=FALSE}
+tmp <- capture.output(a2$run(1))
+```
+
+## Batch 4
+
+```{r bat24, echo=FALSE}
+tmp <- capture.output(a2$run(1))
+```
+
+## Batch 5
+
+```{r bat25, echo=FALSE}
+tmp <- capture.output(a2$run(1))
+```
+
+## Batch 6
+
+```{r bat26, echo=FALSE}
+tmp <- capture.output(a2$run(1))
+```
+
+## Batch 7
+
+```{r bat27, echo=FALSE}
+tmp <- capture.output(a2$run(1))
+```
+
+
+## 2D plateau
+
+```{r, bananaplateau, echo=F, message=FALSE}
+set.seed(5)
+csa(silent=T)
+# temp <- capture.output(a3 <- adapt.concept2.sFFLHD.R6$new(D=2,L=3,func=function(x){banana(x)^.2}, obj="desirability", des_func=des_func_grad_norm2_meaninv_plateau, alpha_des=1e2, n0=10, take_until_maxpvar_below=1, package="GauPro_kernel", design='sFFLHD', selection_method="max_des_red_all"))
+temp <- capture.output(a3 <- adapt.concept2.sFFLHD.R6$new(D=2,L=3,func=function(x)logistic_plateau(x[1])*logistic_plateau(x[2]), obj="desirability", des_func=des_func_grad_norm2_meaninv_plateau, alpha_des=1e2, n0=10, take_until_maxpvar_below=1, package="GauPro_kernel", design='sFFLHD', selection_method="max_des_red_all"))
+a3$run(1)
+```
+
+## Batch 2
+
+```{r bat32, echo=FALSE}
+tmp <- capture.output(a3$run(1))
+```
+
+## Batch 3
+
+```{r bat33, echo=FALSE}
+tmp <- capture.output(a3$run(1))
+```
+
+## Batch 4
+
+```{r bat34, echo=FALSE}
+# tmp <- capture.output(a3$run(1))
+```
+
+## Batch 5
+
+```{r bat35, echo=FALSE}
+# tmp <- capture.output(a3$run(1))
+```
+
+## Batch 6
+
+```{r bat36, echo=FALSE}
+# tmp <- capture.output(a3$run(1))
+```
+
+## Batch 7
+
+```{r bat37, echo=FALSE}
+# tmp <- capture.output(a3$run(1))
+```

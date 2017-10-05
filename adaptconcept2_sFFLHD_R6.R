@@ -125,7 +125,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
     actual_des_func = NULL,
     actual_werror_func = NULL,
     #weight_func = NULL, # weight function: 1 + alpha_des * des_func()
-    weight_const = 1,
+    weight_const = NULL,
     #werror_func = NULL, # weighted error function: sigmahat * (1+alpha_des*des_func())
     selection_method = NULL, # string
     
@@ -149,6 +149,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
                          nugget=1e-8,
                          verbose = 2,
                          design_seed=numeric(0),
+                         weight_const=1,
                          #optio
                          ...) {#browser()
       self$D <- D
@@ -163,6 +164,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       self$take_until_maxpvar_below <- take_until_maxpvar_below
       self$selection_method <- selection_method
       self$des_func_fast <- des_func_fast
+      self$weight_const <- weight_const
       self$verbose <- verbose
       
       
@@ -1482,4 +1484,16 @@ if (F) {
   
   # 1D test
   set.seed(2); csa(); a <- adapt.concept2.sFFLHD.R6$new(D=1,L=3,func=RFF_get(D=1), obj="desirability", des_func=des_func_relmax, alpha_des=1e2, n0=8, take_until_maxpvar_below=.9, package="GauPro_kernel", design='sFFLHD', selection_method="max_des_red_all"); a$run(1)
+  # Logistic function
+  logistic <- function(x, offset, scl) {1 / (1 + exp(-scl*(x-offset)))}; 
+  logistic_plateau <- function(x) {logistic(x[1], .15, 15) - logistic(x[1], .85,15)}; curve(Vectorize(logistic_plateau)(x)); #cf(logistic_plateau)
+  # Relmax
+  set.seed(2); csa(); a <- adapt.concept2.sFFLHD.R6$new(D=1,L=3,func=Vectorize(logistic_plateau), obj="desirability", des_func=des_func_relmax, alpha_des=1e2, n0=4, take_until_maxpvar_below=1, package="GauPro_kernel", design='sFFLHD', selection_method="max_des_red_all"); a$run(1)
+  # grad_norm2_meaninv_plateau
+  set.seed(2); csa(); a <- adapt.concept2.sFFLHD.R6$new(D=1,L=3,func=Vectorize(logistic_plateau), obj="desirability", des_func=des_func_grad_norm2_meaninv_plateau, alpha_des=1e2, n0=4, take_until_maxpvar_below=1, package="GauPro_kernel", design='sFFLHD', selection_method="max_des_red_all"); a$run(1)
+  a$run(1)
+  # 2D logistic
+  set.seed(2); csa(); a <- adapt.concept2.sFFLHD.R6$new(D=2,L=3,func=logistic_plateau, obj="desirability", des_func=des_func_grad_norm2_meaninv_plateau, alpha_des=1e2, n0=4, take_until_maxpvar_below=1, package="GauPro_kernel", design='sFFLHD', selection_method="max_des_red_all"); a$run(1)
+  a3 <- adapt.concept2.sFFLHD.R6$new(D=2,L=3,func=function(x)logistic_plateau(x[1])*logistic_plateau(x[2]), obj="desirability", des_func=des_func_grad_norm2_meaninv_plateau, alpha_des=1e2, n0=10, take_until_maxpvar_below=1, package="GauPro_kernel", design='sFFLHD', selection_method="max_des_red_all")
+  
 }
