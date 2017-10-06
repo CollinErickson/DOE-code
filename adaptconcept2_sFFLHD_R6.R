@@ -822,7 +822,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       gpc <- self$mod$clone(deep=TRUE)
     }
     Xopts_to_consider <- 1:nrow(self$Xopts)
-    if (self$D == 2) {
+    if (self$D == 2 && self$verbose > 1) {
       dontplotfunc <- TRUE
       if (dontplotfunc) {
         split.screen(matrix(
@@ -1038,7 +1038,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       }
     }
     cat("Selected:", bestL, "\n")
-    if (self$D == 2) {
+    if (self$D == 2 && self$verbose >1) {
       if (dontplotfunc) {
         screen(2)
         cf(function(X) {self$werror_func(mod=gpc, XX=X)}, 

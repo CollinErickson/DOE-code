@@ -1,0 +1,79 @@
+---
+title: "Meeting 10/11/17"
+author: "Collin Erickson"
+date: "October 11, 2017"
+output: ioslides_presentation
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+setwd("..//") # Will get reset, but need this to have source below work properly
+source("adaptconcept2_sFFLHD_R6.R")
+```
+
+## Discussed last week
+
+* Comparing how $1+\alpha$ affects results
+
+## Progress
+
+* $\mathbb{E}[1/||g(x)||^2]$ using gradient samples
+
+## 1-D, $E[1/g(x)^2]$, no $1+\alpha$, behaves poorly
+
+```{r, echo=F}
+logistic <- function(x, offset, scl) {1 / (1 + exp(-scl*(x-offset)))}; 
+logistic_plateau <- function(x) {logistic(x[1], .15, 15) - logistic(x[1], .85,15)}; #curve(Vectorize(logistic_plateau)(x)); #cf(logistic_plateau)
+# grad_norm2_meaninv_plateau
+invisible(capture.output({set.seed(2); csa(); a <- adapt.concept2.sFFLHD.R6$new(D=1,L=3,func=Vectorize(logistic_plateau), obj="desirability", des_func=des_func_grad_norm2inv_mean, alpha_des=1, weight_const = 0, n0=4, take_until_maxpvar_below=1, package="laGP_GauPro_kernel", design='sFFLHD', selection_method="max_des_red_all"); a$run(1)}))
+```
+
+## Batch 2
+```{r, echo=F, message=F}
+invisible(capture.output(a$run(1)))
+```
+
+## Batch 3
+```{r, echo=F}
+invisible(capture.output(a$run(1)))
+```
+
+## Batch 4
+```{r, echo=F}
+invisible(capture.output(a$run(1)))
+```
+
+## Batch 5
+```{r, echo=F}
+invisible(capture.output(a$run(1)))
+```
+
+
+
+
+## 2-D, $E[1/g(x)^2]$, no $1+\alpha$, behaves poorly
+
+```{r, echo=F}
+invisible(capture.output({set.seed(2); csa(); a <- adapt.concept2.sFFLHD.R6$new(D=2,L=3,func=function(x)logistic_plateau(x[1])*logistic_plateau(x[2]), obj="desirability", des_func=des_func_grad_norm2inv_mean, alpha_des=1, weight_const = 0, n0=8, take_until_maxpvar_below=1, package="laGP_GauPro_kernel", design='sFFLHD', selection_method="max_des_red_all", verbose=0); a$run(1)}))
+```
+
+## Batch 2
+```{r, echo=F, message=F}
+invisible(capture.output(a$run(1)))
+```
+
+## Batch 3
+```{r, echo=F}
+invisible(capture.output(a$run(1)))
+```
+
+## Batch 4
+```{r, echo=F}
+invisible(capture.output(a$run(1)))
+```
+
+## Batch 5
+```{r, echo=F}
+invisible(capture.output(a$run(1)))
+```
+
