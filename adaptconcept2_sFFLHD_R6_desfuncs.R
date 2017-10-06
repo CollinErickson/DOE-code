@@ -352,7 +352,11 @@ des_func_grad_norm2_meaninv <- function(mod, XX, return_se=F) {
   # browser()
   if ("GauPro_kernel_model" %in% class(mod$mod)) {stop("grad_norm2 only works with GauPro_kernel_model")}
   
-  des <- 1/mod$mod$grad_norm2_dist(XX=XX)$mean
+  if ("IGP_GauPro_kernel" %in% class(mod)) {
+    des <- 1/mod$mod$grad_norm2_dist(XX=XX)$mean
+  } else {
+    des <- 1/mod$mod.extra$GauPro$mod$grad_norm2_dist(XX=XX)$mean
+  }
   des
 }
 des_func_grad_norm2_meaninv_plateau <- function(mod, XX, thresh_perc=.5, N_add=1e3, return_se=F) {#browser()
@@ -372,7 +376,32 @@ des_func_grad_norm2_meaninv_plateau <- function(mod, XX, thresh_perc=.5, N_add=1
   thresh <- minpred + thresh_perc * (maxpred - minpred)
   thresh_prob <- pnorm(thresh, mean = pred$fit, sd = pred$se, lower.tail = F)
   
-  
-  des <- 1/mod$mod$grad_norm2_dist(XX=XX)$mean
+  if ("IGP_GauPro_kernel" %in% class(mod)) {
+    des <- 1/mod$mod$grad_norm2_dist(XX=XX)$mean
+  } else {
+    des <- 1/mod$mod.extra$GauPro$mod$grad_norm2_dist(XX=XX)$mean
+  }
   des * thresh_prob
+}
+des_func_grad_norm2inv_mean <- function(mod, XX, return_se=F, n_samp=300) {
+  D <- if (is.matrix(XX)) ncol(XX) else length(XX)
+  # browser()
+  if ("GauPro_kernel_model" %in% class(mod$mod)) {stop("grad_norm2 only works with GauPro_kernel_model")}
+  
+  if ("IGP_GauPro_kernel" %in% class(mod)) {
+    # des <- 1/mod$mod$grad_norm2_dist(XX=XX)$mean
+    des <- apply(XX, 1, function(xx) {
+      gs <- mod$mod$grad_sample(XX=xx, n=n_samp)
+      gs2 <- rowSums(gs^2)
+      mean(1/gs2)
+    })
+  } else {
+    # des <- 1/mod$mod.extra$GauPro$mod$grad_norm2_dist(XX=XX)$mean
+    des <- apply(XX, 1, function(xx) {
+      gs <- mod$mod.extra$GauPro$mod$grad_sample(XX=xx, n=n_samp)
+      gs2 <- rowSums(gs^2)
+      mean(1/gs2)
+    })
+  }
+  des
 }
