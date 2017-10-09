@@ -151,52 +151,6 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
       self$folder_created = TRUE
       
     },
-    run_OLD = function(save_output=self$save_output) {#browser()
-      for (repl in 1:self$reps) {
-        if (!is.null(self$seed_start)) {
-          set.seed(self$seed_start + self$repl - 1)
-        }
-        if (is.function(self$func)) {funci <- self$func}
-        else if (self$func == "RFF") {funci <- RFF_get(D=self$D)}
-        else {stop("No function given")}
-        
-        for (obj in self$obj) {
-          for (iforce in 1:length(self$forces)) {
-            u <- adapt.concept2.sFFLHD.R6(func=funci, D=self$D, L=self$L,
-                                          obj=obj, 
-                                          force_old=self$force_old,#if(self$forces[iforce]=="old") {self$force_vals[iforce]} else {0},
-                                          force_pvar=self$force_pvar,#if(self$forces[iforce]=="pvar") {self$force_vals[iforce]} else {0},
-                                          n0=self$n0#,
-                                          #...
-            )
-            systime <- system.time(u$run(self$batches,noplot=T))
-            
-            newdf1 <- data.frame(batch=u$stats$iteration, mse=u$stats$mse, 
-                                 pvar=u$stats$pvar, pamv=u$stats$pamv,
-                                 method=obj, num=paste0(obj,repl),
-                                 time = systime[3], row.names=NULL, repl=repl,
-                                 #force=self$forces[iforce], force.to=self$force_vals[iforce],
-                                 #force2=paste0(self$forces[iforce], '_', self$force_vals[iforce])
-                                 force_old=self$force_old, force_pvar=self$force_pvar,
-                                 force2=paste0(self$force_old, '_', self$force_pvar)
-                      )
-            self$outdf <- rbind(self$outdf, newdf1)
-            if (save_output) {
-              if (file.exists(paste0(self$folder_path,"/data_cat.csv"))) { # append new row
-                write.table(x=newdf1, file=paste0(self$folder_path,"/data_cat.csv"),append=T, sep=",", col.names=F)
-              } else { #create file
-                write.table(x=newdf1, file=paste0(self$folder_path,"/data_cat.csv"),append=F, sep=",", col.names=T)
-              }
-            }  
-            u$delete()
-          }
-        }
-      }
-      if (self$save_output) {write.csv(self$outrawdf, paste0(self$folder_path,"/dataraw.csv"))}  
-      self$postprocess_outdf()
-      
-      invisible(self)        
-    },
     run_all = function(redo = FALSE, noplot=FALSE) {
       if (!redo) { # Only run ones that haven't been run yet
         to_run <- which(self$completed_runs == FALSE)
