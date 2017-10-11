@@ -341,12 +341,24 @@ des_func_plateau <- function(mod, XX, return_se=F, N_add=1e2) {
 #'   to predict both at once instead of separately
 des_func_grad_norm2_mean <- function(mod, XX, return_se=F) {
   if ("IGP_GauPro_kernel" %in% class(mod)) {
-    des <- 1/mod$mod$grad_norm2_dist(XX=XX)$mean
+    des <- mod$mod$grad_norm2_dist(XX=XX)$mean
   } else if ("IGP_laGP_GauPro_kernel" %in% class(mod)) {
-    des <- 1/mod$mod.extra$GauPro$mod$grad_norm2_dist(XX=XX)$mean
+    des <- mod$mod.extra$GauPro$mod$grad_norm2_dist(XX=XX)$mean
   } else {
     stop("des_func_grad_norm2_mean only works with GauPro_kernel_model or laGP_GauPro_kernel")
   }
+  des
+}
+# Gradient of mean function, no uncertainty taken into account
+des_func_mean_grad_norm2 <- function(mod, XX, return_se=F) {
+  if ("IGP_GauPro_kernel" %in% class(mod)) {
+    des <- mod$mod$grad(XX=XX)
+  } else if ("IGP_laGP_GauPro_kernel" %in% class(mod)) {
+    des <- mod$mod.extra$GauPro$mod$grad(XX=XX)
+  } else {
+    stop("des_func_grad_norm2_mean only works with GauPro_kernel_model or laGP_GauPro_kernel")
+  }
+  des <- apply(des, 1, function(x) {sum(x^2)})
   des
 }
 des_func_grad_norm2_meaninv <- function(mod, XX, return_se=F) {

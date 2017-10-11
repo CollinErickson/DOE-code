@@ -193,7 +193,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       if(is.null(package)) {self$package <- "laGP"}
       else {self$package <- package}
       self$mod <- IGP(package = self$package, estimate.nugget=FALSE, set.nugget=nugget)
-      self$stats <- list(iteration=c(),n=c(),pvar=c(),mse=c(), ppu=c(), minbatch=c(), pamv=c(), actual_intwerror=c(), intwerror=c())
+      self$stats <- list(iteration=c(),n=c(),pvar=c(),mse=c(), ppu=c(), minbatch=c(), pamv=c(), actual_intwerror=c(), intwerror=c(), intwerror01=c())
       self$iteration <- 1
       self$obj_nu <- NaN
       
@@ -443,8 +443,10 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
      self$stats$actual_intwerror <- c(self$stats$actual_intwerror, self$actual_intwerror_func())
      if (!is.null(self$des_func)) {
        self$stats$intwerror <- c(self$stats$intwerror, self$intwerror_func())
+       self$stats$intwerror01 <- c(self$stats$intwerror01, self$intwerror_func(weight_const=0,alpha=1))
      } else {
        self$stats$intwerror <- c(self$stats$intwerror, NaN)
+       self$stats$intwerror01 <- c(self$stats$intwerror01, NaN)
      }
     },
     mse_func = function() {
