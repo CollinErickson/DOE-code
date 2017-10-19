@@ -192,7 +192,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       
       if(is.null(package)) {self$package <- "laGP"}
       else {self$package <- package}
-      self$mod <- IGP(package = self$package, estimate.nugget=FALSE, set.nugget=nugget)
+      self$mod <- IGP(package = self$package, estimate.nugget=FALSE, nugget=nugget)
       self$stats <- list(iteration=c(),n=c(),pvar=c(),mse=c(), ppu=c(), minbatch=c(), pamv=c(), actual_intwerror=c(), intwerror=c(), intwerror01=c())
       self$iteration <- 1
       self$obj_nu <- NaN
@@ -600,6 +600,10 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
         xwd2 <- ((xwd-min(xwd))/(max(xwd)-min(xwd))) * (ylim[2]-ylim[1])*.2 + ylim[1] - .04*diff(ylim)
         points(x, xdes2, type='l', col=6, lwd=.5)
         points(x, xwd2, type='l', col="cyan", lwd=.5)
+        dens <- density(a$X)
+        ydens <- dens$y
+        ydens2 <- ((ydens-min(ydens))/(max(ydens)-min(ydens))) * (ylim[2]-ylim[1])*.2 + ylim[1] - .04*diff(ylim)
+        points(dens$x, ydens2, type='l', col="orange", lwd=.5)
       }
       points(x, preds$fit-2*preds$se, type='l', col=2, lwd=2)
       points(x, preds$fit+2*preds$se, type='l', col=2, lwd=2)

@@ -1,0 +1,308 @@
+---
+title: "Meeting 10/18"
+author: "Collin Erickson"
+date: "October 16, 2017"
+output: ioslides_presentation
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, cache=TRUE)
+setwd("..//") # Will get reset, but need this to have source below work properly
+source("adaptconcept2_sFFLHD_R6.R")
+
+logistic <- function(x, offset, scl) {1 / (1 + exp(-scl*(x-offset)))}; 
+logistic_plateau <- function(x) {logistic(x[1], .15, 15) - logistic(x[1], .85,15)}; #curve(Vectorize(logistic_plateau)(x)); #cf(logistic_plateau)
+
+```
+
+## Plateau (bad form), nug=1e-4
+
+```{r p1, echo=F, message=F}
+
+# grad_norm2_meaninv_plateau
+invisible(capture.output({set.seed(4); csa(); a <- adapt.concept2.sFFLHD.R6$new(D=1,L=3,func=Vectorize(logistic_plateau), obj="desirability", des_func=des_func_grad_norm2_meaninv_plateau, alpha_des=1, weight_const=0, n0=4, take_until_maxpvar_below=1, package="GauPro_kernel", design='sFFLHD', selection_method="max_des_red_all", nugget=1e-4); a$run(3, plotlastonly = T)}))
+```
+
+<a href="javascript:slidedeck.loadSlide(2)">Slide 2</a>
+<a href="javascript:slidedeck.loadSlide(11)">Slide 11</a>
+<a href="javascript:slidedeck.loadSlide(20)">Slide 20</a>
+<a href="javascript:slidedeck.loadSlide(29)">Slide 29</a>
+<a href="javascript:slidedeck.loadSlide(38)">Slide 38</a>
+
+[Next test](#/1-D,-$E[g(x)^2]$,-no-$1+\alpha$,-single-logistic)
+
+
+
+## Batch 6
+```{r p6, echo=F, message=F}
+invisible(capture.output(a$run(3, plotlastonly = T)))
+```
+
+## Batch 9
+```{r p9, echo=F, message=F}
+invisible(capture.output(a$run(3, plotlastonly = T)))
+```
+
+## Batch 12
+```{r p12, echo=F, message=F}
+invisible(capture.output(a$run(3, plotlastonly = T)))
+```
+
+## Batch 15
+```{r p15, echo=F, message=F}
+invisible(capture.output(a$run(3, plotlastonly = T)))
+```
+
+## Batch 18
+```{r p18, echo=F, message=F}
+invisible(capture.output(a$run(3, plotlastonly = T)))
+```
+
+## Batch 21
+```{r p21, echo=F, message=F}
+invisible(capture.output(a$run(3, plotlastonly = T)))
+```
+
+## Batch 24
+```{r p24, echo=F, message=F}
+invisible(capture.output(a$run(3, plotlastonly = T)))
+```
+
+## Batch 27
+```{r p27, echo=F, message=F}
+invisible(capture.output(a$run(3, plotlastonly = T)))
+```
+
+
+## 1-D, $E[g(x)^2]$, no $1+\alpha$, single logistic
+
+```{r, echo=F, message=F}
+invisible(capture.output({set.seed(2); csa(); a <- adapt.concept2.sFFLHD.R6$new(D=1,L=3,func=Vectorize(function(xx)logistic(xx,.5,15)), obj="desirability", des_func=des_func_grad_norm2_mean, alpha_des=1, weight_const = 0, n0=4, take_until_maxpvar_below=1, package="GauPro_kernel", design='sFFLHD', selection_method="max_des_red_all", nugget=1e-4); a$run(3)}))
+```
+
+
+<a href="javascript:slidedeck.loadSlide(10)">Slide 11</a>
+
+[Next test](#/1-D,-$E[g(x)^2]$,-no-$1+\alpha$,-single-logistic)
+
+
+
+## Batch 6
+```{r pq6, echo=F, message=F}
+invisible(capture.output(a$run(3, plotlastonly = T)))
+```
+
+## Batch 9
+```{r pq9, echo=F, message=F}
+invisible(capture.output(a$run(3, plotlastonly = T)))
+```
+
+## Batch 12
+```{r pq12, echo=F, message=F}
+invisible(capture.output(a$run(3, plotlastonly = T)))
+```
+
+## Batch 15
+```{r pq15, echo=F, message=F}
+invisible(capture.output(a$run(3, plotlastonly = T)))
+```
+
+## Batch 18
+```{r pq18, echo=F, message=F}
+invisible(capture.output(a$run(3, plotlastonly = T)))
+```
+
+## Batch 21
+```{r pq21, echo=F, message=F}
+invisible(capture.output(a$run(3, plotlastonly = T)))
+```
+
+## Batch 24
+```{r pq24, echo=F, message=F}
+invisible(capture.output(a$run(3, plotlastonly = T)))
+```
+
+## Batch 27
+```{r pq27, echo=F, message=F}
+invisible(capture.output(a$run(3, plotlastonly = T)))
+```
+
+
+
+## 1-D, plateau (bad form), no $1+\alpha$, single logistic
+
+```{r pqr3, echo=F, message=F}
+invisible(capture.output({set.seed(2); csa(); a <- adapt.concept2.sFFLHD.R6$new(D=1,L=3,func=Vectorize(function(xx)logistic(xx,.5,15)), obj="desirability", des_func=des_func_grad_norm2_meaninv_plateau, alpha_des=1, weight_const = 0, n0=4, take_until_maxpvar_below=1, package="GauPro_kernel", design='sFFLHD', selection_method="max_des_red_all", nugget=1e-4); a$run(3)}))
+```
+
+<a href="javascript:slidedeck.loadSlide(2)">Slide 2</a>
+<a href="javascript:slidedeck.loadSlide(11)">Slide 11</a>
+<a href="javascript:slidedeck.loadSlide(20)">Slide 20</a>
+<a href="javascript:slidedeck.loadSlide(29)">Slide 29</a>
+<a href="javascript:slidedeck.loadSlide(38)">Slide 38</a>
+
+[Next test](#/1-D,-$E[g(x)^2]$,-no-$1+\alpha$,-single-logistic)
+
+
+
+## Batch 6
+```{r pqr6, echo=F, message=F}
+invisible(capture.output(a$run(3, plotlastonly = T)))
+```
+
+
+## Batch 9
+```{r pqr9, echo=F, message=F}
+invisible(capture.output(a$run(3, plotlastonly = T)))
+```
+
+## Batch 12
+```{r pqr12, echo=F, message=F}
+invisible(capture.output(a$run(3, plotlastonly = T)))
+```
+
+## Batch 15
+```{r pqr15, echo=F, message=F}
+invisible(capture.output(a$run(3, plotlastonly = T)))
+```
+
+## Batch 18
+```{r pqr18, echo=F, message=F}
+invisible(capture.output(a$run(3, plotlastonly = T)))
+```
+
+## Batch 21
+```{r pqr21, echo=F, message=F}
+invisible(capture.output(a$run(3, plotlastonly = T)))
+```
+
+## Batch 24
+```{r pqr24, echo=F, message=F}
+invisible(capture.output(a$run(3, plotlastonly = T)))
+```
+
+## Batch 27
+```{r pqr27, echo=F, message=F}
+invisible(capture.output(a$run(3, plotlastonly = T)))
+```
+
+
+
+## 1-D, plateau (bad form), 1+10, single logistic
+
+```{r pqrs3, echo=F, message=F}
+invisible(capture.output({set.seed(2); csa(); a <- adapt.concept2.sFFLHD.R6$new(D=1,L=3,func=Vectorize(function(xx)logistic(xx,.5,15)), obj="desirability", des_func=des_func_grad_norm2_meaninv_plateau, alpha_des=10, weight_const = 1, n0=4, take_until_maxpvar_below=1, package="GauPro_kernel", design='sFFLHD', selection_method="max_des_red_all", nugget=1e-4); a$run(3)}))
+```
+
+<a href="javascript:slidedeck.loadSlide(2)">Slide 2</a>
+<a href="javascript:slidedeck.loadSlide(11)">Slide 11</a>
+<a href="javascript:slidedeck.loadSlide(20)">Slide 20</a>
+<a href="javascript:slidedeck.loadSlide(29)">Slide 29</a>
+<a href="javascript:slidedeck.loadSlide(38)">Slide 38</a>
+
+[Next test](#/1-D,-$E[g(x)^2]$,-no-$1+\alpha$,-single-logistic)
+
+
+
+## Batch 6
+```{r pqrs6, echo=F, message=F}
+invisible(capture.output(a$run(3, plotlastonly = T)))
+```
+
+
+## Batch 9
+```{r pqrs9, echo=F, message=F}
+invisible(capture.output(a$run(3, plotlastonly = T)))
+```
+
+## Batch 12
+```{r pqrs12, echo=F, message=F}
+invisible(capture.output(a$run(3, plotlastonly = T)))
+```
+
+## Batch 15
+```{r pqrs15, echo=F, message=F}
+invisible(capture.output(a$run(3, plotlastonly = T)))
+```
+
+## Batch 18
+```{r pqrs18, echo=F, message=F}
+invisible(capture.output(a$run(3, plotlastonly = T)))
+```
+
+## Batch 21
+```{r pqrs21, echo=F, message=F}
+invisible(capture.output(a$run(3, plotlastonly = T)))
+```
+
+## Batch 24
+```{r pqrs24, echo=F, message=F}
+invisible(capture.output(a$run(3, plotlastonly = T)))
+```
+
+## Batch 27
+```{r pqrs27, echo=F, message=F}
+invisible(capture.output(a$run(3, plotlastonly = T)))
+```
+
+
+
+
+
+
+## 2-D, $E[g^2]$, no $1+\alpha$, $sin(2*pi*x[1]) + .5*sin(4*pi*x[1]) + x[2]^2$
+
+```{r d3, echo=F, message=F}
+invisible(capture.output({set.seed(2); csa(); a <- adapt.concept2.sFFLHD.R6$new(D=2,L=3,func=function(x) {sin(2*pi*x[1]) + .5*sin(4*pi*x[1]) +0*rnorm(1,0,.03) + x[2]^2}, obj="desirability", des_func=des_func_grad_norm2_mean, alpha_des=1, weight_const = 0, n0=6, take_until_maxpvar_below=1, package="GauPro_kernel", design='sFFLHD', selection_method="max_des_red_all", nugget=1e-5, verbose=0); a$run(3, plotlastonly=TRUE)}))
+```
+
+<a href="javascript:slidedeck.loadSlide(2)">Slide 2</a>
+<a href="javascript:slidedeck.loadSlide(11)">Slide 11</a>
+<a href="javascript:slidedeck.loadSlide(20)">Slide 20</a>
+<a href="javascript:slidedeck.loadSlide(29)">Slide 29</a>
+<a href="javascript:slidedeck.loadSlide(38)">Slide 38</a>
+
+[Next test](#/1-D,-$E[g(x)^2]$,-no-$1+\alpha$,-single-logistic)
+
+
+
+## Batch 6
+```{r d6, echo=F, message=F}
+invisible(capture.output(a$run(3, plotlastonly = T)))
+```
+
+
+## Batch 9
+```{r d9, echo=F, message=F}
+invisible(capture.output(a$run(3, plotlastonly = T)))
+```
+
+
+
+
+## 2-D, $E[g^2]$, no $1+\alpha$, double logistic
+
+```{r de3, echo=F, message=F}
+invisible(capture.output({set.seed(2); csa(); a <- adapt.concept2.sFFLHD.R6$new(D=2,L=3,func=logistic_plateau, obj="desirability", des_func=des_func_grad_norm2_mean, alpha_des=1, weight_const = 0, n0=6, take_until_maxpvar_below=1, package="GauPro_kernel", design='sFFLHD', selection_method="max_des_red_all", nugget=1e-5, verbose=0); a$run(3, plotlastonly=TRUE)}))
+```
+
+<a href="javascript:slidedeck.loadSlide(2)">Slide 2</a>
+<a href="javascript:slidedeck.loadSlide(11)">Slide 11</a>
+<a href="javascript:slidedeck.loadSlide(20)">Slide 20</a>
+<a href="javascript:slidedeck.loadSlide(29)">Slide 29</a>
+<a href="javascript:slidedeck.loadSlide(38)">Slide 38</a>
+
+[Next test](#/1-D,-$E[g(x)^2]$,-no-$1+\alpha$,-single-logistic)
+
+
+
+## Batch 6
+```{r de6, echo=F, message=F}
+invisible(capture.output(a$run(3, plotlastonly = T)))
+```
+
+
+## Batch 9
+```{r de9, echo=F, message=F}
+invisible(capture.output(a$run(3, plotlastonly = T)))
+```
