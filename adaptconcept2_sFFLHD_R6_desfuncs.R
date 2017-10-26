@@ -409,3 +409,21 @@ des_func_grad_norm2inv_mean <- function(mod, XX, return_se=F, n_samp=300) {
   }
   des
 }
+# Weight variance term with alpha
+des_func_grad_norm2_mean_alpha <- function(mod, XX, alpha) {#browser()
+  if ("IGP_GauPro_kernel" %in% class(mod)) {
+    # des <- mod$mod$grad_norm2_dist(XX=XX)$mean
+    dist <- mod$mod$grad_dist(XX=XX)
+  } else if ("IGP_laGP_GauPro_kernel" %in% class(mod)) {
+    # des <- mod$mod.extra$GauPro$mod$grad_norm2_dist(XX=XX)$mean
+    dist <- mod$mod.extra$GauPro$mod$grad_dist(XX=XX)
+  } else {
+    stop("des_func_grad_norm2_mean only works with GauPro_kernel_model or laGP_GauPro_kernel")
+  }
+  # evals <- eigen(dist$var, symmetric = TRUE, only.values = TRUE)
+  des <- apply(dist$mean, 1, function(x) {sum(x^2)}) + alpha * apply(dist$cov, 1, function(x) {sum(eigen(x, symmetric = T, only.values = T)$val)})
+  des
+}
+get_des_func_grad_norm2_mean_alpha <- function(alpha) {
+  function(mod,XX) {des_func_grad_norm2_mean_alpha(mod, XX, alpha=alpha)}
+}

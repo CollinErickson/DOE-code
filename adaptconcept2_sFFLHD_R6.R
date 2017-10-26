@@ -1004,7 +1004,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       # csa(); plot(pvs, pvs2); lmp <- lm(pvs2~pvs); lmp
      
       # Reduce the number to consider if large
-      if (T) {browser()
+      if (T) {#browser()
         if (ell < self$b) {
          numtokeep <- self$nconsider[min(length(self$nconsider), ell+1)] + 1 - self$b # b-1 selected that aren't in consideration
          Xopts_to_consider <- order(int_werror_vals,decreasing = F)[1:min(length(int_werror_vals), numtokeep)]
@@ -1385,5 +1385,8 @@ if (F) {
   # 2D logistic
   set.seed(2); csa(); a <- adapt.concept2.sFFLHD.R6$new(D=2,L=3,func=logistic_plateau, obj="desirability", des_func=des_func_grad_norm2_meaninv_plateau, alpha_des=1e2, n0=4, take_until_maxpvar_below=1, package="GauPro_kernel", design='sFFLHD', selection_method="max_des_red_all"); a$run(1)
   a3 <- adapt.concept2.sFFLHD.R6$new(D=2,L=3,func=function(x)logistic_plateau(x[1])*logistic_plateau(x[2]), obj="desirability", des_func=des_func_grad_norm2_meaninv_plateau, alpha_des=1e2, n0=10, take_until_maxpvar_below=1, package="GauPro_kernel", design='sFFLHD', selection_method="max_des_red_all")
+  
+  # Try weighted mean grad norm2 with alpha for variance term.
+  set.seed(2); csa(); a <- adapt.concept2.sFFLHD.R6$new(D=1,L=3,func=Vectorize(logistic_plateau), obj="desirability", des_func=get_des_func_grad_norm2_mean_alpha(alpha=1), alpha_des=1,weight_const=0, n0=3, take_until_maxpvar_below=1, package="GauPro_kernel", design='sFFLHD', selection_method="max_des_red_all"); a$run(1)
   
 }
