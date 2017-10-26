@@ -1,7 +1,7 @@
 ---
 title: "Meeting 10/18"
 author: "Collin Erickson"
-date: "October 16, 2017"
+date: "October 18, 2017"
 output: ioslides_presentation
 ---
 
@@ -29,7 +29,7 @@ invisible(capture.output({set.seed(4); csa(); a <- adapt.concept2.sFFLHD.R6$new(
 <a href="javascript:slidedeck.loadSlide(29)">Slide 29</a>
 <a href="javascript:slidedeck.loadSlide(38)">Slide 38</a>
 
-[Next test](#/1-D,-$E[g(x)^2]$,-no-$1+\alpha$,-single-logistic)
+<!-- [Next test](#/1-D,-$E[g(x)^2]$,-no-$1+\alpha$,-single-logistic) -->
 
 
 
@@ -77,13 +77,15 @@ invisible(capture.output(a$run(3, plotlastonly = T)))
 ## 1-D, $E[g(x)^2]$, no $1+\alpha$, single logistic
 
 ```{r, echo=F, message=F}
-invisible(capture.output({set.seed(2); csa(); a <- adapt.concept2.sFFLHD.R6$new(D=1,L=3,func=Vectorize(function(xx)logistic(xx,.5,15)), obj="desirability", des_func=des_func_grad_norm2_mean, alpha_des=1, weight_const = 0, n0=4, take_until_maxpvar_below=1, package="GauPro_kernel", design='sFFLHD', selection_method="max_des_red_all", nugget=1e-4); a$run(3)}))
+invisible(capture.output({set.seed(2); csa(); a <- adapt.concept2.sFFLHD.R6$new(D=1,L=3,func=Vectorize(function(xx)logistic(xx,.5,15)), obj="desirability", des_func=des_func_grad_norm2_mean, alpha_des=1, weight_const = 0, n0=4, take_until_maxpvar_below=1, package="GauPro_kernel", design='sFFLHD', selection_method="max_des_red_all", nugget=1e-4); a$run(3, plotlastonly=T)}))
 ```
 
 
-<a href="javascript:slidedeck.loadSlide(10)">Slide 11</a>
-
-[Next test](#/1-D,-$E[g(x)^2]$,-no-$1+\alpha$,-single-logistic)
+<a href="javascript:slidedeck.loadSlide(2)">Slide 2</a>
+<a href="javascript:slidedeck.loadSlide(11)">Slide 11</a>
+<a href="javascript:slidedeck.loadSlide(20)">Slide 20</a>
+<a href="javascript:slidedeck.loadSlide(29)">Slide 29</a>
+<a href="javascript:slidedeck.loadSlide(38)">Slide 38</a>
 
 
 
@@ -132,7 +134,7 @@ invisible(capture.output(a$run(3, plotlastonly = T)))
 ## 1-D, plateau (bad form), no $1+\alpha$, single logistic
 
 ```{r pqr3, echo=F, message=F}
-invisible(capture.output({set.seed(2); csa(); a <- adapt.concept2.sFFLHD.R6$new(D=1,L=3,func=Vectorize(function(xx)logistic(xx,.5,15)), obj="desirability", des_func=des_func_grad_norm2_meaninv_plateau, alpha_des=1, weight_const = 0, n0=4, take_until_maxpvar_below=1, package="GauPro_kernel", design='sFFLHD', selection_method="max_des_red_all", nugget=1e-4); a$run(3)}))
+invisible(capture.output({set.seed(2); csa(); a <- adapt.concept2.sFFLHD.R6$new(D=1,L=3,func=Vectorize(function(xx)logistic(xx,.5,15)), obj="desirability", des_func=des_func_grad_norm2_meaninv_plateau, alpha_des=1, weight_const = 0, n0=4, take_until_maxpvar_below=1, package="GauPro_kernel", design='sFFLHD', selection_method="max_des_red_all", nugget=1e-4); a$run(3, plotlastonly=T)}))
 ```
 
 <a href="javascript:slidedeck.loadSlide(2)">Slide 2</a>
@@ -191,7 +193,7 @@ invisible(capture.output(a$run(3, plotlastonly = T)))
 ## 1-D, plateau (bad form), 1+10, single logistic
 
 ```{r pqrs3, echo=F, message=F}
-invisible(capture.output({set.seed(2); csa(); a <- adapt.concept2.sFFLHD.R6$new(D=1,L=3,func=Vectorize(function(xx)logistic(xx,.5,15)), obj="desirability", des_func=des_func_grad_norm2_meaninv_plateau, alpha_des=10, weight_const = 1, n0=4, take_until_maxpvar_below=1, package="GauPro_kernel", design='sFFLHD', selection_method="max_des_red_all", nugget=1e-4); a$run(3)}))
+invisible(capture.output({set.seed(2); csa(); a <- adapt.concept2.sFFLHD.R6$new(D=1,L=3,func=Vectorize(function(xx)logistic(xx,.5,15)), obj="desirability", des_func=des_func_grad_norm2_meaninv_plateau, alpha_des=10, weight_const = 1, n0=4, take_until_maxpvar_below=1, package="GauPro_kernel", design='sFFLHD', selection_method="max_des_red_all", nugget=1e-4); a$run(3, plotlastonly=T)}))
 ```
 
 <a href="javascript:slidedeck.loadSlide(2)">Slide 2</a>
@@ -292,7 +294,6 @@ invisible(capture.output({set.seed(2); csa(); a <- adapt.concept2.sFFLHD.R6$new(
 <a href="javascript:slidedeck.loadSlide(29)">Slide 29</a>
 <a href="javascript:slidedeck.loadSlide(38)">Slide 38</a>
 
-[Next test](#/1-D,-$E[g(x)^2]$,-no-$1+\alpha$,-single-logistic)
 
 
 

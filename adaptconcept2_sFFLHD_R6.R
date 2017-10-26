@@ -125,6 +125,8 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
     weight_const = NULL,
     #werror_func = NULL, # weighted error function: sigmahat * (1+alpha_des*des_func())
     selection_method = NULL, # string
+    nconsider = NULL,
+    nconsider_random = NULL,
     
     parallel = NULL, # Should the new values be calculated in parallel? Not for the model, for getting actual new Z values
     parallel_cores = NULL, # Number of cores used for parallel
@@ -147,6 +149,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
                          verbose = 2,
                          design_seed=numeric(0),
                          weight_const=1,
+                         nconsider=Inf, nconsider_random=0,
                          ...) {
       self$D <- D
       self$L <- L
@@ -162,6 +165,8 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       self$des_func_fast <- des_func_fast
       self$weight_const <- weight_const
       self$verbose <- verbose
+      self$nconsider <- nconsider
+      self$nconsider_random <- nconsider_random
       
       if (any(length(D)==0, length(L)==0)) {
         message("D and L must be specified")
@@ -283,6 +288,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       }
     },
     run = function(maxit, plotlastonly=F, noplot=F) {
+      # Run multiple iterations
       i <- 1
       while(i <= maxit) {
         if (self$verbose >= 1) {cat(paste('Starting iteration', self$iteration, "\n"))}
@@ -292,6 +298,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       }
     },
     run1 = function(plotit=TRUE) {
+      # Run single iteration
       if (is.null(self$s)) { # If no design s, then we can only add points when we have enough left, so check to make sure there are at least b left
         if (nrow(self$Xopts) + nrow(self$Xopts_removed) < self$b) {stop("Not enough points left to get a batch #82389, initial design not big enough, b reached")}
       }
@@ -427,11 +434,13 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       print(paste('alpha changed to ', self$obj_nu))
     },
     update_mod = function() {
+      # Update GP model for data
       self$mod$update(Xall=self$X, Zall=self$Z)
     },
     set_params = function() {
     },
     update_stats = function() {
+      # Keep stats of progress over course of experiment
      # self$stats$ <- c(self$stats$, )
      self$stats$iteration <- c(self$stats$iteration, self$iteration)
      self$stats$n <- c(self$stats$n, nrow(self$X))
@@ -479,7 +488,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       )
     },
     plot_abserr = function(cex=1, plot.axes=TRUE) {
-      cf_func(function(xx){sqrt((self$mod$predict(xx) - self$func(xx))^2)},
+      cf_func(function(xx){sqrt((self$mod$predict(xx) - apply(xx, 1, self$func))^2)},
               n = 20, mainminmax_minmax = F, pretitle="AbsErr ", batchmax=Inf,
               cex=cex, plot.axes=plot.axes)
     },
@@ -529,7 +538,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       
       # If func_fast plot des vs se and des vs abserror
       if (self$func_fast) {
-        Xplot_abserror <- abs(self$mod$predict(Xplot) - self$func(Xplot))
+        Xplot_abserror <- abs(self$mod$predict(Xplot) - apply(Xplot, 1, self$func))
         plot(NULL, xlim=c(min(Xplot_des), max(Xplot_des)), 
              ylim=c(min(Xplot_abserror, Xplot_se), max(Xplot_abserror, Xplot_se)),
              pch=19, xlab='SE', ylab='Des', cex.axis=cex.axis)#, log='xy')
@@ -611,7 +620,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       if (self$func_fast) {
         Zopts <- apply(self$Xopts, 1, self$func)
         points(self$Xopts, Zopts, col=4, pch=19)
-        points(x, self$func(x), type='l', col=3, lwd=3)
+        points(x, apply(x, 1, self$func), type='l', col=3, lwd=3)
       }
       points(self$X, self$Z, pch=19, cex=2)
       if (self$iteration > 1) { # Plot last L separately
@@ -779,7 +788,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       if (self$selection_method == "SMED") {
         Yall.try <- try(Yall <- self$obj_func(rbind(self$X, self$Xopts)))
       } else if (self$selection_method == "SMED_true") {
-        Yall.try <- try(Yall <- self$func(rbind(self$X, self$Xopts)))
+        Yall.try <- try(Yall <- apply(rbind(self$X, self$Xopts), 1, self$func))
       } else {
         stop("no SMED #35230")
       }
@@ -827,7 +836,19 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
     } else {
       gpc <- self$mod$clone(deep=TRUE)
     }
-    Xopts_to_consider <- 1:nrow(self$Xopts)
+    # Get indices of points to consider, take most recent
+    # Xopts_to_consider <- 1:nrow(self$Xopts)
+    if (self$nconsider[1] < nrow(self$Xopts)) {
+      Xopts_to_consider <- 1:self$nconsider[1] + nrow(self$Xopts) - self$nconsider[1]
+    } else {
+      Xopts_to_consider <- 1:nrow(self$Xopts)
+    }
+    # Add back in some older points randomly
+    numrandtoadd <- self$nconsider_random[1]
+    if (numrandtoadd > 0 && length(setdiff(1:nrow(self$Xopts), Xopts_to_consider)) > numrandtoadd) {
+      Xopts_to_consider <- c(Xopts_to_consider, sample(setdiff(1:nrow(self$Xopts), c(Xopts_to_consider, bestL)), numrandtoadd, F))
+    }
+    # Plot contour function of weighted error function
     if (self$D == 2 && self$verbose > 1) {
       dontplotfunc <- TRUE
       if (dontplotfunc) {
@@ -906,11 +927,11 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
     Z_with_bestL <- self$Z
     Znotrun_preds <- gpc$predict(self$Xopts) # Need to use the predictions before each is added
     for (ell in 1:self$b) {
-      cat(paste0('starting iter ', ell,'/',self$b, ', considering ', length(Xopts_to_consider), "/", nrow(self$Xopts), ', bestL is ', paste0(bestL, collapse = ' '), '\n'))
+      cat(paste0('starting iter ', ell,'/',self$b, ', considering ', length(unique(Xopts_to_consider,bestL)), "/", nrow(self$Xopts), ', bestL is ', paste0(bestL, collapse = ' '), '\n'))
       
       # The surrogate values
       if (exists("use_true_for_surrogates") && use_true_for_surrogates) {print("cheating")
-        Znotrun_preds <- self$func(self$Xopts)
+        Znotrun_preds <- apply(self$Xopts, 1, self$func)
       }
       
       int_werror_vals <- rep(Inf, nrow(self$Xopts))
@@ -983,15 +1004,21 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       # csa(); plot(pvs, pvs2); lmp <- lm(pvs2~pvs); lmp
      
       # Reduce the number to consider if large
-      if (F) {
+      if (T) {browser()
         if (ell < self$b) {
-         numtokeep <- if (ell==1) 30 else if (ell==2) 25 else if (ell==3) 20 else if (ell>=4) {15} else NA
+         numtokeep <- self$nconsider[min(length(self$nconsider), ell+1)] + 1 - self$b # b-1 selected that aren't in consideration
          Xopts_to_consider <- order(int_werror_vals,decreasing = F)[1:min(length(int_werror_vals), numtokeep)]
         }
+        
+        # if (ell < self$b) {
+        #   numtokeep <- if (ell==1) 30 else if (ell==2) 25 else if (ell==3) 20 else if (ell>=4) {15} else NA
+        #   Xopts_to_consider <- order(int_werror_vals,decreasing = F)[1:min(length(int_werror_vals), numtokeep)]
+        # }
        
         # Add back in some random ones
-        if (length(setdiff(1:nrow(self$Xopts), Xopts_to_consider)) > 5) {
-         Xopts_to_consider <- c(Xopts_to_consider, sample(setdiff(1:nrow(self$Xopts), Xopts_to_consider), 5, F))
+        numrandtoadd <- self$nconsider_random[min(length(self$nconsider_random), ell+1)]
+        if (numrandtoadd > 0 && length(setdiff(1:nrow(self$Xopts), Xopts_to_consider)) > numrandtoadd) {
+         Xopts_to_consider <- c(Xopts_to_consider, sample(setdiff(1:nrow(self$Xopts), c(Xopts_to_consider, bestL)), numrandtoadd, F))
         }
       }
 
@@ -1159,7 +1186,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
     err <- mod$predict.se(XX)
     if (exists("use_true_for_error") && use_true_for_error) {
       if (runif(1) < .01) print("Using true error #9258332")
-      err <- abs(mod$predict(XX) - self$func(XX))
+      err <- abs(mod$predict(XX) - apply(XX, 1, self$func))
     }
     err * weight_func(XX=XX, mod=mod, des_func=des_func, alpha=alpha,weight_const=weight_const)
   },
