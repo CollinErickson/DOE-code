@@ -341,9 +341,11 @@ des_func_plateau <- function(mod, XX, return_se=F, N_add=1e2) {
 #'   to predict both at once instead of separately
 des_func_grad_norm2_mean <- function(mod, XX, return_se=F) {
   if ("IGP_GauPro_kernel" %in% class(mod)) {
-    des <- mod$mod$grad_norm2_dist(XX=XX)$mean
+    # des <- mod$mod$grad_norm2_dist(XX=XX)$mean
+    des <- mod$mod$grad_norm2_mean(XX=XX)
   } else if ("IGP_laGP_GauPro_kernel" %in% class(mod)) {
-    des <- mod$mod.extra$GauPro$mod$grad_norm2_dist(XX=XX)$mean
+    # des <- mod$mod.extra$GauPro$mod$grad_norm2_dist(XX=XX)$mean
+    des <- mod$mod.extra$GauPro$mod$grad_norm2_mean(XX=XX)
   } else {
     stop("des_func_grad_norm2_mean only works with GauPro_kernel_model or laGP_GauPro_kernel")
   }
@@ -426,4 +428,29 @@ des_func_grad_norm2_mean_alpha <- function(mod, XX, alpha) {#browser()
 }
 get_des_func_grad_norm2_mean_alpha <- function(alpha) {
   function(mod,XX) {des_func_grad_norm2_mean_alpha(mod, XX, alpha=alpha)}
+}
+actual_des_func_grad_norm2_mean_logistic_plateau <- function(XX, mod) {
+  apply(XX, 1, function(x) {
+    f1 <- logistic(x, .85,15)
+    f2 <- logistic(x, .15,15)
+    (15 * (f1*(1-f1) - f2*(1-f2))) ^ 2
+  })
+}
+actual_des_func_grad_norm2_mean_logistic <- function(XX, mod) {
+  apply(XX, 1, function(x) {
+    f1 <- logistic(x, .5,15)
+    (15 * (f1*(1-f1))) ^ 2
+  })
+}
+actual_des_func_grad_norm2_mean_banana <- function(XX, mod) {
+  apply(XX, 1, function(x) {
+    sum(banana_grad(x) ^ 2)
+  })
+}
+actual_des_func_grad_norm2_mean_f4 <- function(XX, mod) {
+  # f4 <- function(x) {sin(2*pi*x[1]) + .5*sin(4*pi*x[1]) + x[2]^2}
+  # gf4 <- function(x) {c(2*pi*cos(2*pi*x[1]) + .5*4*pi*cos(4*pi*x[1]), 2*x[2])}
+  apply(XX, 1, function(x) {
+    sum(gf4(x) ^ 2)
+  })
 }
