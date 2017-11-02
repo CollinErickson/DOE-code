@@ -146,11 +146,12 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
                          new_batches_per_batch=5,
                          parallel=FALSE, parallel_cores="detect",
                          nugget=1e-8,
-                         verbose = 2,
+                         verbose = 0,
                          design_seed=numeric(0),
                          weight_const=1,
-                         nconsider=Inf, nconsider_random=0,
+                         nconsider=c(60,10,10), nconsider_random=0, # CHANGE BACK TO INF for nconsider
                          ...) {
+      self$iteration <- 1
       self$D <- D
       self$L <- L
       self$b <- if (is.null(b)) L else b
@@ -192,6 +193,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
         self$Xopts <- matrix(NA,0,D)
       } else { # Option to give in Xopts
         self$Xopts <- Xopts
+        self$Xopts_tracker_add(Xopts)
       }
       self$Xopts_removed <- matrix(NA,0,D)
       
@@ -199,7 +201,6 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       else {self$package <- package}
       self$mod <- IGP(package = self$package, estimate.nugget=FALSE, nugget=nugget)
       self$stats <- list(iteration=c(),n=c(),pvar=c(),mse=c(), ppu=c(), minbatch=c(), pamv=c(), actual_intwerror=c(), intwerror=c(), intwerror01=c())
-      self$iteration <- 1
       self$obj_nu <- NaN
       
       # set objective function according to obj
@@ -296,6 +297,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
         self$run1(plotit=iplotit)
         i <- i + 1
       }
+      invisible(self)
     },
     run1 = function(plotit=TRUE) {
       # Run single iteration
@@ -310,6 +312,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       }
       #set_params()
       self$iteration <- self$iteration + 1
+      invisible(self)
     },
     add_data = function() {
       # newL will be the L points selected from Xopts
@@ -320,7 +323,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       # First check to see if X hasn't been initialized yet
       if (nrow(self$X) == 0 ) {
         if (!is.null(self$X0)) { # If X0, use it
-          add_newL_points_to_design(newL=NULL, use_X0=TRUE, reason="X0 given")
+          self$add_newL_points_to_design(newL=NULL, use_X0=TRUE, reason="X0 given")
           return()
         } else if (!is.null(self$n0) && self$n0 > 0) { # Take first batches up to n0 and use it
           self$add_new_batches_to_Xopts(num_batches_to_take = ceiling(self$n0/self$L))
@@ -609,7 +612,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
         xwd2 <- ((xwd-min(xwd))/(max(xwd)-min(xwd))) * (ylim[2]-ylim[1])*.2 + ylim[1] - .04*diff(ylim)
         points(x, xdes2, type='l', col=6, lwd=.5)
         points(x, xwd2, type='l', col="cyan", lwd=.5)
-        dens <- density(a$X)
+        dens <- density(self$X)
         ydens <- dens$y
         ydens2 <- ((ydens-min(ydens))/(max(ydens)-min(ydens))) * (ylim[2]-ylim[1])*.2 + ylim[1] - .04*diff(ylim)
         points(dens$x, ydens2, type='l', col="orange", lwd=.5)
@@ -744,11 +747,11 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       n <- nrow(Xnew)
       Xnewdf <- data.frame(iteration_added=rep(self$iteration, n),
                            time_added = rep(Sys.time(), n))
-      if (self$obj %in% c("desirability","des")) {
-        if (self$selection_method == "max_des_red") {
-          
-        }
-      }
+      # if (self$obj %in% c("desirability","des")) {
+      #   if (self$selection_method == "max_des_red") {
+      #     
+      #   }
+      # }
       self$Xopts_tracker <- rbind(self$Xopts_tracker, Xnewdf)
     },
     Xopts_tracker_remove = function(newL) {
@@ -1129,24 +1132,30 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
     mn
   },
   add_newL_points_to_design = function(newL=NULL, use_X0=FALSE, reason) {
-    if (length(newL) != self$b) { 
-      if (length(newL) != self$n0  || nrow(self$X)!=0) {
-        browser()
-        stop("Selected newL not of length L #84274")
+    if (use_X0) { # If X0 given and first iter, add them
+      Xnew <- self$X0
+      removed_tracker_rows <- data.frame(iteration_added=0,time_added=Sys.time())
+    } else { # Else newL must be given
+      if (length(newL) != self$b) { 
+        if (length(newL) != self$n0  || nrow(self$X)!=0) {
+          browser()
+          stop("Selected newL not of length L #84274")
+        }
       }
+      removed_tracker_rows <- self$Xopts_tracker_remove(newL=newL)
+      Xnew <- self$Xopts[newL, , drop=FALSE]
+      self$Xopts <- self$Xopts[-newL, , drop=FALSE]
+      self$batch.tracker <- self$batch.tracker[-newL]
     }
-    removed_tracker_rows <- self$Xopts_tracker_remove(newL=newL)
-    Xnew <- self$Xopts[newL, , drop=FALSE]
-    self$Xopts <- self$Xopts[-newL, , drop=FALSE]
-    self$batch.tracker <- self$batch.tracker[-newL]
     Znew <- self$calculate_Z(Xnew)
     if (any(duplicated(rbind(self$X,Xnew)))) {browser()}
     self$X <- rbind(self$X,Xnew)
     self$Z <- c(self$Z,Znew)
-    
     # Track points added
-    pred <- if (nrow(self$X) == length(newL)) { # Model not fit yet
-              data.frame(fit=rep(NA, length(newL)), se.fit=rep(NA, length(newL)))
+    pred <- if (nrow(self$X) == length(newL) || use_X0) { # Model not fit yet
+              fakelen <- if (use_X0) {nrow(Xnew)} else {length(newL)}
+              data.frame(fit=rep(NA, fakelen), se.fit=rep(NA, fakelen))
+              # data.frame(fit=rep(NA, length(newL)), se.fit=rep(NA, length(newL)))
             } else{
               self$mod$predict(Xnew, se.fit=TRUE)
             }
@@ -1389,4 +1398,7 @@ if (F) {
   # Try weighted mean grad norm2 with alpha for variance term.
   set.seed(2); csa(); a <- adapt.concept2.sFFLHD.R6$new(D=1,L=3,func=Vectorize(logistic_plateau), obj="desirability", des_func=get_des_func_grad_norm2_mean_alpha(alpha=1), alpha_des=1,weight_const=0, n0=3, take_until_maxpvar_below=1, package="GauPro_kernel", design='sFFLHD', selection_method="max_des_red_all"); a$run(1)
   
+  # Set Xopts in beginning
+  set.seed(2); csa(); a <- adapt.concept2.sFFLHD.R6$new(D=1,L=3,func=Vectorize(logistic_plateau), obj="desirability", des_func=des_func_relmax, alpha_des=1e2, n0=4, take_until_maxpvar_below=1, package="GauPro_kernel", design='given', Xopts=matrix(runif(100),ncol=1), selection_method="max_des_red_all"); a$run(1)
+  set.seed(2); csa(); a <- adapt.concept2.sFFLHD.R6$new(D=2,L=3,func=banana, obj="desirability", des_func=des_func_grad_norm2_mean, alpha_des=1e2, n0=30, take_until_maxpvar_below=.9, package="GauPro_kernel", design='given',Xopts=as.matrix(reshape::expand.grid.df(data.frame(a=0:10),data.frame(b=0:10)))[sample(1:100),]/10, selection_method="max_des_red_all_best"); a$run(1)
 }
