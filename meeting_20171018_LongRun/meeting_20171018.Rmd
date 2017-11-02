@@ -307,3 +307,15 @@ invisible(capture.output(a$run(3, plotlastonly = T)))
 ```{r de9, echo=F, message=F}
 invisible(capture.output(a$run(3, plotlastonly = T)))
 ```
+
+
+
+
+
+
+
+
+
+
+
+

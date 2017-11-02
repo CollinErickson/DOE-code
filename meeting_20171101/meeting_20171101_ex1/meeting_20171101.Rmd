@@ -1,0 +1,168 @@
+---
+title: "Meeting 11/1"
+author: "Collin Erickson"
+date: "November 11, 2017"
+output: ioslides_presentation
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, cache=TRUE)
+setwd("..//..//") # Will get reset, but need this to have source below work properly
+source("adaptconcept2_sFFLHD_R6.R")
+
+logistic <- function(x, offset, scl) {1 / (1 + exp(-scl*(x-offset)))}
+logistic_plateau <- function(x) {logistic(x[1], .15, 15) - logistic(x[1], .85,15)}
+```
+
+
+
+## Last week
+
+* Grad has different form
+    + $E[g^Tg] = Eg^TEg + E[(g-Eg)^T(g-Eg)]$
+
+* Compare these with $\alpha$ 1, 0, 1/2, and just using sFFLHD on sigmoid, double sigmoid, banana, and vertgrad
+
+
+
+## Sigmoid, $E[g^2]$
+
+```{r, echo=F, message=F}
+invisible(capture.output({set.seed(5); csa(); m1e1 <- adapt.concept2.sFFLHD.R6$new(D=1,L=3,func=Vectorize(logistic_plateau), obj="desirability", des_func=des_func_grad_norm2_mean, alpha_des=1, weight_const=0, n0=3, take_until_maxpvar_below=1, package="GauPro_kernel", design='sFFLHD', selection_method="max_des_red_all", nugget=1e-6, actual_des_func=actual_des_func_grad_norm2_mean_logistic_plateau); m1e1$run(3, plotlastonly = T)}))
+```
+
+## Batch 6
+```{r, echo=F, message=F}
+invisible(capture.output(m1e1_2 <- m1e1$run(3, plotlastonly = T)))
+```
+
+## Batch 9
+```{r, echo=F, message=F}
+invisible(capture.output(m1e1_3 <- m1e1_2$run(3, plotlastonly = T)))
+```
+
+## Batch 12
+```{r, echo=F, message=F}
+invisible(capture.output(m1e1_4 <- m1e1_3$run(3, plotlastonly = T)))
+```
+
+
+## Sigmoid, $E[g]^2$
+
+```{r m2e1, echo=F, message=F}
+invisible(capture.output({set.seed(5); csa(); m2e1 <- adapt.concept2.sFFLHD.R6$new(D=1,L=3,func=Vectorize(logistic_plateau), obj="desirability", des_func=des_func_mean_grad_norm2, alpha_des=1, weight_const=0, n0=3, take_until_maxpvar_below=1, package="GauPro_kernel", design='sFFLHD', selection_method="max_des_red_all", nugget=1e-6, actual_des_func=actual_des_func_grad_norm2_mean_logistic_plateau); m2e1$run(3, plotlastonly = T)}))
+```
+
+## Batch 6
+```{r m2e1_2, echo=F, message=F}
+invisible(capture.output(m2e1_2 <- m2e1$run(3, plotlastonly = T)))
+```
+
+## Batch 9
+```{r m2e1_3, echo=F, message=F}
+invisible(capture.output(m2e1_3 <- m2e1_2$run(3, plotlastonly = T)))
+```
+
+## Batch 12
+```{r m2e1_4, echo=F, message=F}
+invisible(capture.output(m2e1_4 <- m2e1_3$run(3, plotlastonly = T)))
+```
+
+
+## Sigmoid, $E[g]^2 + 0.5 E[r^Tr]$
+
+```{r, echo=F, message=F}
+invisible(capture.output({set.seed(5); csa(); m3e1 <- adapt.concept2.sFFLHD.R6$new(D=1,L=3,func=Vectorize(logistic_plateau), obj="desirability", des_func=get_des_func_grad_norm2_mean_alpha(alpha=.5), alpha_des=1, weight_const=0, n0=3, take_until_maxpvar_below=1, package="GauPro_kernel", design='sFFLHD', selection_method="max_des_red_all", nugget=1e-6, actual_des_func=actual_des_func_grad_norm2_mean_logistic_plateau); m3e1$run(3, plotlastonly = T)}))
+```
+
+## Batch 6
+```{r, echo=F, message=F}
+invisible(capture.output(m3e1_2 <- m3e1$run(3, plotlastonly = T)))
+```
+
+## Batch 9
+```{r, echo=F, message=F}
+invisible(capture.output(m3e1_3 <- m3e1_2$run(3, plotlastonly = T)))
+```
+
+## Batch 12
+```{r, echo=F, message=F}
+invisible(capture.output(m3e1_4 <- m3e1_3$run(3, plotlastonly = T)))
+```
+
+## Sigmoid, sFFLHD
+
+```{r, echo=F, message=F}
+invisible(capture.output({set.seed(5); csa(); m4e1 <- adapt.concept2.sFFLHD.R6$new(D=1,L=3,func=Vectorize(logistic_plateau), obj="desirability", des_func=get_des_func_grad_norm2_mean_alpha(alpha=.5), alpha_des=1, weight_const=0, n0=3, take_until_maxpvar_below=1, package="GauPro_kernel", design='sFFLHD', selection_method="nonadapt", nugget=1e-6, actual_des_func=actual_des_func_grad_norm2_mean_logistic_plateau); m4e1$run(3, plotlastonly = T)}))
+```
+
+## Batch 6
+```{r, echo=F, message=F}
+invisible(capture.output(m4e1_2 <- m4e1$run(3, plotlastonly = T)))
+```
+
+## Batch 9
+```{r, echo=F, message=F}
+invisible(capture.output(m4e1_3 <- m4e1_2$run(3, plotlastonly = T)))
+```
+
+## Batch 12
+```{r, echo=F, message=F}
+invisible(capture.output(m4e1_4 <- m4e1_3$run(3, plotlastonly = T)))
+```
+
+## Comparison of intwerror
+
+```{r, cache=F}
+e1_aiw <- list(m1=m1e1_4$stats$actual_intwerror,
+               m2=m2e1_4$stats$actual_intwerror,
+               m3=m3e1_4$stats$actual_intwerror,
+               m4=m4e1_4$stats$actual_intwerror)
+e1_aiw2 <- reshape2::melt(e1_aiw)
+# print(str(e1_aiw2))
+print(e1_aiw2$L)
+e1_aiw2$iter <- rep(1:length(e1_aiw[[1]]), length(e1_aiw))
+e1_aiw
+```
+
+## Comparison of intwerror
+
+```{r, cache=F}
+library(ggplot2)
+ggplot(data=e1_aiw2, aes(x=iter, y=value, group=L1, color=L1)) + geom_line() + geom_point()  + scale_y_continuous(trans='log10')
+```
+
+## tt
+
+```{r}
+m1e1$stats
+```
+
+## t2
+
+```{r}
+print(m1e1_2$stats)
+print(m4e1_2$stats$actual_intwerror)
+```
+
+
+## Comparison of mse
+
+```{r compiledata_mse, cache=F}
+e1_aiw_mse <- list(m1=m1e1_4$stats$mse,
+               m2=m2e1_4$stats$mse,
+               m3=m3e1_4$stats$mse,
+               m4=m4e1_4$stats$mse)
+e1_aiw2_mse <- reshape2::melt(e1_aiw_mse)
+print(str(e1_aiw2_mse))
+print(e1_aiw2_mse$L)
+e1_aiw2_mse$iter <- rep(1:length(e1_aiw_mse[[1]]), length(e1_aiw_mse))
+e1_aiw_mse
+```
+
+## Comparison of mse
+
+```{r plotintwerror_mse, cache=F}
+library(ggplot2)
+ggplot(data=e1_aiw2_mse, aes(x=iter, y=value, group=L1, color=L1)) + geom_line() + geom_point()  + scale_y_continuous(trans='log10')
+```
