@@ -431,14 +431,14 @@ get_des_func_grad_norm2_mean_alpha <- function(alpha) {
 }
 actual_des_func_grad_norm2_mean_logistic_plateau <- function(XX, mod) {
   apply(XX, 1, function(x) {
-    f1 <- logistic(x, .85,15)
-    f2 <- logistic(x, .15,15)
+    f1 <- logistic(x, offset=.85, scl=15)
+    f2 <- logistic(x, offset=.15, scl=15)
     (15 * (f1*(1-f1) - f2*(1-f2))) ^ 2
   })
 }
-actual_des_func_grad_norm2_mean_logistic <- function(XX, mod) {
+actual_des_func_grad_norm2_mean_logistic15 <- function(XX, mod) {
   apply(XX, 1, function(x) {
-    f1 <- logistic(x, .5,15)
+    f1 <- logistic(x, offset=.5,scl=15)
     (15 * (f1*(1-f1))) ^ 2
   })
 }
@@ -452,5 +452,10 @@ actual_des_func_grad_norm2_mean_f4 <- function(XX, mod) {
   # gf4 <- function(x) {c(2*pi*cos(2*pi*x[1]) + .5*4*pi*cos(4*pi*x[1]), 2*x[2])}
   apply(XX, 1, function(x) {
     sum(gf4(x) ^ 2)
+  })
+}
+actual_des_func_grad_norm2_mean_vertigrad <- function(XX, mod) {
+  apply(XX, 1, function(x) {
+    sum(vertigrad_grad(x) ^ 2)
   })
 }
