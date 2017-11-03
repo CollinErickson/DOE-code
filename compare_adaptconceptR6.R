@@ -39,10 +39,12 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
     selection_method=NULL,
     des_func=NULL,
     alpha_des = NULL,
+    weight_const = NULL,
     actual_des_func=NULL,
     design = NULL,
     number_runs = NULL,
     completed_runs = NULL,
+    pass_list = NULL,
     initialize = function(func, D, L, b=NULL, batches=10, reps=5, 
                           obj=c("nonadapt", "grad"), 
                           #plot_after=c(), plot_every=c(),
@@ -55,9 +57,10 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
                           package="laGP",
                           selection_method='SMED',
                           design='sFFLHD',
-                          des_func=NA, alpha_des=NaN,
+                          des_func=NA, alpha_des=NaN, weight_const=1,
                           actual_des_func=NULL,
-                          ...) {#browser()
+                          pass_list=list() # List of things to pass to adapt concept for each
+                          ) {#browser()
       self$func <- func
       self$D <- D
       self$L <- L
@@ -81,7 +84,9 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
       self$design <- self$design
       self$des_func <- des_func
       self$alpha_des <- alpha_des
+      self$weight_const <- weight_const
       self$actual_des_func <- actual_des_func
+      self$pass_list <- pass_list
       #browser()
       if (is.null(func_string)) {
         if (is.character(func)) {func_string <- func}
@@ -104,7 +109,7 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
                               design_seed=if(!is.null(design_seed_start)) design_seed_start+(1:reps-1)*1e5 else NA),
                    data.frame(reps),
                    data.frame(batches),
-                   data.frame(obj, selection_method, des_func, alpha_des,
+                   data.frame(obj, selection_method, des_func, alpha_des, weight_const,
                               actual_des_func, #=deparse(substitute(actual_des_func)), 
                               actual_des_func_num=1:length(actual_des_func),
                               design,
@@ -120,13 +125,15 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
       group_names <- c()
       
       #browser()
-      for (i_input in c('func_string', 'D', 'L', 'b', 'reps', 'batches', 'obj', 'force_old', 'force_pvar', 'n0','package', 'selection_method', 'design')) {
+      # These are columns to use to split into groups
+      for (i_input in c('func_string', 'D', 'L', 'b', 'reps', 'batches', 'obj', 'force_old', 'force_pvar', 'n0','package', 'selection_method', 'design', 'des_func')) {
         evalparsei <- eval(parse(text=i_input))
         if (length(evalparsei) > 1 && !all(evalparsei == evalparsei[1])) {
           #self$rungrid$Group <- paste(self$rungrid$Group, self$rungrid[,i_input])
           group_names <- c(group_names, i_input)
         }
       }
+      if (length(group_names) == 0) {stop("All inputs are length one, need at least one with multiple values #59102")}
       # browser()
       group_cols <- sapply(group_names, function(gg){paste0(gg,'=',self$rungrid[,gg])})
       self$rungrid$Group <- apply(group_cols, 1, function(rr){paste(rr, collapse=',')})
@@ -182,8 +189,9 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
       #if (is.function(row_grid$func)) {}#funci <- self$func}
       #else if (row_grid$func == "RFF") {row_grid$func <- RFF_get(D=self$D)}
       #else {stop("No function given")}
-      #browser()
-      u <- do.call(adapt.concept2.sFFLHD.R6$new, lapply(self$rungridlist, function(x)x[[irow]]))
+      # browser()
+      input_list <- c(lapply(self$rungridlist, function(x)x[[irow]]), self$pass_list)
+      u <- do.call(adapt.concept2.sFFLHD.R6$new, input_list)
       #browser()
       systime <- system.time(u$run(row_grid$batches,noplot=noplot))
       #browser()
@@ -231,7 +239,7 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
       splitColNames <- c("func","func_string","func_num","D","L","b",
                          "reps","batches",
                          "force_old","force_pvar","force2",
-                         "n0","obj", "batch", "Group","package", "actual_des_func_num", "alpha_des")
+                         "n0","obj", "batch", "Group","package", "actual_des_func_num", "alpha_des", "weight_const")
       self$meandf <- plyr::ddply(
                        self$outdf, 
                        splitColNames, 
@@ -251,19 +259,21 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
       
       invisible(self)
     },
-    plot_MSE_over_batch = function(save_output = self$save_output) {
+    plot_MSE_over_batch = function(save_output = self$save_output, legend_labels=NULL) {
       if (save_output) {
         png(filename = paste0(self$folder_path,"/plotMSE.png"),
             width = 480, height = 480)
       }
-      print(
-        ggplot(data=self$outdf, aes(x=batch, y=mse, group = interaction(num,Group), colour = Group)) +
-          geom_line() +
-          geom_line(inherit.aes = F, data=self$meanlogdf, aes(x=batch, y=mse, colour = Group, size=3, alpha=.5)) +
-          geom_point() + 
-          scale_y_continuous(trans="log", breaks = base_breaks()) + #scale_y_log10() + 
-          xlab("Batch") + ylab("MSE") + guides(size=FALSE, alpha=FALSE)
-      )
+      p <- ggplot(data=self$outdf, aes(x=batch, y=mse, group = interaction(num,Group), colour = Group)) +
+        geom_line() +
+        geom_line(inherit.aes = F, data=self$meanlogdf, aes(x=batch, y=mse, colour = Group, size=3, alpha=.5)) +
+        geom_point() + 
+        scale_y_continuous(trans="log", breaks = base_breaks()) + #scale_y_log10() + 
+        xlab("Batch") + ylab("MSE") + guides(size=FALSE, alpha=FALSE)
+      if (!is.null(legend_labels)) {
+        p <- p + scale_color_hue(labels=legend_labels)
+      }
+      print(p)
       if (save_output) {dev.off()}
       invisible(self)
     },
