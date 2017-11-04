@@ -455,7 +455,10 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
      self$stats$actual_intwerror <- c(self$stats$actual_intwerror, self$actual_intwerror_func())
      if (!is.null(self$des_func)) {
        self$stats$intwerror <- c(self$stats$intwerror, self$intwerror_func())
-       self$stats$intwerror01 <- c(self$stats$intwerror01, self$intwerror_func(weight_const=0,alpha=1))
+       self$stats$intwerror01 <- c(self$stats$intwerror01, NaN) # Not using now, should be sped up anyways 
+                                                                # by doing at the same time as intwerror, 
+                                                                # bad to do it this way 
+                                                                # self$intwerror_func(weight_const=0,alpha=1))
      } else {
        self$stats$intwerror <- c(self$stats$intwerror, NaN)
        self$stats$intwerror01 <- c(self$stats$intwerror01, NaN)
@@ -1401,4 +1404,5 @@ if (F) {
   # Set Xopts in beginning
   set.seed(2); csa(); a <- adapt.concept2.sFFLHD.R6$new(D=1,L=3,func=Vectorize(logistic_plateau), obj="desirability", des_func=des_func_relmax, alpha_des=1e2, n0=4, take_until_maxpvar_below=1, package="GauPro_kernel", design='given', Xopts=matrix(runif(100),ncol=1), selection_method="max_des_red_all"); a$run(1)
   set.seed(2); csa(); a <- adapt.concept2.sFFLHD.R6$new(D=2,L=3,func=banana, obj="desirability", des_func=des_func_grad_norm2_mean, alpha_des=1e2, n0=30, take_until_maxpvar_below=.9, package="GauPro_kernel", design='given',Xopts=as.matrix(reshape::expand.grid.df(data.frame(a=0:10),data.frame(b=0:10)))[sample(1:100),]/10, selection_method="max_des_red_all_best"); a$run(1)
+  set.seed(3); csa(); a <- adapt.concept2.sFFLHD.R6$new(D=2,L=3,func=banana, obj="desirability", des_func=des_func_grad_norm2_mean, alpha_des=1e2, n0=30, take_until_maxpvar_below=.9, package="laGP_GauPro_kernel", design='given',X0=MaxPro::MaxProLHD(n=20,p=2,total_iter=1e4)$Design,Xopts=as.matrix(reshape::expand.grid.df(data.frame(a=0:10),data.frame(b=0:10)))[sample(1:11^2),]/10, selection_method="max_des_red_all_best"); a$run(1)
 }
