@@ -1,5 +1,5 @@
 ---
-title: "Meeting 11/1 Example 3, many runs"
+title: "Meeting 11/1 Example 1, many runs"
 author: "Collin Erickson"
 date: "November 11, 2017"
 output: ioslides_presentation
@@ -19,17 +19,15 @@ source("compare_adaptconceptR6.R")
 Not useful, no randomness
 
 ```{r runs}
-ncd <- 10
-Xopts <- as.matrix(reshape::expand.grid.df(data.frame(a=0:ncd),data.frame(b=0:ncd)))[sample(1:(ncd+1)^2),]/ncd
 c1 <- compare.adaptR6$new(
-  D=2,L=1,func=banana, obj="desirability", alpha_des=1, weight_const=0, #n0=8, #take_until_maxpvar_below=1,
+  D=1,L=1,func=logistic_plateau, obj="desirability", alpha_des=1, weight_const=0, #n0=8, #take_until_maxpvar_below=1,
   package="laGP_GauPro_kernel", 
-  design='given', actual_des_func='actual_des_func_grad_norm2_mean_banana', #verbose=0,#, nconsider=c(50,20,10),  nugget=1e-6, nconsider_random=c(0),
+  design='given', actual_des_func='actual_des_func_grad_norm2_mean_logistic_plateau', #verbose=0,#, nconsider=c(50,20,10),  nugget=1e-6, nconsider_random=c(0),
   selection_method=c("max_des_red_all","max_des_red_all","max_des_red_all","nonadapt"),
   des_func=c('des_func_grad_norm2_mean','des_func_mean_grad_norm2','get_des_func_grad_norm2_mean_alpha(alpha=.5)','des_func_grad_norm2_mean'),
-  batches=30, reps=10, 
-  pass_list=list(X0=lhs::optimumLHS(n=20,k=2),
-                 Xopts=Xopts,
+  batches=4, reps=3, 
+  pass_list=list(X0=matrix(c(0,1/3,2/3,1),ncol=1),
+                 Xopts=matrix(1:99,ncol=1)[sample(1:99),,drop=FALSE]/100,
                  nconsider=c(Inf,10,10)
                  )
 
@@ -104,7 +102,7 @@ p1
 
 ## enddf
 
-```{r enddf}
+```{r}
 c1$enddf
 ```
 

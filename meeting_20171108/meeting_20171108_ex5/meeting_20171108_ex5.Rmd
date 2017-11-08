@@ -1,0 +1,331 @@
+---
+title: "Meeting 11/8 Example 5 quad peaks"
+author: "Collin Erickson"
+date: "November 8, 2017"
+output: ioslides_presentation
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, cache=TRUE)
+setwd("..//..//") # Will get reset, but need this to have source below work properly
+source("adaptconcept2_sFFLHD_R6.R")
+```
+
+
+
+## Last week
+
+* Not big difference when using $\alpha=$ 0, 0.5, 1 (esp last two)
+
+* Want to test one at a time with grid of candidate points
+
+
+```{r runfunc}
+ncd <- 10
+Xopts <- as.matrix(reshape::expand.grid.df(data.frame(a=0:ncd),data.frame(b=0:ncd)))[sample(1:(ncd+1)^2),]/ncd
+runfunc <- function(des_func, selection_method="max_des_red_all") {
+  adapt.concept2.sFFLHD.R6$new(D=2,L=1,func=quad_peaks, obj="desirability", des_func=des_func, 
+                               alpha_des=1, weight_const=0, take_until_maxpvar_below=1, 
+                               package="laGP_GauPro_kernel", design='given', 
+                               selection_method=selection_method, nugget=1e-6, 
+                               actual_des_func=actual_des_func_grad_norm2_mean_quad_peaks, 
+                               verbose=0, nconsider=c(Inf,10,10), nconsider_random=c(0),
+                               X0=lhs::optimumLHS(n=6,k=2),
+                               Xopts=Xopts
+                               )
+}
+```
+
+
+
+## Quad peaks, $E[g^2]$, $\alpha=1$
+
+```{r m1e1, echo=F, message=F}
+invisible(capture.output({set.seed(5); csa(); m1e1 <- runfunc(des_func=des_func_grad_norm2_mean); m1e1$run(3, plotlastonly = T)}))
+```
+
+## Batch 6 $\alpha=1$
+```{r m1e1_2, echo=F, message=F}
+invisible(capture.output(m1e1_2 <- m1e1$run(3, plotlastonly = T)))
+```
+
+
+## Batch 9 $\alpha=1$
+```{r m1e1_3, echo=F, message=F}
+invisible(capture.output(m1e1_3 <- m1e1_2$run(3, plotlastonly = T)))
+```
+
+## Batch 12 $\alpha=1$
+```{r m1e1_4, echo=F, message=F}
+invisible(capture.output(m1e1_4 <- m1e1_3$run(3, plotlastonly = T)))
+```
+
+## Batch 15 $\alpha=1$
+```{r m1e1_5, echo=F, message=F}
+invisible(capture.output(m1e1_5 <- m1e1_4$run(3, plotlastonly = T)))
+```
+
+## Batch 18 $\alpha=1$
+```{r m1e1_6, echo=F, message=F}
+invisible(capture.output(m1e1_6 <- m1e1_5$run(3, plotlastonly = T)))
+```
+
+## Batch 21 $\alpha=1$
+```{r m1e1_7, echo=F, message=F}
+invisible(capture.output(m1e1_7 <- m1e1_6$run(3, plotlastonly = T)))
+```
+
+## Batch 24 $\alpha=1$
+```{r m1e1_8, echo=F, message=F}
+invisible(capture.output(m1e1_8 <- m1e1_7$run(3, plotlastonly = T)))
+```
+
+## Batch 27 $\alpha=1$
+```{r m1e1_9, echo=F, message=F}
+invisible(capture.output(m1e1_9 <- m1e1_8$run(3, plotlastonly = T)))
+```
+
+## Batch 30 $\alpha=1$
+```{r m1e1_10, echo=F, message=F}
+invisible(capture.output(m1e1_10 <- m1e1_9$run(3, plotlastonly = T)))
+```
+
+## Point order
+```{r po1}
+plot(NULL, xlim=c(0,1), ylim=c(0,1))
+text(m1e1_10$X, labels=m1e1_10$X_tracker$iteration_added)
+```
+
+
+
+
+## Quad peaks, $E[g]^2$ $\alpha=0$
+
+```{r m2e1, echo=F, message=F}
+invisible(capture.output({set.seed(5); csa(); m2e1 <- runfunc(des_func=des_func_mean_grad_norm2); m2e1$run(3, plotlastonly = T)}))
+```
+
+## Batch 6 $\alpha=0$
+```{r m2e1_2, echo=F, message=F}
+invisible(capture.output(m2e1_2 <- m2e1$run(3, plotlastonly = T)))
+```
+
+## Batch 9 $\alpha=0$
+```{r m2e1_3, echo=F, message=F}
+invisible(capture.output(m2e1_3 <- m2e1_2$run(3, plotlastonly = T)))
+```
+
+## Batch 12 $\alpha=0$
+```{r m2e1_4, echo=F, message=F}
+invisible(capture.output(m2e1_4 <- m2e1_3$run(3, plotlastonly = T)))
+```
+
+## Batch 15 $\alpha=0$
+```{r m2e1_5, echo=F, message=F}
+invisible(capture.output(m2e1_5 <- m2e1_4$run(3, plotlastonly = T)))
+```
+
+## Batch 18 $\alpha=0$
+```{r m2e1_6, echo=F, message=F}
+invisible(capture.output(m2e1_6 <- m2e1_5$run(3, plotlastonly = T)))
+```
+
+## Batch 21 $\alpha=0$
+```{r m2e1_7, echo=F, message=F}
+invisible(capture.output(m2e1_7 <- m2e1_6$run(3, plotlastonly = T)))
+```
+
+## Batch 24 $\alpha=0$
+```{r m2e1_8, echo=F, message=F}
+invisible(capture.output(m2e1_8 <- m2e1_7$run(3, plotlastonly = T)))
+```
+
+## Batch 27 $\alpha=0$
+```{r m2e1_9, echo=F, message=F}
+invisible(capture.output(m2e1_9 <- m2e1_8$run(3, plotlastonly = T)))
+```
+
+## Batch 30 $\alpha=0$
+```{r m2e1_10, echo=F, message=F}
+invisible(capture.output(m2e1_10 <- m2e1_9$run(3, plotlastonly = T)))
+```
+
+## Point order
+```{r po2}
+plot(NULL, xlim=c(0,1), ylim=c(0,1))
+text(m2e1_10$X, labels=m2e1_10$X_tracker$iteration_added)
+```
+
+
+## Quad peaks, $E[g]^2 + 0.5 E[r^Tr]$,  $\alpha=0.5$
+
+```{r m3e1, echo=F, message=F}
+invisible(capture.output({set.seed(5); csa(); m3e1 <- runfunc(des_func=get_des_func_grad_norm2_mean_alpha(alpha=.5)); m3e1$run(3, plotlastonly = T)}))
+```
+
+## Batch 6 $\alpha=0.5$
+```{r m3e1_2, echo=F, message=F}
+invisible(capture.output(m3e1_2 <- m3e1$run(3, plotlastonly = T)))
+```
+
+## Batch 9 $\alpha=0.5$
+```{r m3e1_3, echo=F, message=F}
+invisible(capture.output(m3e1_3 <- m3e1_2$run(3, plotlastonly = T)))
+```
+
+## Batch 12 $\alpha=0.5$
+```{r m3e1_4, echo=F, message=F}
+invisible(capture.output(m3e1_4 <- m3e1_3$run(3, plotlastonly = T)))
+```
+
+## Batch 15 $\alpha=0.5$
+```{r m3e1_5, echo=F, message=F}
+invisible(capture.output(m3e1_5 <- m3e1_4$run(3, plotlastonly = T)))
+```
+
+## Batch 18 $\alpha=0.5$
+```{r m3e1_6, echo=F, message=F}
+invisible(capture.output(m3e1_6 <- m3e1_5$run(3, plotlastonly = T)))
+```
+
+## Batch 21 $\alpha=0.5$
+```{r m3e1_7, echo=F, message=F}
+invisible(capture.output(m3e1_7 <- m3e1_6$run(3, plotlastonly = T)))
+```
+
+## Batch 24 $\alpha=0.5$
+```{r m3e1_8, echo=F, message=F}
+invisible(capture.output(m3e1_8 <- m3e1_7$run(3, plotlastonly = T)))
+```
+
+## Batch 27 $\alpha=0.5$
+```{r m3e1_9, echo=F, message=F}
+invisible(capture.output(m3e1_9 <- m3e1_8$run(3, plotlastonly = T)))
+```
+
+## Batch 30 $\alpha=0.5$
+```{r m3e1_10, echo=F, message=F}
+invisible(capture.output(m3e1_10 <- m3e1_9$run(3, plotlastonly = T)))
+```
+
+## Point order
+```{r po3}
+plot(NULL, xlim=c(0,1), ylim=c(0,1))
+text(m3e1_10$X, labels=m3e1_10$X_tracker$iteration_added)
+```
+
+
+
+## Quad peaks, random
+
+```{r m4e1, echo=F, message=F}
+invisible(capture.output({set.seed(5); csa(); m4e1 <- runfunc(des_func=des_func_grad_norm2_mean, selection_method="nonadapt"); m4e1$run(3, plotlastonly = T)}))
+```
+
+## Batch 6 random
+```{r m4e1_2, echo=F, message=F}
+invisible(capture.output(m4e1_2 <- m4e1$run(3, plotlastonly = T)))
+```
+
+## Batch 9 random
+```{r m4e1_3, echo=F, message=F}
+invisible(capture.output(m4e1_3 <- m4e1_2$run(3, plotlastonly = T)))
+```
+
+## Batch 12 random
+```{r m4e1_4, echo=F, message=F}
+invisible(capture.output(m4e1_4 <- m4e1_3$run(3, plotlastonly = T)))
+```
+
+## Batch 15 random
+```{r m4e1_5, echo=F, message=F}
+invisible(capture.output(m4e1_5 <- m4e1_4$run(3, plotlastonly = T)))
+```
+
+## Batch 18 random
+```{r m4e1_6, echo=F, message=F}
+invisible(capture.output(m4e1_6 <- m4e1_5$run(3, plotlastonly = T)))
+```
+
+## Batch 21 random
+```{r m4e1_7, echo=F, message=F}
+invisible(capture.output(m4e1_7 <- m4e1_6$run(3, plotlastonly = T)))
+```
+
+## Batch 24 random
+```{r m4e1_8, echo=F, message=F}
+invisible(capture.output(m4e1_8 <- m4e1_7$run(3, plotlastonly = T)))
+```
+
+## Batch 27 random
+```{r m4e1_9, echo=F, message=F}
+invisible(capture.output(m4e1_9 <- m4e1_8$run(3, plotlastonly = T)))
+```
+
+## Batch 30 random
+```{r m4e1_10, echo=F, message=F}
+invisible(capture.output(m4e1_10 <- m4e1_9$run(3, plotlastonly = T)))
+```
+
+## Point order
+```{r po4}
+plot(NULL, xlim=c(0,1), ylim=c(0,1))
+text(m4e1_10$X, labels=m4e1_10$X_tracker$iteration_added)
+```
+
+
+
+
+## Point order
+```{r po_all, fig.width=3, fig.height=3, fig.show='hold'}
+plot(NULL, xlim=c(0,1), ylim=c(0,1), main="alpha=1"); text(m1e1_10$X, labels=m1e1_10$X_tracker$iteration_added)
+plot(NULL, xlim=c(0,1), ylim=c(0,1), main="alpha=0"); text(m2e1_10$X, labels=m2e1_10$X_tracker$iteration_added)
+plot(NULL, xlim=c(0,1), ylim=c(0,1), main="alpha=.5"); text(m3e1_10$X, labels=m3e1_10$X_tracker$iteration_added)
+plot(NULL, xlim=c(0,1), ylim=c(0,1), main="random"); text(m4e1_10$X, labels=m4e1_10$X_tracker$iteration_added)
+```
+
+
+## Comparison of intwerror
+
+```{r compiledata, cache=F}
+e1_aiw <- list(m1=m1e1_10$stats$actual_intwerror,
+               m2=m2e1_10$stats$actual_intwerror,
+               m3=m3e1_10$stats$actual_intwerror,
+               m4=m4e1_10$stats$actual_intwerror)
+e1_aiw2 <- reshape2::melt(e1_aiw)
+print(str(e1_aiw2))
+print(e1_aiw2$L)
+e1_aiw2$iter <- rep(1:length(e1_aiw[[1]]), length(e1_aiw))
+e1_aiw
+```
+
+## Comparison of intwerror
+
+```{r plotintwerror, cache=F}
+library(ggplot2)
+ggplot(data=e1_aiw2, aes(x=iter, y=value, group=L1, color=L1)) + geom_line() + geom_point()  + scale_y_continuous(trans='log10') + 
+  scale_color_hue(labels=expression(alpha==1,alpha==0,alpha==0.5,random))#c("$\alpha=1$",expression(z>0),.5,"random"))
+```
+
+
+## Comparison of mse
+
+```{r compiledata_mse, cache=F}
+e1_aiw_mse <- list(m1=m1e1_10$stats$mse,
+                   m2=m2e1_10$stats$mse,
+                   m3=m3e1_10$stats$mse,
+                   m4=m4e1_10$stats$mse)
+e1_aiw2_mse <- reshape2::melt(e1_aiw_mse)
+print(str(e1_aiw2_mse))
+print(e1_aiw2_mse$L)
+e1_aiw2_mse$iter <- rep(1:length(e1_aiw_mse[[1]]), length(e1_aiw_mse))
+e1_aiw_mse
+```
+
+## Comparison of mse
+
+```{r plotintwerror_mse, cache=F}
+library(ggplot2)
+ggplot(data=e1_aiw2_mse, aes(x=iter, y=value, group=L1, color=L1)) + geom_line() + geom_point()  + scale_y_continuous(trans='log10') + 
+  scale_color_hue(labels=expression(alpha==1,alpha==0,alpha==0.5,random))
+```
