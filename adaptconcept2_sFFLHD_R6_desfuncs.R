@@ -459,3 +459,15 @@ actual_des_func_grad_norm2_mean_vertigrad <- function(XX, mod) {
     sum(vertigrad_grad(x) ^ 2)
   })
 }
+actual_des_func_grad_norm2_mean_quad_peaks <- function(XX, mod) {
+  apply(XX, 1, function(x) {
+    sum(numDeriv::grad(quad_peaks, x) ^ 2)
+  })
+}
+get_num_actual_des_func_grad_norm2_mean <- function(funcforgrad) {
+  function(XX, mod) {
+    apply(XX, 1, function(x) {
+      sum(numDeriv::grad(funcforgrad, x) ^ 2)
+    })
+  }
+}
