@@ -149,7 +149,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
                          verbose = 0,
                          design_seed=numeric(0),
                          weight_const=1,
-                         nconsider=c(60,10,10), nconsider_random=0, # CHANGE BACK TO INF for nconsider
+                         nconsider=Inf, nconsider_random=0, # CHANGE BACK TO INF for nconsider
                          ...) {
       self$iteration <- 1
       self$D <- D
@@ -182,6 +182,8 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
         self$s <- random_design$new(D=D, L=L, use_lhs=FALSE, seed=design_seed)
       } else if (self$design == "lhd") {
         self$s <- random_design$new(D=D, L=L, use_lhs=TRUE, seed=design_seed)
+      } else if (self$design == "sobol") {
+        self$s <- sobol_design$new(D=D, L=L, seed=design_seed)
       } else if (self$design == "given") { # This means Xopts is given in and no new points will be added to design
         self$s <- NULL
       } else {
@@ -615,10 +617,12 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
         xwd2 <- ((xwd-min(xwd))/(max(xwd)-min(xwd))) * (ylim[2]-ylim[1])*.2 + ylim[1] - .04*diff(ylim)
         points(x, xdes2, type='l', col=6, lwd=.5)
         points(x, xwd2, type='l', col="cyan", lwd=.5)
-        dens <- density(self$X)
-        ydens <- dens$y
-        ydens2 <- ((ydens-min(ydens))/(max(ydens)-min(ydens))) * (ylim[2]-ylim[1])*.2 + ylim[1] - .04*diff(ylim)
-        points(dens$x, ydens2, type='l', col="orange", lwd=.5)
+        if (nrow(self$X) > 1) {
+          dens <- density(self$X)
+          ydens <- dens$y
+          ydens2 <- ((ydens-min(ydens))/(max(ydens)-min(ydens))) * (ylim[2]-ylim[1])*.2 + ylim[1] - .04*diff(ylim)
+          points(dens$x, ydens2, type='l', col="orange", lwd=.5)
+        }
       }
       points(x, preds$fit-2*preds$se, type='l', col=2, lwd=2)
       points(x, preds$fit+2*preds$se, type='l', col=2, lwd=2)
@@ -1403,6 +1407,9 @@ if (F) {
   
   # Set Xopts in beginning
   set.seed(2); csa(); a <- adapt.concept2.sFFLHD.R6$new(D=1,L=3,func=Vectorize(logistic_plateau), obj="desirability", des_func=des_func_relmax, alpha_des=1e2, n0=4, take_until_maxpvar_below=1, package="GauPro_kernel", design='given', Xopts=matrix(runif(100),ncol=1), selection_method="max_des_red_all"); a$run(1)
-  set.seed(2); csa(); a <- adapt.concept2.sFFLHD.R6$new(D=2,L=3,func=banana, obj="desirability", des_func=des_func_grad_norm2_mean, alpha_des=1e2, n0=30, take_until_maxpvar_below=.9, package="GauPro_kernel", design='given',Xopts=as.matrix(reshape::expand.grid.df(data.frame(a=0:10),data.frame(b=0:10)))[sample(1:100),]/10, selection_method="max_des_red_all_best"); a$run(1)
+  set.seed(2); csa(); a <- adapt.concept2.sFFLHD.R6$new(D=2,L=3,func=banana, obj="desirability", des_func=des_func_grad_norm2_mean, alpha_des=1e2, n0=30, take_until_maxpvar_below=.9, package="GauPro_kernel", design='given',Xopts=as.matrix(reshape::expand.grid.df(data.frame(a=0:10),data.frame(b=0:10)))[sample(1:121),]/10, selection_method="max_des_red_all_best"); a$run(1)
   set.seed(3); csa(); a <- adapt.concept2.sFFLHD.R6$new(D=2,L=3,func=banana, obj="desirability", des_func=des_func_grad_norm2_mean, alpha_des=1e2, n0=30, take_until_maxpvar_below=.9, package="laGP_GauPro_kernel", design='given',X0=MaxPro::MaxProLHD(n=20,p=2,total_iter=1e4)$Design,Xopts=as.matrix(reshape::expand.grid.df(data.frame(a=0:10),data.frame(b=0:10)))[sample(1:11^2),]/10, selection_method="max_des_red_all_best"); a$run(1)
+  
+  set.seed(2); csa(); a <- adapt.concept2.sFFLHD.R6$new(D=1,L=1,func=Vectorize(function(x){x}), obj="desirability", des_func=get_des_func_grad_norm2_mean_alpha(alpha=1), alpha_des=1,weight_const=0, n0=2, take_until_maxpvar_below=1, package="GauPro_kernel", design='given', selection_method="max_des_red_all", Xopts=matrix(c(.5,lhs::maximinLHS(n=40,k=1)),ncol=1)); a$run(1)
+  
 }
