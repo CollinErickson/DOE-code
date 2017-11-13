@@ -1,0 +1,111 @@
+---
+title: "Meeting 11/1 Example 3, many runs"
+author: "Collin Erickson"
+date: "November 11, 2017"
+output: ioslides_presentation
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, cache=TRUE)
+setwd("..//..//") # Will get reset, but need this to have source below work properly
+source("compare_adaptconceptR6.R")
+```
+
+
+
+
+## Run 10 batches, 10 replications, 1 at a time
+
+Not useful, no randomness
+
+```{r runs}
+ncd <- 10
+Xopts <- as.matrix(reshape::expand.grid.df(data.frame(a=0:ncd),data.frame(b=0:ncd)))[sample(1:(ncd+1)^2),]/ncd
+c1 <- compare.adaptR6$new(
+  D=3,L=1,func=beambending, obj="desirability", alpha_des=1, weight_const=0, #n0=8, #take_until_maxpvar_below=1,
+  package="laGP_GauPro_kernel", 
+  design='given', actual_des_func='actual_des_func_grad_norm2_mean_banana', #verbose=0,#, nconsider=c(50,20,10),  nugget=1e-6, nconsider_random=c(0),
+  selection_method=c("max_des_red_all","max_des_red_all","max_des_red_all","nonadapt"),
+  des_func=c('des_func_grad_norm2_mean','des_func_mean_grad_norm2','get_des_func_grad_norm2_mean_alpha(alpha=.5)','des_func_grad_norm2_mean'),
+  batches=30, reps=10, 
+  pass_list=list(X0=lhs::optimumLHS(n=20,k=2),
+                 Xopts=Xopts,
+                 nconsider=c(Inf,10,10)
+                 )
+
+)
+c1$run_all(noplot = TRUE)
+```
+
+## Weighted error over batch
+
+```{r plotawe, cache=F}
+# c1$plot_AWE_over_batch()
+ggplot(data=c1$outdf, aes(x=batch, y=actual_intwerror, group = interaction(num,Group), colour = Group)) +
+          geom_line() +
+          geom_line(inherit.aes = F, data=c1$meanlogdf, aes(x=batch, y=actual_intwerror, colour = Group, size=3, alpha=.5)) +
+          geom_point() + 
+          # scale_y_log10(breaks = base_breaks()) + #pretty(self$outdf$actual_intwerror, n=5)) + 
+          scale_y_continuous(trans="log", breaks = base_breaks()) + #pretty(self$outdf$actual_intwerror, n=5)) + 
+          xlab("Batch") + ylab("actual_intwerror") + guides(size=FALSE, alpha=FALSE) +
+          scale_color_hue(labels=c('alpha=1','alpha=0','alpha=.5','nonadapt'))
+```
+
+
+
+
+## Weighted error by group
+
+```{r plotawegroup, cache=F}
+# c1$plot_AWE_over_group()
+
+p1 <- ggplot(data=c1$enddf, 
+           aes(x=Group, y=actual_intwerror, colour = Group)
+    )# +  geom_jitter(width=.1)
+p1 <- p1 + geom_boxplot()
+p1 <- p1 + geom_jitter(width=.1)
+p1 <- p1 + #scale_y_log10() + 
+  scale_y_continuous(trans="log", breaks = base_breaks())
+p1 <- p1 + scale_color_hue(labels=c('alpha=1','alpha=0','alpha=.5','nonadapt'))
+p1
+```
+
+
+## Weighted MSE over batch
+
+```{r plotmse, cache=F}
+# c1$plot_MSE_over_batch()
+ggplot(data=c1$outdf, aes(x=batch, y=mse, group = interaction(num,Group), colour = Group)) +
+          geom_line() +
+          geom_line(inherit.aes = F, data=c1$meanlogdf, aes(x=batch, y=mse, colour = Group, size=3, alpha=.5)) +
+          geom_point() + 
+          # scale_y_log10(breaks = base_breaks()) + #pretty(self$outdf$mse, n=5)) + 
+          scale_y_continuous(trans="log", breaks = base_breaks()) + #pretty(self$outdf$mse, n=5)) + 
+          xlab("Batch") + ylab("mse") + guides(size=FALSE, alpha=FALSE) +
+          scale_color_hue(labels=c('alpha=1','alpha=0','alpha=.5','nonadapt'))
+```
+
+
+## Weighted MSE by group
+
+```{r plotmsegroup, cache=F}
+# c1$plot_AWE_over_group()
+
+p1 <- ggplot(data=c1$enddf, 
+           aes(x=Group, y=mse, colour = Group)
+    )# +  geom_jitter(width=.1)
+p1 <- p1 + geom_boxplot()
+p1 <- p1 + geom_jitter(width=.1)
+p1 <- p1 + #scale_y_log10() +
+  scale_y_continuous(trans="log", breaks = base_breaks())
+p1 <- p1 + scale_color_hue(labels=c('alpha=1','alpha=0','alpha=.5','nonadapt'))
+p1
+```
+
+## enddf
+
+```{r enddf}
+c1$enddf
+```
+
+
