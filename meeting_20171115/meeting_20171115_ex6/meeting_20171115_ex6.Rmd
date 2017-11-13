@@ -1,5 +1,5 @@
 ---
-title: "Meeting 11/8 Example OTL Circuit"
+title: "Meeting 11/8 Example 6 Beam Bending"
 author: "Collin Erickson"
 date: "November 8, 2017"
 output: ioslides_presentation
@@ -24,33 +24,30 @@ source("adaptconcept2_sFFLHD_R6.R")
 # ncd <- 10
 # Xopts <- as.matrix(reshape::expand.grid.df(data.frame(a=0:ncd),data.frame(b=0:ncd)))[sample(1:(ncd+1)^2),]/ncd
 # runfunc <- function(des_func, selection_method="max_des_red_all") {
-#   adapt.concept2.sFFLHD.R6$new(D=2,L=1,func=func, obj="desirability", des_func=des_func, 
+#   adapt.concept2.sFFLHD.R6$new(D=2,L=1,func=beambending, obj="desirability", des_func=des_func, 
 #                                alpha_des=1, weight_const=0, take_until_maxpvar_below=1, 
 #                                package="laGP_GauPro_kernel", design='given', 
 #                                selection_method=selection_method, nugget=1e-6, 
-#                                actual_des_func=actual_des_func_grad_norm2_mean_OTL_Circuit, 
+#                                actual_des_func=actual_des_func_grad_norm2_mean_beambending, 
 #                                verbose=0, nconsider=c(Inf,10,10), nconsider_random=c(0),
 #                                X0=lhs::optimumLHS(n=6,k=2),
 #                                Xopts=Xopts
 #                                )
 # }
 nruns <- 10
-D <- 6
-func <- OTL_Circuit
-actual_des_func <- get_num_actual_des_func_grad_norm2_mean(OTL_Circuit)
 ```
 
 
 
-## OTL circuit, $E[g^2]$, $\alpha=1$, sFFLHD_Lflex batch 3
+## Beam bending, $E[g^2]$, $\alpha=1$, sFFLHD batch 3
 
 ```{r m1_runfunc}
 m1_runfunc <- function() {
-  adapt.concept2.sFFLHD.R6$new(D=D,L=3,func=func, obj="desirability", des_func=des_func_grad_norm2_mean, 
+  adapt.concept2.sFFLHD.R6$new(D=3,L=3,func=beambending, obj="desirability", des_func=des_func_grad_norm2_mean, 
                                alpha_des=1, weight_const=0, take_until_maxpvar_below=1, 
-                               package="laGP_GauPro_kernel", design='sFFLHD_Lflex', 
+                               package="laGP_GauPro_kernel", design='sFFLHD', 
                                selection_method="max_des_red_all", nugget=1e-6, 
-                               actual_des_func=actual_des_func, 
+                               actual_des_func=get_num_actual_des_func_grad_norm2_mean(beambending), 
                                verbose=0, nconsider=c(Inf,10,10), nconsider_random=c(0),
                                n0=9
                                # X0=lhs::optimumLHS(n=6,k=2),
@@ -140,15 +137,15 @@ m1_runs[[i]] <- m1e10
 
 
 
-## OTL circuit, $E[g^2]$, $\alpha=0$, sFFLHD batch 3
+## Beam bending, $E[g^2]$, $\alpha=0$, sFFLHD batch 3
 
 ```{r m2_runfunc}
 m2_runfunc <- function() {
-  adapt.concept2.sFFLHD.R6$new(D=D,L=3,func=func, obj="desirability", des_func=des_func_mean_grad_norm2, 
+  adapt.concept2.sFFLHD.R6$new(D=3,L=3,func=beambending, obj="desirability", des_func=des_func_mean_grad_norm2, 
                                alpha_des=1, weight_const=0, take_until_maxpvar_below=1, 
-                               package="laGP_GauPro_kernel", design='sFFLHD_Lflex', 
+                               package="laGP_GauPro_kernel", design='sFFLHD', 
                                selection_method="max_des_red_all", nugget=1e-6, 
-                               actual_des_func=actual_des_func, 
+                               actual_des_func=get_num_actual_des_func_grad_norm2_mean(beambending), 
                                verbose=0, nconsider=c(Inf,10,10), nconsider_random=c(0),
                                n0=9
                                # X0=lhs::optimumLHS(n=6,k=2),
@@ -237,19 +234,19 @@ m2_runs[[i]] <- m2e10
 
 
 
-## OTL circuit, $E[g^2]$, $\alpha=1$, LHS batch 3
+## Beam bending, $E[g^2]$, $\alpha=1$, LHS batch 3
 
 ```{r m3_runfunc}
 m3_runfunc <- function() {
-  adapt.concept2.sFFLHD.R6$new(D=D,L=3,func=func, obj="desirability", des_func=des_func_grad_norm2_mean, 
+  adapt.concept2.sFFLHD.R6$new(D=3,L=3,func=beambending, obj="desirability", des_func=des_func_grad_norm2_mean, 
                                alpha_des=1, weight_const=0, take_until_maxpvar_below=1, 
                                package="laGP_GauPro_kernel", design='given', 
                                selection_method="max_des_red_all", nugget=1e-6, 
-                               actual_des_func=actual_des_func, 
+                               actual_des_func=get_num_actual_des_func_grad_norm2_mean(beambending), 
                                verbose=0, nconsider=c(Inf,10,10), nconsider_random=c(0),
                                # n0=9
-                               X0=MaxPro::MaxProLHD(n=D*3, p=D, itermax=400)$Design[sample(1:9),], #lhs::optimumLHS(n=6,k=2),
-                               Xopts=MaxPro::MaxProLHD(n=D*30, p=D, itermax=400)$Design[sample(1:90),]
+                               X0=MaxPro::MaxProLHD(n=3*3, p=3, itermax=400)$Design[sample(1:9),], #lhs::optimumLHS(n=6,k=2),
+                               Xopts=MaxPro::MaxProLHD(n=3*30, p=3, itermax=400)$Design[sample(1:90),]
                                )
 }
 m3_runs <- vector("list", nruns)
@@ -337,19 +334,19 @@ m3_runs[[i]] <- m3e10
 
 
 
-## OTL circuit, $E[g^2]$, $\alpha=0$, LHS batch 3
+## Beam bending, $E[g^2]$, $\alpha=0$, LHS batch 3
 
 ```{r m4_runfunc}
 m4_runfunc <- function() {
-  adapt.concept2.sFFLHD.R6$new(D=D,L=3,func=func, obj="desirability", des_func=des_func_mean_grad_norm2, 
+  adapt.concept2.sFFLHD.R6$new(D=3,L=3,func=beambending, obj="desirability", des_func=des_func_mean_grad_norm2, 
                                alpha_des=1, weight_const=0, take_until_maxpvar_below=1, 
                                package="laGP_GauPro_kernel", design='given', 
                                selection_method="max_des_red_all", nugget=1e-6, 
-                               actual_des_func=actual_des_func, 
+                               actual_des_func=get_num_actual_des_func_grad_norm2_mean(beambending), 
                                verbose=0, nconsider=c(Inf,10,10), nconsider_random=c(0),
                                # n0=9
-                               X0=MaxPro::MaxProLHD(n=D*3, p=D, itermax=400)$Design[sample(1:9),], #lhs::optimumLHS(n=6,k=2),
-                               Xopts=MaxPro::MaxProLHD(n=D*30, p=D, itermax=400)$Design[sample(1:90),]
+                               X0=MaxPro::MaxProLHD(n=3*3, p=3, itermax=400)$Design[sample(1:9),], #lhs::optimumLHS(n=6,k=2),
+                               Xopts=MaxPro::MaxProLHD(n=3*30, p=3, itermax=400)$Design[sample(1:90),]
                                )
 }
 m4_runs <- vector("list", nruns)
@@ -439,15 +436,15 @@ m4_runs[[i]] <- m4e10
 
 
 
-## OTL circuit, $E[g^2]$, sFFLHD_Lflex non-adaptive batch 3
+## Beam bending, $E[g^2]$, sFFLHD non-adaptive batch 3
 
 ```{r m5_runfunc}
 m5_runfunc <- function() {
-  adapt.concept2.sFFLHD.R6$new(D=D,L=3,func=func, obj="desirability", des_func=des_func_mean_grad_norm2, 
+  adapt.concept2.sFFLHD.R6$new(D=3,L=3,func=beambending, obj="desirability", des_func=des_func_mean_grad_norm2, 
                                alpha_des=1, weight_const=0, take_until_maxpvar_below=1, 
-                               package="laGP_GauPro_kernel", design='sFFLHD_Lflex', 
+                               package="laGP_GauPro_kernel", design='sFFLHD', 
                                selection_method="nonadapt", nugget=1e-6, 
-                               actual_des_func=actual_des_func, 
+                               actual_des_func=get_num_actual_des_func_grad_norm2_mean(beambending), 
                                verbose=0, nconsider=c(Inf,10,10), nconsider_random=c(0),
                                n0=9
                                )
@@ -536,15 +533,15 @@ m5_runs[[i]] <- m5e10
 
 
 
-## OTL circuit, $E[g^2]$, !!!!!!! sobel non-adaptive batch 3
+## Beam bending, $E[g^2]$, !!!!!!! sobel non-adaptive batch 3
 
 ```{r m6_runfunc}
 m6_runfunc <- function() {
-  adapt.concept2.sFFLHD.R6$new(D=D,L=3,func=func, obj="desirability", des_func=des_func_mean_grad_norm2, 
+  adapt.concept2.sFFLHD.R6$new(D=3,L=3,func=beambending, obj="desirability", des_func=des_func_mean_grad_norm2, 
                                alpha_des=1, weight_const=0, take_until_maxpvar_below=1, 
                                package="laGP_GauPro_kernel", design='sobol', 
                                selection_method="nonadapt", nugget=1e-6, 
-                               actual_des_func=actual_des_func, 
+                               actual_des_func=get_num_actual_des_func_grad_norm2_mean(beambending), 
                                verbose=0, nconsider=c(Inf,10,10), nconsider_random=c(0),
                                n0=9
   )
@@ -633,15 +630,15 @@ m6_runs[[i]] <- m6e10
 
 
 
-## OTL circuit, $E[g^2]$, sFFLHD picking max SE batch 3
+## Beam bending, $E[g^2]$, random non-adaptive batch 3
 
 ```{r m7_runfunc}
 m7_runfunc <- function() {
-  adapt.concept2.sFFLHD.R6$new(D=D,L=3,func=func, obj="desirability", des_func=des_func_mean_grad_norm2, 
+  adapt.concept2.sFFLHD.R6$new(D=3,L=3,func=beambending, obj="desirability", des_func=des_func_mean_grad_norm2, 
                                alpha_des=1, weight_const=0, take_until_maxpvar_below=1, 
-                               package="laGP_GauPro_kernel", design='sFFLHD_Lflex', 
+                               package="laGP_GauPro_kernel", design='sFFLHD', 
                                selection_method="ALM", nugget=1e-6, 
-                               actual_des_func=actual_des_func, 
+                               actual_des_func=get_num_actual_des_func_grad_norm2_mean(beambending), 
                                verbose=0, nconsider=c(Inf,10,10), nconsider_random=c(0),
                                n0=9
   )
@@ -729,16 +726,15 @@ m7_runs[[i]] <- m7e10
 ```
 
 
-
-## OTL circuit, $E[g^2]$, sFFLHD picking max SE red batch 3
+## Beam bending, $E[g^2]$, sFFLHD picking max SE red batch 3
 
 ```{r m8_runfunc}
 m8_runfunc <- function() {
-  adapt.concept2.sFFLHD.R6$new(D=D,L=3,func=func, obj="desirability", des_func=des_func_mean_grad_norm2, 
+  adapt.concept2.sFFLHD.R6$new(D=3,L=3,func=beambending, obj="desirability", des_func=des_func_mean_grad_norm2, 
                                alpha_des=1, weight_const=0, take_until_maxpvar_below=1, 
-                               package="laGP_GauPro_kernel", design='sFFLHD_Lflex', 
+                               package="laGP_GauPro_kernel", design='sFFLHD', 
                                selection_method="ALC", nugget=1e-6, 
-                               actual_des_func=actual_des_func, 
+                               actual_des_func=get_num_actual_des_func_grad_norm2_mean(beambending), 
                                verbose=0, nconsider=c(Inf,10,10), nconsider_random=c(0),
                                n0=9
   )
@@ -901,6 +897,7 @@ for (i in 1:length(m5_runs)) {
 m5_stats
 ```
 
+
 ```{r gatherresultsm6, cache=F}
 m6_stats <- data.frame()
 for (i in 1:length(m6_runs)) {
@@ -928,7 +925,6 @@ for (i in 1:length(m7_runs)) {
 }
 m7_stats
 ```
-
 
 ```{r gatherresultsm8, cache=F}
 m8_stats <- data.frame()
