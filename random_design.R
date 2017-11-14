@@ -46,14 +46,16 @@ sobol_design <- R6::R6Class("sobol_design",
                                  self$D <- D
                                  self$L <- L
                                  self$seed <- seed
-                                 self$X <- randtoolbox::sobol(n=L,dim=D, init=T, seed=seed)
+                                 # D=1 sobol gives vector, as.matrix makes it matrix with 1 col
+                                 self$X <- as.matrix(randtoolbox::sobol(n=L,dim=D, init=T, seed=seed))
                                },
                                get.batch = function(L=self$L) {
                                  # if (length(self$seed) > 0) {
                                  #   set.seed(self$seed)
                                  #   self$seed <- self$seed + 1
                                  # }
-                                 newX <- randtoolbox::sobol(n=L, dim=self$D, init=F)
+                                 # D=1 sobol gives vector, as.matrix makes it matrix with 1 col
+                                 newX <- as.matrix(randtoolbox::sobol(n=L, dim=self$D, init=F))
                                  self$X <- rbind(self$X, newX)
                                  newX
                                }
