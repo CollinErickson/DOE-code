@@ -1,0 +1,1006 @@
+---
+title: "Meeting 11/20 Example Logistic"
+author: "Collin Erickson"
+date: "November 20, 2017"
+output: ioslides_presentation
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, cache=TRUE)
+setwd("..//..//") # Will get reset, but need this to have source below work properly
+source("adaptconcept2_sFFLHD_R6.R")
+```
+
+
+
+## Last week
+
+* Not big difference when using $\alpha=$ 0, 0.5, 1 (esp last two)
+
+* Want to test one at a time with grid of candidate points
+
+* 1D fitting with my GP code
+
+
+```{r runfunc}
+nruns <- 10
+D <- 1
+func <- logistic15
+actual_des_func <- actual_des_func_grad_norm2_mean_logistic15 #get_num_actual_des_func_grad_norm2_mean(logistic15)
+n0 <- 3*D # 3 initial points
+n_batches_to_run <- ceiling((10*D-3*D)/3) #6  # Gets up to 18+3*14=60=10*D
+n_batches_to_run_oneatatime <- 7*D
+LHD_candidate_factor <- 50
+```
+
+
+
+## Logistic, $E[g^2]$, $\alpha=1$, sFFLHD batch 3
+
+```{r m1_runfunc}
+m1_runfunc <- function() {
+  adapt.concept2.sFFLHD.R6$new(D=D,L=3,func=func, obj="desirability", des_func=des_func_grad_norm2_mean, 
+                               alpha_des=1, weight_const=0, take_until_maxpvar_below=1, 
+                               package="GauPro_kernel", design='sFFLHD', 
+                               selection_method="max_des_red_all", nugget=1e-6, 
+                               actual_des_func=actual_des_func, 
+                               verbose=0, nconsider=c(Inf,10,10), nconsider_random=c(0),
+                               n0=n0
+                               # X0=lhs::optimumLHS(n=6,k=2),
+                               # Xopts=Xopts
+                               )
+}
+m1_runs <- vector("list", nruns)
+```
+
+
+```{r m1e1, echo=F, message=F}
+invisible(capture.output({set.seed(1); csa(); m1e1 <- m1_runfunc(); m1e1$run(n_batches_to_run, plotlastonly = T)}))
+m1_runs[[1]] <- m1e1
+```
+
+## m1e2
+
+```{r m1e2, echo=F, message=F}
+i <- 2
+invisible(capture.output({set.seed(i); csa(); m1e2 <- m1_runfunc(); m1e2$run(n_batches_to_run, plotlastonly = T)}))
+m1_runs[[i]] <- m1e2
+```
+
+## m1e3
+
+```{r m1e3, echo=F, message=F}
+i <- 3
+invisible(capture.output({set.seed(i); csa(); m1e3 <- m1_runfunc(); m1e3$run(n_batches_to_run, plotlastonly = T)}))
+m1_runs[[i]] <- m1e3
+```
+
+## m1e4
+
+```{r m1e4, echo=F, message=F}
+i <- 4
+invisible(capture.output({set.seed(i); csa(); m1e4 <- m1_runfunc(); m1e4$run(n_batches_to_run, plotlastonly = T)}))
+m1_runs[[i]] <- m1e4
+```
+
+## m1e5
+
+```{r m1e5, echo=F, message=F}
+i <- 5
+invisible(capture.output({set.seed(i); csa(); m1e5 <- m1_runfunc(); m1e5$run(n_batches_to_run, plotlastonly = T)}))
+m1_runs[[i]] <- m1e5
+```
+
+## m1e6
+
+```{r m1e6, echo=F, message=F}
+i <- 6
+invisible(capture.output({set.seed(i); csa(); m1e6 <- m1_runfunc(); m1e6$run(n_batches_to_run, plotlastonly = T)}))
+m1_runs[[i]] <- m1e6
+```
+
+## m1e7
+
+```{r m1e7, echo=F, message=F}
+i <- 7
+invisible(capture.output({set.seed(i); csa(); m1e7 <- m1_runfunc(); m1e7$run(n_batches_to_run, plotlastonly = T)}))
+m1_runs[[i]] <- m1e7
+```
+
+## m1e8
+
+```{r m1e8, echo=F, message=F}
+i <- 8
+invisible(capture.output({set.seed(i); csa(); m1e8 <- m1_runfunc(); m1e8$run(n_batches_to_run, plotlastonly = T)}))
+m1_runs[[i]] <- m1e8
+```
+
+## m1e9
+
+```{r m1e9, echo=F, message=F}
+i <- 9
+invisible(capture.output({set.seed(i); csa(); m1e9 <- m1_runfunc(); m1e9$run(n_batches_to_run, plotlastonly = T)}))
+m1_runs[[i]] <- m1e9
+```
+
+## m1e10
+
+```{r m1e10, echo=F, message=F}
+i <- 10
+invisible(capture.output({set.seed(i); csa(); m1e10 <- m1_runfunc(); m1e10$run(n_batches_to_run, plotlastonly = T)}))
+m1_runs[[i]] <- m1e10
+```
+
+
+
+## Logistic, $E[g^2]$, $\alpha=0$, sFFLHD batch 3
+
+```{r m2_runfunc}
+m2_runfunc <- function() {
+  adapt.concept2.sFFLHD.R6$new(D=D,L=3,func=func, obj="desirability", des_func=des_func_mean_grad_norm2, 
+                               alpha_des=1, weight_const=0, take_until_maxpvar_below=1, 
+                               package="GauPro_kernel", design='sFFLHD', 
+                               selection_method="max_des_red_all", nugget=1e-6, 
+                               actual_des_func=actual_des_func, 
+                               verbose=0, nconsider=c(Inf,10,10), nconsider_random=c(0),
+                               n0=n0
+                               # X0=lhs::optimumLHS(n=6,k=2),
+                               # Xopts=Xopts
+                               )
+}
+m2_runs <- vector("list", nruns)
+```
+
+
+```{r m2e1, echo=F, message=F}
+invisible(capture.output({set.seed(1); csa(); m2e1 <- m2_runfunc(); m2e1$run(n_batches_to_run, plotlastonly = T)}))
+m2_runs[[1]] <- m2e1
+```
+
+```{r m2e2, echo=F, message=F}
+# i <- 2
+invisible(capture.output({set.seed(2); csa(); m2e2 <- m2_runfunc(); m2e2$run(n_batches_to_run, plotlastonly = T)}))
+m2_runs[[2]] <- m2e2
+# invisible(capture.output({set.seed(i); csa(); m2_runs[[i]] <- m2_runfunc(); m2_runs[[i]]$run(n_batches_to_run, plotlastonly = T)}))
+```
+
+```{r m2e3, echo=F, message=F}
+invisible(capture.output({set.seed(3); csa(); m2e3 <- m2_runfunc(); m2e3$run(n_batches_to_run, plotlastonly = T)}))
+m2_runs[[3]] <- m2e3
+```
+
+## m2e4
+
+```{r m2e4, echo=F, message=F}
+i <- 4
+invisible(capture.output({set.seed(i); csa(); m2e4 <- m2_runfunc(); m2e4$run(n_batches_to_run, plotlastonly = T)}))
+m2_runs[[i]] <- m2e4
+```
+
+## m2e5
+
+```{r m2e5, echo=F, message=F}
+i <- 5
+invisible(capture.output({set.seed(i); csa(); m2e5 <- m2_runfunc(); m2e5$run(n_batches_to_run, plotlastonly = T)}))
+m2_runs[[i]] <- m2e5
+```
+
+## m2e6
+
+```{r m2e6, echo=F, message=F}
+i <- 6
+invisible(capture.output({set.seed(i); csa(); m2e6 <- m2_runfunc(); m2e6$run(n_batches_to_run, plotlastonly = T)}))
+m2_runs[[i]] <- m2e6
+```
+
+## m2e7
+
+```{r m2e7, echo=F, message=F}
+i <- 7
+invisible(capture.output({set.seed(i); csa(); m2e7 <- m2_runfunc(); m2e7$run(n_batches_to_run, plotlastonly = T)}))
+m2_runs[[i]] <- m2e7
+```
+
+## m2e8
+
+```{r m2e8, echo=F, message=F}
+i <- 8
+invisible(capture.output({set.seed(i); csa(); m2e8 <- m2_runfunc(); m2e8$run(n_batches_to_run, plotlastonly = T)}))
+m2_runs[[i]] <- m2e8
+```
+
+## m2e9
+
+```{r m2e9, echo=F, message=F}
+i <- 9
+invisible(capture.output({set.seed(i); csa(); m2e9 <- m2_runfunc(); m2e9$run(n_batches_to_run, plotlastonly = T)}))
+m2_runs[[i]] <- m2e9
+```
+
+## m2e10
+
+```{r m2e10, echo=F, message=F}
+i <- 10
+invisible(capture.output({set.seed(i); csa(); m2e10 <- m2_runfunc(); m2e10$run(n_batches_to_run, plotlastonly = T)}))
+m2_runs[[i]] <- m2e10
+```
+
+
+
+
+
+
+## Logistic, $E[g^2]$, $\alpha=1$, LHS batch 3
+
+```{r m3_runfunc}
+m3_runfunc <- function() {
+  adapt.concept2.sFFLHD.R6$new(D=D,L=3,func=func, obj="desirability", des_func=des_func_grad_norm2_mean, 
+                               alpha_des=1, weight_const=0, take_until_maxpvar_below=1, 
+                               package="GauPro_kernel", design='given', 
+                               selection_method="max_des_red_all", nugget=1e-6, 
+                               actual_des_func=actual_des_func, 
+                               verbose=0, nconsider=c(Inf,10,10), nconsider_random=c(0),
+                               # n0=n0
+                               # X0=MaxPro::MaxProLHD(n=D*3, p=D, itermax=1e4)$Design[sample(1:(D*3)),],
+                               X0=lhs::optimumLHS(n=D*3,k=D),
+                               # Xopts=MaxPro::MaxProLHD(n=D*LHD_candidate_factor, p=D, itermax=1e4)$Design[sample(1:(D*LHD_candidate_factor)),]
+                               Xopts=lhs::optimumLHS(n=D*LHD_candidate_factor, k=D)[sample(1:(D*LHD_candidate_factor)),,drop=F]
+                               )
+}
+m3_runs <- vector("list", nruns)
+```
+
+
+```{r m3e1, echo=F, message=F}
+invisible(capture.output({set.seed(1); csa(); m3e1 <- m3_runfunc(); m3e1$run(n_batches_to_run, plotlastonly = T)}))
+m3_runs[[1]] <- m3e1
+```
+
+## m3e2
+
+```{r m3e2, echo=F, message=F}
+i <- 2
+invisible(capture.output({set.seed(i); csa(); m3e2 <- m3_runfunc(); m3e2$run(n_batches_to_run, plotlastonly = T)}))
+m3_runs[[i]] <- m3e2
+```
+
+## m3e3
+
+```{r m3e3, echo=F, message=F}
+i <- 3
+invisible(capture.output({set.seed(i); csa(); m3e3 <- m3_runfunc(); m3e3$run(n_batches_to_run, plotlastonly = T)}))
+m3_runs[[i]] <- m3e3
+```
+
+## m3e4
+
+```{r m3e4, echo=F, message=F}
+i <- 4
+invisible(capture.output({set.seed(i); csa(); m3e4 <- m3_runfunc(); m3e4$run(n_batches_to_run, plotlastonly = T)}))
+m3_runs[[i]] <- m3e4
+```
+
+## m3e5
+
+```{r m3e5, echo=F, message=F}
+i <- 5
+invisible(capture.output({set.seed(i); csa(); m3e5 <- m3_runfunc(); m3e5$run(n_batches_to_run, plotlastonly = T)}))
+m3_runs[[i]] <- m3e5
+```
+
+## m3e6
+
+```{r m3e6, echo=F, message=F}
+i <- 6
+invisible(capture.output({set.seed(i); csa(); m3e6 <- m3_runfunc(); m3e6$run(n_batches_to_run, plotlastonly = T)}))
+m3_runs[[i]] <- m3e6
+```
+
+## m3e7
+
+```{r m3e7, echo=F, message=F}
+i <- 7
+invisible(capture.output({set.seed(i); csa(); m3e7 <- m3_runfunc(); m3e7$run(n_batches_to_run, plotlastonly = T)}))
+m3_runs[[i]] <- m3e7
+```
+
+## m3e8
+
+```{r m3e8, echo=F, message=F}
+i <- 8
+invisible(capture.output({set.seed(i); csa(); m3e8 <- m3_runfunc(); m3e8$run(n_batches_to_run, plotlastonly = T)}))
+m3_runs[[i]] <- m3e8
+```
+
+## m3e9
+
+```{r m3e9, echo=F, message=F}
+i <- 9
+invisible(capture.output({set.seed(i); csa(); m3e9 <- m3_runfunc(); m3e9$run(n_batches_to_run, plotlastonly = T)}))
+m3_runs[[i]] <- m3e9
+```
+
+## m3e10
+
+```{r m3e10, echo=F, message=F}
+i <- 10
+invisible(capture.output({set.seed(i); csa(); m3e10 <- m3_runfunc(); m3e10$run(n_batches_to_run, plotlastonly = T)}))
+m3_runs[[i]] <- m3e10
+```
+
+
+
+
+
+## Logistic, $E[g^2]$, $\alpha=0$, LHS batch 3
+
+```{r m4_runfunc}
+m4_runfunc <- function() {
+  adapt.concept2.sFFLHD.R6$new(D=D,L=3,func=func, obj="desirability", des_func=des_func_mean_grad_norm2, 
+                               alpha_des=1, weight_const=0, take_until_maxpvar_below=1, 
+                               package="GauPro_kernel", design='given', 
+                               selection_method="max_des_red_all", nugget=1e-6, 
+                               actual_des_func=actual_des_func, 
+                               verbose=0, nconsider=c(Inf,10,10), nconsider_random=c(0),
+                               # n0=n0
+                               # X0=MaxPro::MaxProLHD(n=D*3, p=D, itermax=1e4)$Design[sample(1:(D*3)),],
+                               X0=lhs::optimumLHS(n=D*3,k=D),
+                               # Xopts=MaxPro::MaxProLHD(n=D*LHD_candidate_factor, p=D, itermax=1e4)$Design[sample(1:(D*LHD_candidate_factor)),]
+                               Xopts=lhs::optimumLHS(n=D*LHD_candidate_factor, k=D)[sample(1:(D*LHD_candidate_factor)),,drop=F]
+                               )
+}
+m4_runs <- vector("list", nruns)
+```
+
+
+```{r m4e1, echo=F, message=F}
+invisible(capture.output({set.seed(1); csa(); m4e1 <- m4_runfunc(); m4e1$run(n_batches_to_run, plotlastonly = T)}))
+m4_runs[[1]] <- m4e1
+```
+
+## m4e2
+
+```{r m4e2, echo=F, message=F}
+i <- 2
+invisible(capture.output({set.seed(i); csa(); m4e2 <- m4_runfunc(); m4e2$run(n_batches_to_run, plotlastonly = T)}))
+m4_runs[[i]] <- m4e2
+```
+
+## m4e3
+
+```{r m4e3, echo=F, message=F}
+i <- 3
+invisible(capture.output({set.seed(i); csa(); m4e3 <- m4_runfunc(); m4e3$run(n_batches_to_run, plotlastonly = T)}))
+m4_runs[[i]] <- m4e3
+```
+
+## m4e4
+
+```{r m4e4, echo=F, message=F}
+i <- 4
+invisible(capture.output({set.seed(i); csa(); m4e4 <- m4_runfunc(); m4e4$run(n_batches_to_run, plotlastonly = T)}))
+m4_runs[[i]] <- m4e4
+```
+
+## m4e5
+
+```{r m4e5, echo=F, message=F}
+i <- 5
+invisible(capture.output({set.seed(i); csa(); m4e5 <- m4_runfunc(); m4e5$run(n_batches_to_run, plotlastonly = T)}))
+m4_runs[[i]] <- m4e5
+```
+
+## m4e6
+
+```{r m4e6, echo=F, message=F}
+i <- 6
+invisible(capture.output({set.seed(i); csa(); m4e6 <- m4_runfunc(); m4e6$run(n_batches_to_run, plotlastonly = T)}))
+m4_runs[[i]] <- m4e6
+```
+
+## m4e7
+
+```{r m4e7, echo=F, message=F}
+i <- 7
+invisible(capture.output({set.seed(i); csa(); m4e7 <- m4_runfunc(); m4e7$run(n_batches_to_run, plotlastonly = T)}))
+m4_runs[[i]] <- m4e7
+```
+
+## m4e8
+
+```{r m4e8, echo=F, message=F}
+i <- 8
+invisible(capture.output({set.seed(i); csa(); m4e8 <- m4_runfunc(); m4e8$run(n_batches_to_run, plotlastonly = T)}))
+m4_runs[[i]] <- m4e8
+```
+
+## m4e9
+
+```{r m4e9, echo=F, message=F}
+i <- 9
+invisible(capture.output({set.seed(i); csa(); m4e9 <- m4_runfunc(); m4e9$run(n_batches_to_run, plotlastonly = T)}))
+m4_runs[[i]] <- m4e9
+```
+
+## m4e10
+
+```{r m4e10, echo=F, message=F}
+i <- 10
+invisible(capture.output({set.seed(i); csa(); m4e10 <- m4_runfunc(); m4e10$run(n_batches_to_run, plotlastonly = T)}))
+m4_runs[[i]] <- m4e10
+```
+
+
+
+
+
+
+
+## Logistic, $E[g^2]$, sFFLHD non-adaptive batch 3
+
+```{r m5_runfunc}
+m5_runfunc <- function() {
+  adapt.concept2.sFFLHD.R6$new(D=D,L=3,func=func, obj="desirability", des_func=des_func_mean_grad_norm2, 
+                               alpha_des=1, weight_const=0, take_until_maxpvar_below=1, 
+                               package="GauPro_kernel", design='sFFLHD', 
+                               selection_method="nonadapt", nugget=1e-6, 
+                               actual_des_func=actual_des_func, 
+                               verbose=0, nconsider=c(Inf,10,10), nconsider_random=c(0),
+                               n0=n0
+                               )
+}
+m5_runs <- vector("list", nruns)
+```
+
+
+```{r m5e1, echo=F, message=F}
+invisible(capture.output({set.seed(1); csa(); m5e1 <- m5_runfunc(); m5e1$run(n_batches_to_run, plotlastonly = T)}))
+m5_runs[[1]] <- m5e1
+```
+
+## m5e2
+
+```{r m5e2, echo=F, message=F}
+i <- 2
+# invisible(capture.output({set.seed(i); csa(); m5e2 <- m5_runfunc(); m5e2$run(n_batches_to_run, plotlastonly = T)}))
+# m5_runs[[i]] <- m5e2
+invisible(capture.output({set.seed(i); csa(); m5_runs[[i]] <- m5_runfunc(); m5_runs[[i]]$run(n_batches_to_run, plotlastonly = T)}))
+```
+
+## m5e3
+
+```{r m5e3, echo=F, message=F}
+i <- 3
+invisible(capture.output({set.seed(i); csa(); m5e3 <- m5_runfunc(); m5e3$run(n_batches_to_run, plotlastonly = T)}))
+m5_runs[[i]] <- m5e3
+```
+
+## m5e4
+
+```{r m5e4, echo=F, message=F}
+i <- 4
+invisible(capture.output({set.seed(i); csa(); m5e4 <- m5_runfunc(); m5e4$run(n_batches_to_run, plotlastonly = T)}))
+m5_runs[[i]] <- m5e4
+```
+
+## m5e5
+
+```{r m5e5, echo=F, message=F}
+i <- 5
+invisible(capture.output({set.seed(i); csa(); m5e5 <- m5_runfunc(); m5e5$run(n_batches_to_run, plotlastonly = T)}))
+m5_runs[[i]] <- m5e5
+```
+
+## m5e6
+
+```{r m5e6, echo=F, message=F}
+i <- 6
+invisible(capture.output({set.seed(i); csa(); m5e6 <- m5_runfunc(); m5e6$run(n_batches_to_run, plotlastonly = T)}))
+m5_runs[[i]] <- m5e6
+```
+
+## m5e7
+
+```{r m5e7, echo=F, message=F}
+i <- 7
+invisible(capture.output({set.seed(i); csa(); m5e7 <- m5_runfunc(); m5e7$run(n_batches_to_run, plotlastonly = T)}))
+m5_runs[[i]] <- m5e7
+```
+
+## m5e8
+
+```{r m5e8, echo=F, message=F}
+i <- 8
+invisible(capture.output({set.seed(i); csa(); m5e8 <- m5_runfunc(); m5e8$run(n_batches_to_run, plotlastonly = T)}))
+m5_runs[[i]] <- m5e8
+```
+
+## m5e9
+
+```{r m5e9, echo=F, message=F}
+i <- 9
+invisible(capture.output({set.seed(i); csa(); m5e9 <- m5_runfunc(); m5e9$run(n_batches_to_run, plotlastonly = T)}))
+m5_runs[[i]] <- m5e9
+```
+
+## m5e10
+
+```{r m5e10, echo=F, message=F}
+i <- 10
+invisible(capture.output({set.seed(i); csa(); m5e10 <- m5_runfunc(); m5e10$run(n_batches_to_run, plotlastonly = T)}))
+m5_runs[[i]] <- m5e10
+```
+
+
+
+## Logistic, $E[g^2]$, sobel non-adaptive batch 3
+
+```{r m6_runfunc}
+m6_runfunc <- function() {
+  adapt.concept2.sFFLHD.R6$new(D=D,L=3,func=func, obj="desirability", des_func=des_func_mean_grad_norm2, 
+                               alpha_des=1, weight_const=0, take_until_maxpvar_below=1, 
+                               package="GauPro_kernel", design='sobol', 
+                               selection_method="nonadapt", nugget=1e-6, 
+                               actual_des_func=actual_des_func, 
+                               verbose=0, nconsider=c(Inf,10,10), nconsider_random=c(0),
+                               n0=n0
+  )
+}
+m6_runs <- vector("list", nruns)
+```
+
+
+```{r m6e1, echo=F, message=F}
+invisible(capture.output({set.seed(1); csa(); m6e1 <- m6_runfunc(); m6e1$run(n_batches_to_run, plotlastonly = T)}))
+m6_runs[[1]] <- m6e1
+```
+
+## m6e2
+
+```{r m6e2, echo=F, message=F}
+i <- 2
+invisible(capture.output({set.seed(i); csa(); m6e2 <- m6_runfunc(); m6e2$run(n_batches_to_run, plotlastonly = T)}))
+m6_runs[[i]] <- m6e2
+# invisible(capture.output({set.seed(i); csa(); m6_runs[[i]] <- m6_runfunc(); m6_runs[[i]]$run(n_batches_to_run, plotlastonly = T)}))
+```
+
+## m6e3
+
+```{r m6e3, echo=F, message=F}
+i <- 3
+invisible(capture.output({set.seed(i); csa(); m6e3 <- m6_runfunc(); m6e3$run(n_batches_to_run, plotlastonly = T)}))
+m6_runs[[i]] <- m6e3
+```
+
+## m6e4
+
+```{r m6e4, echo=F, message=F}
+i <- 4
+invisible(capture.output({set.seed(i); csa(); m6e4 <- m6_runfunc(); m6e4$run(n_batches_to_run, plotlastonly = T)}))
+m6_runs[[i]] <- m6e4
+```
+
+## m6e5
+
+```{r m6e5, echo=F, message=F}
+i <- 5
+invisible(capture.output({set.seed(i); csa(); m6e5 <- m6_runfunc(); m6e5$run(n_batches_to_run, plotlastonly = T)}))
+m6_runs[[i]] <- m6e5
+```
+
+## m6e6
+
+```{r m6e6, echo=F, message=F}
+i <- 6
+invisible(capture.output({set.seed(i); csa(); m6e6 <- m6_runfunc(); m6e6$run(n_batches_to_run, plotlastonly = T)}))
+m6_runs[[i]] <- m6e6
+```
+
+## m6e7
+
+```{r m6e7, echo=F, message=F}
+i <- 7
+invisible(capture.output({set.seed(i); csa(); m6e7 <- m6_runfunc(); m6e7$run(n_batches_to_run, plotlastonly = T)}))
+m6_runs[[i]] <- m6e7
+```
+
+## m6e8
+
+```{r m6e8, echo=F, message=F}
+i <- 8
+invisible(capture.output({set.seed(i); csa(); m6e8 <- m6_runfunc(); m6e8$run(n_batches_to_run, plotlastonly = T)}))
+m6_runs[[i]] <- m6e8
+```
+
+## m6e9
+
+```{r m6e9, echo=F, message=F}
+i <- 9
+invisible(capture.output({set.seed(i); csa(); m6e9 <- m6_runfunc(); m6e9$run(n_batches_to_run, plotlastonly = T)}))
+m6_runs[[i]] <- m6e9
+```
+
+## m6e10
+
+```{r m6e10, echo=F, message=F}
+i <- 10
+invisible(capture.output({set.seed(i); csa(); m6e10 <- m6_runfunc(); m6e10$run(n_batches_to_run, plotlastonly = T)}))
+m6_runs[[i]] <- m6e10
+```
+
+
+
+## Logistic, $E[g^2]$, sFFLHD picking max SE batch 3
+
+```{r m7_runfunc}
+m7_runfunc <- function() {
+  adapt.concept2.sFFLHD.R6$new(D=D,L=3,func=func, obj="desirability", des_func=des_func_mean_grad_norm2, 
+                               alpha_des=1, weight_const=0, take_until_maxpvar_below=1, 
+                               package="GauPro_kernel", design='sFFLHD', 
+                               selection_method="ALM", nugget=1e-6, 
+                               actual_des_func=actual_des_func, 
+                               verbose=0, nconsider=c(Inf,10,10), nconsider_random=c(0),
+                               n0=n0
+  )
+}
+m7_runs <- vector("list", nruns)
+```
+
+
+```{r m7e1, echo=F, message=F}
+invisible(capture.output({set.seed(1); csa(); m7e1 <- m7_runfunc(); m7e1$run(n_batches_to_run, plotlastonly = T)}))
+m7_runs[[1]] <- m7e1
+```
+
+## m7e2
+
+```{r m7e2, echo=F, message=F}
+i <- 2
+# invisible(capture.output({set.seed(i); csa(); m7e2 <- m7_runfunc(); m7e2$run(n_batches_to_run, plotlastonly = T)}))
+# m7_runs[[i]] <- m7e2
+invisible(capture.output({set.seed(i); csa(); m7_runs[[i]] <- m7_runfunc(); m7_runs[[i]]$run(n_batches_to_run, plotlastonly = T)}))
+```
+
+## m7e3
+
+```{r m7e3, echo=F, message=F}
+i <- 3
+invisible(capture.output({set.seed(i); csa(); m7e3 <- m7_runfunc(); m7e3$run(n_batches_to_run, plotlastonly = T)}))
+m7_runs[[i]] <- m7e3
+```
+
+## m7e4
+
+```{r m7e4, echo=F, message=F}
+i <- 4
+invisible(capture.output({set.seed(i); csa(); m7e4 <- m7_runfunc(); m7e4$run(n_batches_to_run, plotlastonly = T)}))
+m7_runs[[i]] <- m7e4
+```
+
+## m7e5
+
+```{r m7e5, echo=F, message=F}
+i <- 5
+invisible(capture.output({set.seed(i); csa(); m7e5 <- m7_runfunc(); m7e5$run(n_batches_to_run, plotlastonly = T)}))
+m7_runs[[i]] <- m7e5
+```
+
+## m7e6
+
+```{r m7e6, echo=F, message=F}
+i <- 6
+invisible(capture.output({set.seed(i); csa(); m7e6 <- m7_runfunc(); m7e6$run(n_batches_to_run, plotlastonly = T)}))
+m7_runs[[i]] <- m7e6
+```
+
+## m7e7
+
+```{r m7e7, echo=F, message=F}
+i <- 7
+invisible(capture.output({set.seed(i); csa(); m7e7 <- m7_runfunc(); m7e7$run(n_batches_to_run, plotlastonly = T)}))
+m7_runs[[i]] <- m7e7
+```
+
+## m7e8
+
+```{r m7e8, echo=F, message=F}
+i <- 8
+invisible(capture.output({set.seed(i); csa(); m7e8 <- m7_runfunc(); m7e8$run(n_batches_to_run, plotlastonly = T)}))
+m7_runs[[i]] <- m7e8
+```
+
+## m7e9
+
+```{r m7e9, echo=F, message=F}
+i <- 9
+invisible(capture.output({set.seed(i); csa(); m7e9 <- m7_runfunc(); m7e9$run(n_batches_to_run, plotlastonly = T)}))
+m7_runs[[i]] <- m7e9
+```
+
+## m7e10
+
+```{r m7e10, echo=F, message=F}
+i <- 10
+invisible(capture.output({set.seed(i); csa(); m7e10 <- m7_runfunc(); m7e10$run(n_batches_to_run, plotlastonly = T)}))
+m7_runs[[i]] <- m7e10
+```
+
+
+
+## Logistic, $E[g^2]$, sFFLHD picking max SE red batch 3
+
+```{r m8_runfunc}
+m8_runfunc <- function() {
+  adapt.concept2.sFFLHD.R6$new(D=D,L=3,func=func, obj="desirability", des_func=des_func_mean_grad_norm2, 
+                               alpha_des=1, weight_const=0, take_until_maxpvar_below=1, 
+                               package="GauPro_kernel", design='sFFLHD', 
+                               selection_method="ALC", nugget=1e-6, 
+                               actual_des_func=actual_des_func, 
+                               verbose=0, nconsider=c(Inf,10,10), nconsider_random=c(0),
+                               n0=n0
+  )
+}
+m8_runs <- vector("list", nruns)
+```
+
+
+```{r m8e1, echo=F, message=F}
+invisible(capture.output({set.seed(1); csa(); m8e1 <- m8_runfunc(); m8e1$run(n_batches_to_run, plotlastonly = T)}))
+m8_runs[[1]] <- m8e1
+```
+
+## m8e2
+
+```{r m8e2, echo=F, message=F}
+i <- 2
+# invisible(capture.output({set.seed(i); csa(); m8e2 <- m8_runfunc(); m8e2$run(n_batches_to_run, plotlastonly = T)}))
+# m8_runs[[i]] <- m8e2
+invisible(capture.output({set.seed(i); csa(); m8_runs[[i]] <- m8_runfunc(); m8_runs[[i]]$run(n_batches_to_run, plotlastonly = T)}))
+```
+
+## m8e3
+
+```{r m8e3, echo=F, message=F}
+i <- 3
+invisible(capture.output({set.seed(i); csa(); m8e3 <- m8_runfunc(); m8e3$run(n_batches_to_run, plotlastonly = T)}))
+m8_runs[[i]] <- m8e3
+```
+
+## m8e4
+
+```{r m8e4, echo=F, message=F}
+i <- 4
+invisible(capture.output({set.seed(i); csa(); m8e4 <- m8_runfunc(); m8e4$run(n_batches_to_run, plotlastonly = T)}))
+m8_runs[[i]] <- m8e4
+```
+
+## m8e5
+
+```{r m8e5, echo=F, message=F}
+i <- 5
+invisible(capture.output({set.seed(i); csa(); m8e5 <- m8_runfunc(); m8e5$run(n_batches_to_run, plotlastonly = T)}))
+m8_runs[[i]] <- m8e5
+```
+
+## m8e6
+
+```{r m8e6, echo=F, message=F}
+i <- 6
+invisible(capture.output({set.seed(i); csa(); m8e6 <- m8_runfunc(); m8e6$run(n_batches_to_run, plotlastonly = T)}))
+m8_runs[[i]] <- m8e6
+```
+
+## m8e7
+
+```{r m8e7, echo=F, message=F}
+i <- 7
+invisible(capture.output({set.seed(i); csa(); m8e7 <- m8_runfunc(); m8e7$run(n_batches_to_run, plotlastonly = T)}))
+m8_runs[[i]] <- m8e7
+```
+
+## m8e8
+
+```{r m8e8, echo=F, message=F}
+i <- 8
+invisible(capture.output({set.seed(i); csa(); m8e8 <- m8_runfunc(); m8e8$run(n_batches_to_run, plotlastonly = T)}))
+m8_runs[[i]] <- m8e8
+```
+
+## m8e9
+
+```{r m8e9, echo=F, message=F}
+i <- 9
+invisible(capture.output({set.seed(i); csa(); m8e9 <- m8_runfunc(); m8e9$run(n_batches_to_run, plotlastonly = T)}))
+m8_runs[[i]] <- m8e9
+```
+
+## m8e10
+
+```{r m8e10, echo=F, message=F}
+i <- 10
+invisible(capture.output({set.seed(i); csa(); m8e10 <- m8_runfunc(); m8e10$run(n_batches_to_run, plotlastonly = T)}))
+m8_runs[[i]] <- m8e10
+```
+
+
+
+
+
+## Gather results
+
+```{r gatherresultsm1, cache=F}
+m1_stats <- data.frame()
+for (i in 1:length(m1_runs)) {
+  if (!is.null(m1_runs[[i]])) {
+    m1_stats <- rbind(m1_stats, 
+                      data.frame(m=1, rp=i, name="sWb3a1",
+                                 iter=m1_runs[[i]]$stats$iter, 
+                                 actual_intwerror=m1_runs[[i]]$stats$actual_intwerror, 
+                                 mse=m1_runs[[i]]$stats$mse))
+    }
+}
+m1_stats
+```
+
+```{r gatherresultsm2, cache=F}
+m2_stats <- data.frame()
+for (i in 1:length(m2_runs)) {
+  if (!is.null(m2_runs[[i]])) {
+    m2_stats <- rbind(m2_stats, 
+                      data.frame(m=2, rp=i, name="sWb3a0",
+                                 iter=m2_runs[[i]]$stats$iter, 
+                                 actual_intwerror=m2_runs[[i]]$stats$actual_intwerror, 
+                                 mse=m2_runs[[i]]$stats$mse))
+    }
+}
+m2_stats
+```
+
+```{r gatherresultsm3, cache=F}
+m3_stats <- data.frame()
+for (i in 1:length(m3_runs)) {
+  if (!is.null(m3_runs[[i]])) {
+    m3_stats <- rbind(m3_stats, 
+                      data.frame(m=3, rp=i, name="LWb3a1",
+                                 iter=m3_runs[[i]]$stats$iter, 
+                                 actual_intwerror=m3_runs[[i]]$stats$actual_intwerror, 
+                                 mse=m3_runs[[i]]$stats$mse))
+    }
+}
+m3_stats
+```
+
+```{r gatherresultsm4, cache=F}
+m4_stats <- data.frame()
+for (i in 1:length(m4_runs)) {
+  if (!is.null(m4_runs[[i]])) {
+    m4_stats <- rbind(m4_stats, 
+                      data.frame(m=4, rp=i, name="LWb3a0",
+                                 iter=m4_runs[[i]]$stats$iter, 
+                                 actual_intwerror=m4_runs[[i]]$stats$actual_intwerror, 
+                                 mse=m4_runs[[i]]$stats$mse))
+    }
+}
+m4_stats
+```
+
+```{r gatherresultsm5, cache=F}
+m5_stats <- data.frame()
+for (i in 1:length(m5_runs)) {
+  if (!is.null(m5_runs[[i]])) {
+    m5_stats <- rbind(m5_stats, 
+                      data.frame(m=5, rp=i, name="s",
+                                 iter=m5_runs[[i]]$stats$iter, 
+                                 actual_intwerror=m5_runs[[i]]$stats$actual_intwerror, 
+                                 mse=m5_runs[[i]]$stats$mse))
+    }
+}
+m5_stats
+```
+
+```{r gatherresultsm6, cache=F}
+m6_stats <- data.frame()
+for (i in 1:length(m6_runs)) {
+  if (!is.null(m6_runs[[i]])) {
+    m6_stats <- rbind(m6_stats, 
+                      data.frame(m=6, rp=i, name="sobol",
+                                 iter=m6_runs[[i]]$stats$iter, 
+                                 actual_intwerror=m6_runs[[i]]$stats$actual_intwerror, 
+                                 mse=m6_runs[[i]]$stats$mse))
+  }
+}
+m6_stats
+```
+
+```{r gatherresultsm7, cache=F}
+m7_stats <- data.frame()
+for (i in 1:length(m7_runs)) {
+  if (!is.null(m7_runs[[i]])) {
+    m7_stats <- rbind(m7_stats, 
+                      data.frame(m=7, rp=i, name="sALM",
+                                 iter=m7_runs[[i]]$stats$iter, 
+                                 actual_intwerror=m7_runs[[i]]$stats$actual_intwerror, 
+                                 mse=m7_runs[[i]]$stats$mse))
+  }
+}
+m7_stats
+```
+
+
+```{r gatherresultsm8, cache=F}
+m8_stats <- data.frame()
+for (i in 1:length(m8_runs)) {
+  if (!is.null(m8_runs[[i]])) {
+    m8_stats <- rbind(m8_stats, 
+                      data.frame(m=8, rp=i, name="sALC",
+                                 iter=m8_runs[[i]]$stats$iter, 
+                                 actual_intwerror=m8_runs[[i]]$stats$actual_intwerror, 
+                                 mse=m8_runs[[i]]$stats$mse))
+  }
+}
+m8_stats
+```
+
+```{r gatherresults, cache=F}
+m_stats <- rbind(m1_stats, m2_stats, m3_stats, m4_stats, m5_stats, m6_stats, m7_stats, m8_stats)
+```
+
+
+
+
+## Comparison of IntWerror
+
+```{r plotintwerror_iwe, cache=F}
+library(ggplot2) # , shape=as.factor(rp)
+ggplot(data=m_stats, aes(x=iter, y=actual_intwerror, group=interaction(rp,name), color=name)) + geom_line() + geom_point()  + scale_y_continuous(trans='log10') #+ 
+  #scale_color_hue(labels=expression(alpha==1,alpha==0,alpha==0.5,random))
+```
+
+
+## Weighted error by group
+
+```{r plotawegroup, cache=F}
+base_breaks <- function(n = 10){
+  function(x) {
+    axisTicks(log10(range(x, na.rm = TRUE)), log = TRUE, n = n)
+  }
+}
+p1 <- ggplot(data=m_stats[m_stats$iter==max(m_stats$iter),], 
+           aes(x=name, y=actual_intwerror, colour = name)
+    )# +  geom_jitter(width=.1)
+p1 <- p1 + geom_boxplot()
+p1 <- p1 + geom_jitter(width=.1)
+p1 <- p1 + #scale_y_log10() + 
+  scale_y_continuous(trans="log", breaks = base_breaks())
+# p1 <- p1 + scale_color_hue(labels=c('alpha=1','alpha=0','alpha=.5','nonadapt'))
+p1
+```
+
+
+
+## Comparison of mse
+
+```{r plotintwerror_mse, cache=F}
+library(ggplot2) # , shape=as.factor(rp)
+ggplot(data=m_stats, aes(x=iter, y=mse, group=interaction(rp,name), color=name)) + geom_line() + geom_point()  + scale_y_continuous(trans='log10') #+ 
+  #scale_color_hue(labels=expression(alpha==1,alpha==0,alpha==0.5,random))
+```
+
+## MSE by group
+
+```{r plotmsegroup, cache=F}
+base_breaks <- function(n = 10){
+  function(x) {
+    axisTicks(log10(range(x, na.rm = TRUE)), log = TRUE, n = n)
+  }
+}
+p1 <- ggplot(data=m_stats[m_stats$iter==max(m_stats$iter),], 
+           aes(x=name, y=mse, colour = name)
+    )# +  geom_jitter(width=.1)
+p1 <- p1 + geom_boxplot()
+p1 <- p1 + geom_jitter(width=.1)
+p1 <- p1 + #scale_y_log10() + 
+  scale_y_continuous(trans="log", breaks = base_breaks())
+# p1 <- p1 + scale_color_hue(labels=c('alpha=1','alpha=0','alpha=.5','nonadapt'))
+p1
+```
