@@ -29,9 +29,11 @@ D <- 1
 func <- logistic15
 actual_des_func <- actual_des_func_grad_norm2_mean_logistic15 #get_num_actual_des_func_grad_norm2_mean(logistic15)
 n0 <- 3*D # 3 initial points
-n_batches_to_run <- 1+ceiling((10*D-3*D)/3) #6  # Gets up to 18+3*14=60=10*D
-n_batches_to_run_oneatatime <- 1 + 3 * ceiling((10*D-3*D)/3) #2#4#7*D
+n_final <- 10*D # Final number of points, maybe 10D, more for lower D?
+n_batches_to_run <- 1+ceiling((n_final-n0)/3) #6  # Gets up to 18+3*14=60=10*D
+n_batches_to_run_oneatatime <- 1 + 3 * ceiling((n_final-n0)/3) #2#4#7*D
 LHD_candidate_factor <- 50
+GP_package <- if (D==1) "GauPro_kernel" else "laGP_GauPro_kernel"
 ```
 
 
@@ -42,13 +44,11 @@ LHD_candidate_factor <- 50
 m1_runfunc <- function() {
   adapt.concept2.sFFLHD.R6$new(D=D,L=3,func=func, obj="desirability", des_func=des_func_grad_norm2_mean, 
                                alpha_des=1, weight_const=0, take_until_maxpvar_below=1, 
-                               package="GauPro_kernel", design='sFFLHD', 
+                               package=GP_package, design='sFFLHD', 
                                selection_method="max_des_red_all", nugget=1e-6, 
                                actual_des_func=actual_des_func, 
-                               verbose=0, nconsider=c(Inf,10,10), nconsider_random=c(0),
+                               verbose=0, nconsider=c(Inf,Inf,Inf), nconsider_random=c(0),
                                n0=n0
-                               # X0=lhs::optimumLHS(n=6,k=2),
-                               # Xopts=Xopts
                                )
 }
 m1_runs <- vector("list", nruns)
@@ -140,13 +140,11 @@ m1_runs[[i]] <- m1e10$stats
 m2_runfunc <- function() {
   adapt.concept2.sFFLHD.R6$new(D=D,L=3,func=func, obj="desirability", des_func=des_func_mean_grad_norm2, 
                                alpha_des=1, weight_const=0, take_until_maxpvar_below=1, 
-                               package="GauPro_kernel", design='sFFLHD', 
+                               package=GP_package, design='sFFLHD', 
                                selection_method="max_des_red_all", nugget=1e-6, 
                                actual_des_func=actual_des_func, 
-                               verbose=0, nconsider=c(Inf,10,10), nconsider_random=c(0),
+                               verbose=0, nconsider=c(Inf,Inf,Inf), nconsider_random=c(0),
                                n0=n0
-                               # X0=lhs::optimumLHS(n=6,k=2),
-                               # Xopts=Xopts
                                )
 }
 m2_runs <- vector("list", nruns)
@@ -162,7 +160,6 @@ m2_runs[[1]] <- m2e1$stats
 # i <- 2
 invisible(capture.output({set.seed(2); csa(); m2e2 <- m2_runfunc(); m2e2$run(n_batches_to_run, plotlastonly = T)}))
 m2_runs[[2]] <- m2e2$stats
-# invisible(capture.output({set.seed(i); csa(); m2_runs[[i]] <- m2_runfunc(); m2_runs[[i]]$run(n_batches_to_run, plotlastonly = T)}))
 ```
 
 ```{r m2e3, echo=F, message=F}
@@ -237,15 +234,17 @@ m2_runs[[i]] <- m2e10$stats
 m3_runfunc <- function() {
   adapt.concept2.sFFLHD.R6$new(D=D,L=3,func=func, obj="desirability", des_func=des_func_grad_norm2_mean, 
                                alpha_des=1, weight_const=0, take_until_maxpvar_below=1, 
-                               package="GauPro_kernel", design='given', 
+                               package=GP_package, design='given', 
                                selection_method="max_des_red_all", nugget=1e-6, 
                                actual_des_func=actual_des_func, 
-                               verbose=0, nconsider=c(Inf,10,10), nconsider_random=c(0),
-                               # n0=n0
-                               # X0=MaxPro::MaxProLHD(n=D*3, p=D, itermax=1e4)$Design[sample(1:(D*3)),],
-                               X0=lhs::optimumLHS(n=D*3,k=D),
-                               # Xopts=MaxPro::MaxProLHD(n=D*LHD_candidate_factor, p=D, itermax=1e4)$Design[sample(1:(D*LHD_candidate_factor)),]
-                               Xopts=lhs::optimumLHS(n=D*LHD_candidate_factor, k=D)[sample(1:(D*LHD_candidate_factor)),,drop=F]
+                               verbose=0, nconsider=c(Inf,Inf,Inf), nconsider_random=c(0),
+                               X0=if (D==1) {lhs::optimumLHS(n=D*3,k=D)}
+                                  else {MaxPro::MaxProLHD(n=D*3, p=D, itermax=1e4)$Design[sample(1:(D*3)),]},
+                               Xopts=if (D==1) {
+                                       lhs::optimumLHS(n=D*LHD_candidate_factor, k=D)[sample(1:(D*LHD_candidate_factor)),,drop=F]
+                               } else {
+                                       MaxPro::MaxProLHD(n=D*LHD_candidate_factor, p=D, itermax=1e4)$Design[sample(1:(D*LHD_candidate_factor)),]
+                                     }
                                )
 }
 m3_runs <- vector("list", nruns)
@@ -339,15 +338,17 @@ m3_runs[[i]] <- m3e10$stats
 m4_runfunc <- function() {
   adapt.concept2.sFFLHD.R6$new(D=D,L=3,func=func, obj="desirability", des_func=des_func_mean_grad_norm2, 
                                alpha_des=1, weight_const=0, take_until_maxpvar_below=1, 
-                               package="GauPro_kernel", design='given', 
+                               package=GP_package, design='given', 
                                selection_method="max_des_red_all", nugget=1e-6, 
                                actual_des_func=actual_des_func, 
-                               verbose=0, nconsider=c(Inf,10,10), nconsider_random=c(0),
-                               # n0=n0
-                               # X0=MaxPro::MaxProLHD(n=D*3, p=D, itermax=1e4)$Design[sample(1:(D*3)),],
-                               X0=lhs::optimumLHS(n=D*3,k=D),
-                               # Xopts=MaxPro::MaxProLHD(n=D*LHD_candidate_factor, p=D, itermax=1e4)$Design[sample(1:(D*LHD_candidate_factor)),]
-                               Xopts=lhs::optimumLHS(n=D*LHD_candidate_factor, k=D)[sample(1:(D*LHD_candidate_factor)),,drop=F]
+                               verbose=0, nconsider=c(Inf,Inf,Inf), nconsider_random=c(0),
+                               X0=if (D==1) {lhs::optimumLHS(n=D*3,k=D)}
+                                  else {MaxPro::MaxProLHD(n=D*3, p=D, itermax=1e4)$Design[sample(1:(D*3)),]},
+                               Xopts=if (D==1) {
+                                       lhs::optimumLHS(n=D*LHD_candidate_factor, k=D)[sample(1:(D*LHD_candidate_factor)),,drop=F]
+                               } else {
+                                       MaxPro::MaxProLHD(n=D*LHD_candidate_factor, p=D, itermax=1e4)$Design[sample(1:(D*LHD_candidate_factor)),]
+                                     }
                                )
 }
 m4_runs <- vector("list", nruns)
@@ -443,10 +444,10 @@ m4_runs[[i]] <- m4e10$stats
 m5_runfunc <- function() {
   adapt.concept2.sFFLHD.R6$new(D=D,L=3,func=func, obj="desirability", des_func=des_func_mean_grad_norm2, 
                                alpha_des=1, weight_const=0, take_until_maxpvar_below=1, 
-                               package="GauPro_kernel", design='sFFLHD', 
+                               package=GP_package, design='sFFLHD', 
                                selection_method="nonadapt", nugget=1e-6, 
                                actual_des_func=actual_des_func, 
-                               verbose=0, nconsider=c(Inf,10,10), nconsider_random=c(0),
+                               verbose=0, nconsider=c(Inf,Inf,Inf), nconsider_random=c(0),
                                n0=n0
                                )
 }
@@ -465,7 +466,6 @@ m5_runs[[1]] <- m5e1$stats
 i <- 2
 invisible(capture.output({set.seed(i); csa(); m5e2 <- m5_runfunc(); m5e2$run(n_batches_to_run, plotlastonly = T)}))
 m5_runs[[i]] <- m5e2$stats
-# invisible(capture.output({set.seed(i); csa(); m5_runs[[i]] <- m5_runfunc(); m5_runs[[i]]$run(n_batches_to_run, plotlastonly = T)}))
 ```
 
 ## m5e3
@@ -540,10 +540,10 @@ m5_runs[[i]] <- m5e10$stats
 m6_runfunc <- function(design_seed) {
   adapt.concept2.sFFLHD.R6$new(D=D,L=3,func=func, obj="desirability", des_func=des_func_mean_grad_norm2, 
                                alpha_des=1, weight_const=0, take_until_maxpvar_below=1, 
-                               package="GauPro_kernel", design='sobol', design_seed=design_seed,
+                               package=GP_package, design='sobol', design_seed=design_seed,
                                selection_method="nonadapt", nugget=1e-6, 
                                actual_des_func=actual_des_func, 
-                               verbose=0, nconsider=c(Inf,10,10), nconsider_random=c(0),
+                               verbose=0, nconsider=c(Inf,Inf,Inf), nconsider_random=c(0),
                                n0=n0
   )
 }
@@ -561,8 +561,7 @@ m6_runs[[1]] <- m6e1$stats
 ```{r m6e2, echo=F, message=F}
 i <- 2
 invisible(capture.output({set.seed(i); csa(); m6e2 <- m6_runfunc(design_seed=i); m6e2$run(n_batches_to_run, plotlastonly = T)}))
-m6_runs[[i]] <- m6e2$stats
-# invisible(capture.output({set.seed(i); csa(); m6_runs[[i]] <- m6_runfunc(); m6_runs[[i]]$run(n_batches_to_run, plotlastonly = T)}))
+m6_runs[[i]] <- m6e2$stat
 ```
 
 ## m6e3
@@ -637,10 +636,10 @@ m6_runs[[i]] <- m6e10$stats
 m7_runfunc <- function() {
   adapt.concept2.sFFLHD.R6$new(D=D,L=3,func=func, obj="desirability", des_func=des_func_mean_grad_norm2, 
                                alpha_des=1, weight_const=0, take_until_maxpvar_below=1, 
-                               package="GauPro_kernel", design='sFFLHD', 
+                               package=GP_package, design='sFFLHD', 
                                selection_method="ALM", nugget=1e-6, 
                                actual_des_func=actual_des_func, 
-                               verbose=0, nconsider=c(Inf,10,10), nconsider_random=c(0),
+                               verbose=0, nconsider=c(Inf,Inf,Inf), nconsider_random=c(0),
                                n0=n0
   )
 }
@@ -659,7 +658,6 @@ m7_runs[[1]] <- m7e1$stats
 i <- 2
 invisible(capture.output({set.seed(i); csa(); m7e2 <- m7_runfunc(); m7e2$run(n_batches_to_run, plotlastonly = T)}))
 m7_runs[[i]] <- m7e2$stats
-# invisible(capture.output({set.seed(i); csa(); m7_runs[[i]] <- m7_runfunc(); m7_runs[[i]]$run(n_batches_to_run, plotlastonly = T)}))
 ```
 
 ## m7e3
@@ -734,10 +732,10 @@ m7_runs[[i]] <- m7e10$stats
 m8_runfunc <- function() {
   adapt.concept2.sFFLHD.R6$new(D=D,L=3,func=func, obj="desirability", des_func=des_func_mean_grad_norm2, 
                                alpha_des=1, weight_const=0, take_until_maxpvar_below=1, 
-                               package="GauPro_kernel", design='sFFLHD', 
+                               package=GP_package, design='sFFLHD', 
                                selection_method="ALC", nugget=1e-6, 
                                actual_des_func=actual_des_func, 
-                               verbose=0, nconsider=c(Inf,10,10), nconsider_random=c(0),
+                               verbose=0, nconsider=c(Inf,Inf,Inf), nconsider_random=c(0),
                                n0=n0
   )
 }
@@ -756,7 +754,6 @@ m8_runs[[1]] <- m8e1$stats
 i <- 2
 invisible(capture.output({set.seed(i); csa(); m8e2 <- m8_runfunc(); m8e2$run(n_batches_to_run, plotlastonly = T)}))
 m8_runs[[i]] <- m8e2$stats
-# invisible(capture.output({set.seed(i); csa(); m8_runs[[i]] <- m8_runfunc(); m8_runs[[i]]$run(n_batches_to_run, plotlastonly = T)}))
 ```
 
 ## m8e3
@@ -831,13 +828,11 @@ m8_runs[[i]] <- m8e10$stats
 m9_runfunc <- function() {
   adapt.concept2.sFFLHD.R6$new(D=D,b=1,L=3,func=func, obj="desirability", des_func=des_func_grad_norm2_mean, 
                                alpha_des=1, weight_const=0, take_until_maxpvar_below=1, 
-                               package="GauPro_kernel", design='sFFLHD', 
+                               package=GP_package, design='sFFLHD', 
                                selection_method="max_des_red_all", nugget=1e-6, 
                                actual_des_func=actual_des_func, 
-                               verbose=0, nconsider=c(Inf,10,10), nconsider_random=c(0),
+                               verbose=0, nconsider=c(Inf,Inf,Inf), nconsider_random=c(0),
                                n0=n0
-                               # X0=lhs::optimumLHS(n=6,k=2),
-                               # Xopts=Xopts
   )
 }
 m9_runs <- vector("list", nruns)
@@ -932,13 +927,11 @@ m9_runs[[i]] <- m9e10$stats
 m10_runfunc <- function() {
   adapt.concept2.sFFLHD.R6$new(D=D,b=1,L=3,func=func, obj="desirability", des_func=des_func_mean_grad_norm2, 
                                alpha_des=1, weight_const=0, take_until_maxpvar_below=1, 
-                               package="GauPro_kernel", design='sFFLHD', 
+                               package=GP_package, design='sFFLHD', 
                                selection_method="max_des_red_all", nugget=1e-6, 
                                actual_des_func=actual_des_func, 
-                               verbose=0, nconsider=c(Inf,10,10), nconsider_random=c(0),
+                               verbose=0, nconsider=c(Inf,Inf,Inf), nconsider_random=c(0),
                                n0=n0
-                               # X0=lhs::optimumLHS(n=6,k=2),
-                               # Xopts=Xopts
   )
 }
 m10_runs <- vector("list", nruns)
@@ -1035,15 +1028,17 @@ m10_runs[[i]] <- m10e10$stats
 m11_runfunc <- function() {
   adapt.concept2.sFFLHD.R6$new(D=D,b=1,L=3,func=func, obj="desirability", des_func=des_func_grad_norm2_mean, 
                                alpha_des=1, weight_const=0, take_until_maxpvar_below=1, 
-                               package="GauPro_kernel", design='given', 
+                               package=GP_package, design='given', 
                                selection_method="max_des_red_all", nugget=1e-6, 
                                actual_des_func=actual_des_func, 
-                               verbose=0, nconsider=c(Inf,10,10), nconsider_random=c(0),
-                               # n0=n0
-                               # X0=MaxPro::MaxProLHD(n=D*3, p=D, itermax=1e4)$Design[sample(1:(D*3)),],
-                               X0=lhs::optimumLHS(n=D*3,k=D),
-                               # Xopts=MaxPro::MaxProLHD(n=D*LHD_candidate_factor, p=D, itermax=1e4)$Design[sample(1:(D*LHD_candidate_factor)),]
-                               Xopts=lhs::optimumLHS(n=D*LHD_candidate_factor, k=D)[sample(1:(D*LHD_candidate_factor)),,drop=F]
+                               verbose=0, nconsider=c(Inf,Inf,Inf), nconsider_random=c(0),
+                               X0=if (D==1) {lhs::optimumLHS(n=D*3,k=D)}
+                                  else {MaxPro::MaxProLHD(n=D*3, p=D, itermax=1e4)$Design[sample(1:(D*3)),]},
+                               Xopts=if (D==1) {
+                                       lhs::optimumLHS(n=D*LHD_candidate_factor, k=D)[sample(1:(D*LHD_candidate_factor)),,drop=F]
+                               } else {
+                                       MaxPro::MaxProLHD(n=D*LHD_candidate_factor, p=D, itermax=1e4)$Design[sample(1:(D*LHD_candidate_factor)),]
+                                     }
   )
 }
 m11_runs <- vector("list", nruns)
@@ -1137,15 +1132,17 @@ m11_runs[[i]] <- m11e10$stats
 m12_runfunc <- function() {
   adapt.concept2.sFFLHD.R6$new(D=D,b=1,L=3,func=func, obj="desirability", des_func=des_func_mean_grad_norm2, 
                                alpha_des=1, weight_const=0, take_until_maxpvar_below=1, 
-                               package="GauPro_kernel", design='given', 
+                               package=GP_package, design='given', 
                                selection_method="max_des_red_all", nugget=1e-6, 
                                actual_des_func=actual_des_func, 
-                               verbose=0, nconsider=c(Inf,10,10), nconsider_random=c(0),
-                               # n0=n0
-                               # X0=MaxPro::MaxProLHD(n=D*3, p=D, itermax=1e4)$Design[sample(1:(D*3)),],
-                               X0=lhs::optimumLHS(n=D*3,k=D),
-                               # Xopts=MaxPro::MaxProLHD(n=D*LHD_candidate_factor, p=D, itermax=1e4)$Design[sample(1:(D*LHD_candidate_factor)),]
-                               Xopts=lhs::optimumLHS(n=D*LHD_candidate_factor, k=D)[sample(1:(D*LHD_candidate_factor)),,drop=F]
+                               verbose=0, nconsider=c(Inf,Inf,Inf), nconsider_random=c(0),
+                               X0=if (D==1) {lhs::optimumLHS(n=D*3,k=D)}
+                                  else {MaxPro::MaxProLHD(n=D*3, p=D, itermax=1e4)$Design[sample(1:(D*3)),]},
+                               Xopts=if (D==1) {
+                                       lhs::optimumLHS(n=D*LHD_candidate_factor, k=D)[sample(1:(D*LHD_candidate_factor)),,drop=F]
+                               } else {
+                                       MaxPro::MaxProLHD(n=D*LHD_candidate_factor, p=D, itermax=1e4)$Design[sample(1:(D*LHD_candidate_factor)),]
+                                     }
   )
 }
 m12_runs <- vector("list", nruns)
@@ -1239,10 +1236,10 @@ m12_runs[[i]] <- m12e10$stats
 m13_runfunc <- function() {
   adapt.concept2.sFFLHD.R6$new(D=D,b=1,L=3,func=func, obj="desirability", des_func=des_func_mean_grad_norm2, 
                                alpha_des=1, weight_const=0, take_until_maxpvar_below=1, 
-                               package="GauPro_kernel", design='sFFLHD', 
+                               package=GP_package, design='sFFLHD', 
                                selection_method="ALM", nugget=1e-6, 
                                actual_des_func=actual_des_func, 
-                               verbose=0, nconsider=c(Inf,10,10), nconsider_random=c(0),
+                               verbose=0, nconsider=c(Inf,Inf,Inf), nconsider_random=c(0),
                                n0=n0
   )
 }
@@ -1336,10 +1333,10 @@ m13_runs[[i]] <- m13e10$stats
 m14_runfunc <- function() {
   adapt.concept2.sFFLHD.R6$new(D=D,b=1,L=3,func=func, obj="desirability", des_func=des_func_mean_grad_norm2, 
                                alpha_des=1, weight_const=0, take_until_maxpvar_below=1, 
-                               package="GauPro_kernel", design='sFFLHD', 
+                               package=GP_package, design='sFFLHD', 
                                selection_method="ALC", nugget=1e-6, 
                                actual_des_func=actual_des_func, 
-                               verbose=0, nconsider=c(Inf,10,10), nconsider_random=c(0),
+                               verbose=0, nconsider=c(Inf,Inf,Inf), nconsider_random=c(0),
                                n0=n0
   )
 }
