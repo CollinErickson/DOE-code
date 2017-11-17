@@ -44,7 +44,7 @@ GP_package <- if (D==1) "GauPro_kernel" else "laGP_GauPro_kernel"
 m1_runfunc <- function() {
   adapt.concept2.sFFLHD.R6$new(D=D,L=3,func=func, obj="desirability", des_func=des_func_grad_norm2_mean, 
                                alpha_des=1, weight_const=0, take_until_maxpvar_below=1, 
-                               package=GP_package, design='sFFLHD', 
+                               package=GP_package, design='sFFLHD_Lflex', 
                                selection_method="max_des_red_all", nugget=1e-6, 
                                actual_des_func=actual_des_func, 
                                verbose=0, nconsider=c(Inf,Inf,Inf), nconsider_random=c(0),
@@ -140,7 +140,7 @@ m1_runs[[i]] <- m1e10$stats
 m2_runfunc <- function() {
   adapt.concept2.sFFLHD.R6$new(D=D,L=3,func=func, obj="desirability", des_func=des_func_mean_grad_norm2, 
                                alpha_des=1, weight_const=0, take_until_maxpvar_below=1, 
-                               package=GP_package, design='sFFLHD', 
+                               package=GP_package, design='sFFLHD_Lflex', 
                                selection_method="max_des_red_all", nugget=1e-6, 
                                actual_des_func=actual_des_func, 
                                verbose=0, nconsider=c(Inf,Inf,Inf), nconsider_random=c(0),
@@ -444,7 +444,7 @@ m4_runs[[i]] <- m4e10$stats
 m5_runfunc <- function() {
   adapt.concept2.sFFLHD.R6$new(D=D,L=3,func=func, obj="desirability", des_func=des_func_mean_grad_norm2, 
                                alpha_des=1, weight_const=0, take_until_maxpvar_below=1, 
-                               package=GP_package, design='sFFLHD', 
+                               package=GP_package, design='sFFLHD_Lflex', 
                                selection_method="nonadapt", nugget=1e-6, 
                                actual_des_func=actual_des_func, 
                                verbose=0, nconsider=c(Inf,Inf,Inf), nconsider_random=c(0),
@@ -636,7 +636,7 @@ m6_runs[[i]] <- m6e10$stats
 m7_runfunc <- function() {
   adapt.concept2.sFFLHD.R6$new(D=D,L=3,func=func, obj="desirability", des_func=des_func_mean_grad_norm2, 
                                alpha_des=1, weight_const=0, take_until_maxpvar_below=1, 
-                               package=GP_package, design='sFFLHD', 
+                               package=GP_package, design='sFFLHD_Lflex', 
                                selection_method="ALM", nugget=1e-6, 
                                actual_des_func=actual_des_func, 
                                verbose=0, nconsider=c(Inf,Inf,Inf), nconsider_random=c(0),
@@ -732,7 +732,7 @@ m7_runs[[i]] <- m7e10$stats
 m8_runfunc <- function() {
   adapt.concept2.sFFLHD.R6$new(D=D,L=3,func=func, obj="desirability", des_func=des_func_mean_grad_norm2, 
                                alpha_des=1, weight_const=0, take_until_maxpvar_below=1, 
-                               package=GP_package, design='sFFLHD', 
+                               package=GP_package, design='sFFLHD_Lflex', 
                                selection_method="ALC", nugget=1e-6, 
                                actual_des_func=actual_des_func, 
                                verbose=0, nconsider=c(Inf,Inf,Inf), nconsider_random=c(0),
@@ -828,7 +828,7 @@ m8_runs[[i]] <- m8e10$stats
 m9_runfunc <- function() {
   adapt.concept2.sFFLHD.R6$new(D=D,b=1,L=3,func=func, obj="desirability", des_func=des_func_grad_norm2_mean, 
                                alpha_des=1, weight_const=0, take_until_maxpvar_below=1, 
-                               package=GP_package, design='sFFLHD', 
+                               package=GP_package, design='sFFLHD_Lflex', 
                                selection_method="max_des_red_all", nugget=1e-6, 
                                actual_des_func=actual_des_func, 
                                verbose=0, nconsider=c(Inf,Inf,Inf), nconsider_random=c(0),
@@ -927,7 +927,7 @@ m9_runs[[i]] <- m9e10$stats
 m10_runfunc <- function() {
   adapt.concept2.sFFLHD.R6$new(D=D,b=1,L=3,func=func, obj="desirability", des_func=des_func_mean_grad_norm2, 
                                alpha_des=1, weight_const=0, take_until_maxpvar_below=1, 
-                               package=GP_package, design='sFFLHD', 
+                               package=GP_package, design='sFFLHD_Lflex', 
                                selection_method="max_des_red_all", nugget=1e-6, 
                                actual_des_func=actual_des_func, 
                                verbose=0, nconsider=c(Inf,Inf,Inf), nconsider_random=c(0),
@@ -1236,7 +1236,7 @@ m12_runs[[i]] <- m12e10$stats
 m13_runfunc <- function() {
   adapt.concept2.sFFLHD.R6$new(D=D,b=1,L=3,func=func, obj="desirability", des_func=des_func_mean_grad_norm2, 
                                alpha_des=1, weight_const=0, take_until_maxpvar_below=1, 
-                               package=GP_package, design='sFFLHD', 
+                               package=GP_package, design='sFFLHD_Lflex', 
                                selection_method="ALM", nugget=1e-6, 
                                actual_des_func=actual_des_func, 
                                verbose=0, nconsider=c(Inf,Inf,Inf), nconsider_random=c(0),
@@ -1333,7 +1333,7 @@ m13_runs[[i]] <- m13e10$stats
 m14_runfunc <- function() {
   adapt.concept2.sFFLHD.R6$new(D=D,b=1,L=3,func=func, obj="desirability", des_func=des_func_mean_grad_norm2, 
                                alpha_des=1, weight_const=0, take_until_maxpvar_below=1, 
-                               package=GP_package, design='sFFLHD', 
+                               package=GP_package, design='sFFLHD_Lflex', 
                                selection_method="ALC", nugget=1e-6, 
                                actual_des_func=actual_des_func, 
                                verbose=0, nconsider=c(Inf,Inf,Inf), nconsider_random=c(0),
