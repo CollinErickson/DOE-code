@@ -835,7 +835,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
        }
      }
      newL <- bestL
-     rm(gpc, objall, objopt, bestopt, bestL, Xnewone, Znewone)
+     rm(gpc, objall, objopt, bestopt, bestL)
      newL
    },
   select_new_points_from_max_des_red = function() {
