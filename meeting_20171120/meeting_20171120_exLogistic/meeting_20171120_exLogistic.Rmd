@@ -537,10 +537,10 @@ m5_runs[[i]] <- m5e10$stats
 ## Logistic, $E[g^2]$, sobel non-adaptive batch 3
 
 ```{r m6_runfunc}
-m6_runfunc <- function() {
+m6_runfunc <- function(design_seed) {
   adapt.concept2.sFFLHD.R6$new(D=D,L=3,func=func, obj="desirability", des_func=des_func_mean_grad_norm2, 
                                alpha_des=1, weight_const=0, take_until_maxpvar_below=1, 
-                               package="GauPro_kernel", design='sobol', 
+                               package="GauPro_kernel", design='sobol', design_seed=design_seed,
                                selection_method="nonadapt", nugget=1e-6, 
                                actual_des_func=actual_des_func, 
                                verbose=0, nconsider=c(Inf,10,10), nconsider_random=c(0),
@@ -552,7 +552,7 @@ m6_runs <- vector("list", nruns)
 
 
 ```{r m6e1, echo=F, message=F}
-invisible(capture.output({set.seed(1); csa(); m6e1 <- m6_runfunc(); m6e1$run(n_batches_to_run, plotlastonly = T)}))
+invisible(capture.output({set.seed(1); csa(); m6e1 <- m6_runfunc(design_seed=1); m6e1$run(n_batches_to_run, plotlastonly = T)}))
 m6_runs[[1]] <- m6e1$stats
 ```
 
@@ -560,7 +560,7 @@ m6_runs[[1]] <- m6e1$stats
 
 ```{r m6e2, echo=F, message=F}
 i <- 2
-invisible(capture.output({set.seed(i); csa(); m6e2 <- m6_runfunc(); m6e2$run(n_batches_to_run, plotlastonly = T)}))
+invisible(capture.output({set.seed(i); csa(); m6e2 <- m6_runfunc(design_seed=i); m6e2$run(n_batches_to_run, plotlastonly = T)}))
 m6_runs[[i]] <- m6e2$stats
 # invisible(capture.output({set.seed(i); csa(); m6_runs[[i]] <- m6_runfunc(); m6_runs[[i]]$run(n_batches_to_run, plotlastonly = T)}))
 ```
@@ -569,7 +569,7 @@ m6_runs[[i]] <- m6e2$stats
 
 ```{r m6e3, echo=F, message=F}
 i <- 3
-invisible(capture.output({set.seed(i); csa(); m6e3 <- m6_runfunc(); m6e3$run(n_batches_to_run, plotlastonly = T)}))
+invisible(capture.output({set.seed(i); csa(); m6e3 <- m6_runfunc(design_seed=i); m6e3$run(n_batches_to_run, plotlastonly = T)}))
 m6_runs[[i]] <- m6e3$stats
 ```
 
@@ -577,7 +577,7 @@ m6_runs[[i]] <- m6e3$stats
 
 ```{r m6e4, echo=F, message=F}
 i <- 4
-invisible(capture.output({set.seed(i); csa(); m6e4 <- m6_runfunc(); m6e4$run(n_batches_to_run, plotlastonly = T)}))
+invisible(capture.output({set.seed(i); csa(); m6e4 <- m6_runfunc(design_seed=i); m6e4$run(n_batches_to_run, plotlastonly = T)}))
 m6_runs[[i]] <- m6e4$stats
 ```
 
@@ -585,7 +585,7 @@ m6_runs[[i]] <- m6e4$stats
 
 ```{r m6e5, echo=F, message=F}
 i <- 5
-invisible(capture.output({set.seed(i); csa(); m6e5 <- m6_runfunc(); m6e5$run(n_batches_to_run, plotlastonly = T)}))
+invisible(capture.output({set.seed(i); csa(); m6e5 <- m6_runfunc(design_seed=i); m6e5$run(n_batches_to_run, plotlastonly = T)}))
 m6_runs[[i]] <- m6e5$stats
 ```
 
@@ -593,7 +593,7 @@ m6_runs[[i]] <- m6e5$stats
 
 ```{r m6e6, echo=F, message=F}
 i <- 6
-invisible(capture.output({set.seed(i); csa(); m6e6 <- m6_runfunc(); m6e6$run(n_batches_to_run, plotlastonly = T)}))
+invisible(capture.output({set.seed(i); csa(); m6e6 <- m6_runfunc(design_seed=i); m6e6$run(n_batches_to_run, plotlastonly = T)}))
 m6_runs[[i]] <- m6e6$stats
 ```
 
@@ -601,7 +601,7 @@ m6_runs[[i]] <- m6e6$stats
 
 ```{r m6e7, echo=F, message=F}
 i <- 7
-invisible(capture.output({set.seed(i); csa(); m6e7 <- m6_runfunc(); m6e7$run(n_batches_to_run, plotlastonly = T)}))
+invisible(capture.output({set.seed(i); csa(); m6e7 <- m6_runfunc(design_seed=i); m6e7$run(n_batches_to_run, plotlastonly = T)}))
 m6_runs[[i]] <- m6e7$stats
 ```
 
@@ -609,7 +609,7 @@ m6_runs[[i]] <- m6e7$stats
 
 ```{r m6e8, echo=F, message=F}
 i <- 8
-invisible(capture.output({set.seed(i); csa(); m6e8 <- m6_runfunc(); m6e8$run(n_batches_to_run, plotlastonly = T)}))
+invisible(capture.output({set.seed(i); csa(); m6e8 <- m6_runfunc(design_seed=i); m6e8$run(n_batches_to_run, plotlastonly = T)}))
 m6_runs[[i]] <- m6e8$stats
 ```
 
@@ -617,7 +617,7 @@ m6_runs[[i]] <- m6e8$stats
 
 ```{r m6e9, echo=F, message=F}
 i <- 9
-invisible(capture.output({set.seed(i); csa(); m6e9 <- m6_runfunc(); m6e9$run(n_batches_to_run, plotlastonly = T)}))
+invisible(capture.output({set.seed(i); csa(); m6e9 <- m6_runfunc(design_seed=i); m6e9$run(n_batches_to_run, plotlastonly = T)}))
 m6_runs[[i]] <- m6e9$stats
 ```
 
@@ -625,7 +625,7 @@ m6_runs[[i]] <- m6e9$stats
 
 ```{r m6e10, echo=F, message=F}
 i <- 10
-invisible(capture.output({set.seed(i); csa(); m6e10 <- m6_runfunc(); m6e10$run(n_batches_to_run, plotlastonly = T)}))
+invisible(capture.output({set.seed(i); csa(); m6e10 <- m6_runfunc(design_seed=i); m6e10$run(n_batches_to_run, plotlastonly = T)}))
 m6_runs[[i]] <- m6e10$stats
 ```
 
