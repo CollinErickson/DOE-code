@@ -1571,7 +1571,7 @@ m10_stats <- data.frame()
 for (i in 1:length(m10_runs)) {
   if (!is.null(m10_runs[[i]])) {
     m10_stats <- rbind(m10_stats, 
-                      data.frame(m=10, rp=i, name="sWb1a1",
+                      data.frame(m=10, rp=i, name="sWb1a0",
                                  iter=m10_runs[[i]]$iter, 
                                  n=m10_runs[[i]]$n,
                                  actual_intwerror=m10_runs[[i]]$actual_intwerror, 
@@ -1586,7 +1586,7 @@ m11_stats <- data.frame()
 for (i in 1:length(m11_runs)) {
   if (!is.null(m11_runs[[i]])) {
     m11_stats <- rbind(m11_stats, 
-                      data.frame(m=11, rp=i, name="LWb1a0",
+                      data.frame(m=11, rp=i, name="LWb1a1",
                                  iter=m11_runs[[i]]$iter, 
                                  n=m11_runs[[i]]$n,
                                  actual_intwerror=m11_runs[[i]]$actual_intwerror, 
@@ -1617,7 +1617,7 @@ m13_stats <- data.frame()
 for (i in 1:length(m13_runs)) {
   if (!is.null(m13_runs[[i]])) {
     m13_stats <- rbind(m13_stats, 
-                      data.frame(m=13, rp=i, name="sALWb1",
+                      data.frame(m=13, rp=i, name="sALMb1",
                                  iter=m13_runs[[i]]$iter,
                                  n=m13_runs[[i]]$n,
                                  actual_intwerror=m13_runs[[i]]$actual_intwerror, 
@@ -1659,6 +1659,29 @@ ggplot(data=m_stats, aes(x=n, y=actual_intwerror, group=interaction(rp,name), co
 ```
 
 
+
+## Comparison of IntWerror means
+
+```{r plotintwerror_iwe_means, cache=F}
+mean_df <- plyr::ddply(.data = m_stats, .variables = c("n","name"), .fun = function(dd) {data.frame(n=dd$n[1],name=dd$name[1],actual_intwerror=mean(dd$actual_intwerror), mse=mean(dd$mse))})
+ggplot(data=mean_df, aes(x=n, y=actual_intwerror, group=name, color=name)) + geom_line() + geom_point()  + scale_y_continuous(trans='log10')
+```
+
+## Comparison of IntWerror log means
+
+```{r plotintwerror_iwe_logmeans, cache=F}
+meanlog_df <- plyr::ddply(.data = m_stats, .variables = c("n","name"), .fun = function(dd) {data.frame(n=dd$n[1],name=dd$name[1],actual_intwerror=exp(mean(log(dd$actual_intwerror))), mse=exp(mean(log(dd$mse))))})
+meanlog_df_a1 <- meanlog_df[meanlog_df$name %in% c("sWb3a1",'LWb3a1','sALMb3','sALCb3',"sWb1a1",'LWb1a1','sALMb1','sALCb1'),]
+ggplot(data=meanlog_df, aes(x=n, y=actual_intwerror, group=name, color=name)) + geom_line() + geom_point()  + scale_y_continuous(trans='log10')
+```
+
+## Comp of IntWerr log means alpha=1
+
+```{r plotintwerror_iwe_logmeans2, cache=F}
+ggplot(data=meanlog_df_a1, aes(x=n, y=actual_intwerror, group=name, color=name)) + geom_line() + geom_point()  + scale_y_continuous(trans='log10')
+```
+
+
 ## Weighted error by group
 
 ```{r plotawegroup, cache=F}
@@ -1682,13 +1705,43 @@ p1
 ```
 
 
+## Weighted error by group alpha=1
+
+```{r plotawegroup_alpha1, cache=F}
+base_breaks <- function(n = 10){
+  function(x) {
+    axisTicks(log10(range(x, na.rm = TRUE)), log = TRUE, n = n)
+  }
+}
+end1_df <- plyr::ddply(.data = m_stats[m_stats$name %in% c("sWb3a1",'LWb3a1','sALMb3','sALCb3',"sWb1a1",'LWb1a1','sALMb1','sALCb1'),], .variables = c("rp","name"), .fun = function(dd) {dd[dd$n==max(dd$n),]})
+p1 <- ggplot(data=end1_df, 
+           aes(x=name, y=actual_intwerror, colour = name))
+p1 <- p1 + geom_boxplot()
+p1 <- p1 + geom_jitter(width=.1)
+p1 <- p1 + 
+  scale_y_continuous(trans="log", breaks = base_breaks())
+p1
+```
+
+
 
 ## Comparison of mse
 
 ```{r plotintwerror_mse, cache=F}
-library(ggplot2) # , shape=as.factor(rp)
 ggplot(data=m_stats, aes(x=n, y=mse, group=interaction(rp,name), color=name)) + geom_line() + geom_point()  + scale_y_continuous(trans='log10') #+ 
   #scale_color_hue(labels=expression(alpha==1,alpha==0,alpha==0.5,random))
+```
+
+## Comparison of MSE log means
+
+```{r plotintwerror_mse_logmeans, cache=F}
+ggplot(data=meanlog_df, aes(x=n, y=mse, group=name, color=name)) + geom_line() + geom_point()  + scale_y_continuous(trans='log10')
+```
+
+## Comp of MSE log means alpha=1
+
+```{r plotintwerror_mse_logmeans2, cache=F}
+ggplot(data=meanlog_df_a1, aes(x=n, y=mse, group=name, color=name)) + geom_line() + geom_point()  + scale_y_continuous(trans='log10')
 ```
 
 ## MSE by group
@@ -1708,5 +1761,22 @@ p1 <- p1 + geom_jitter(width=.1)
 p1 <- p1 + #scale_y_log10() + 
   scale_y_continuous(trans="log", breaks = base_breaks())
 # p1 <- p1 + scale_color_hue(labels=c('alpha=1','alpha=0','alpha=.5','nonadapt'))
+p1
+```
+
+## MSE by group alpha=1
+
+```{r plotmsegroup_alpha1, cache=F}
+base_breaks <- function(n = 10){
+  function(x) {
+    axisTicks(log10(range(x, na.rm = TRUE)), log = TRUE, n = n)
+  }
+}
+p1 <- ggplot(data=end1_df, 
+           aes(x=name, y=mse, colour = name))
+p1 <- p1 + geom_boxplot()
+p1 <- p1 + geom_jitter(width=.1)
+p1 <- p1 + 
+  scale_y_continuous(trans="log", breaks = base_breaks())
 p1
 ```
