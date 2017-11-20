@@ -1706,7 +1706,7 @@ base_breaks <- function(n = 10){
   }
 }
 end1_df <- plyr::ddply(.data = m_stats[m_stats$name %in% c("sWb3a1",'LWb3a1','sALMb3','sALCb3',"sWb1a1",'LWb1a1','sALMb1','sALCb1'),], .variables = c("rp","name"), .fun = function(dd) {dd[dd$n==max(dd$n),]})
-p1 <- ggplot(data=end_df, 
+p1 <- ggplot(data=end1_df, 
            aes(x=name, y=actual_intwerror, colour = name))
 p1 <- p1 + geom_boxplot()
 p1 <- p1 + geom_jitter(width=.1)
