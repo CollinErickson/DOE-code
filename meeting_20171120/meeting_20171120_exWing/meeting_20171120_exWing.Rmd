@@ -1460,6 +1460,13 @@ m2_stats
 ```{r gatherresultsm3, cache=F}
 m3_stats <- data.frame()
 for (i in 1:length(m3_runs)) {
+  if (is.null(m3_runs[[i]])) { # Add this to add back ones that are completed but somehow got removed
+    istring <- paste0('m',3,'e',i)
+    if (exists(istring)) {
+      m3_runs[[i]] <- eval(parse(text=paste0(istring,"$stats")))
+      #stop("FINISH TRYING TO CHECK FOR EXISTING ONES")
+    }
+  }
   if (!is.null(m3_runs[[i]])) {
     m3_stats <- rbind(m3_stats, 
                       data.frame(m=3, rp=i, name="LWb3a1",
@@ -1475,6 +1482,13 @@ m3_stats
 ```{r gatherresultsm4, cache=F}
 m4_stats <- data.frame()
 for (i in 1:length(m4_runs)) {
+  if (is.null(m4_runs[[i]])) { # Add this to add back ones that are completed but somehow got removed
+    istring <- paste0('m',4,'e',i)
+    if (exists(istring)) {
+      m4_runs[[i]] <- eval(parse(text=paste0(istring,"$stats")))
+      #stop("FINISH TRYING TO CHECK FOR EXISTING ONES")
+    }
+  }
   if (!is.null(m4_runs[[i]])) {
     m4_stats <- rbind(m4_stats, 
                       data.frame(m=4, rp=i, name="LWb3a0",
@@ -1554,6 +1568,12 @@ m8_stats
 ```{r gatherresultsm9, cache=F}
 m9_stats <- data.frame()
 for (i in 1:length(m9_runs)) {
+  if (is.null(m9_runs[[i]])) { # Add this to add back ones that are completed but somehow got removed
+    istring <- paste0('m',9,'e',i)
+    if (exists(istring)) {
+      m9_runs[[i]] <- eval(parse(text=paste0(istring,"$stats")))
+    }
+  }
   if (!is.null(m9_runs[[i]])) {
     m9_stats <- rbind(m9_stats, 
                       data.frame(m=9, rp=i, name="sWb1a1",
@@ -1569,6 +1589,12 @@ m9_stats
 ```{r gatherresultsm10, cache=F}
 m10_stats <- data.frame()
 for (i in 1:length(m10_runs)) {
+  if (is.null(m10_runs[[i]])) { # Add this to add back ones that are completed but somehow got removed
+    istring <- paste0('m',10,'e',i)
+    if (exists(istring)) {
+      m10_runs[[i]] <- eval(parse(text=paste0(istring,"$stats")))
+    }
+  }
   if (!is.null(m10_runs[[i]])) {
     m10_stats <- rbind(m10_stats, 
                       data.frame(m=10, rp=i, name="sWb1a0",
@@ -1584,6 +1610,12 @@ m10_stats
 ```{r gatherresultsm11, cache=F}
 m11_stats <- data.frame()
 for (i in 1:length(m11_runs)) {
+  if (is.null(m11_runs[[i]])) { # Add this to add back ones that are completed but somehow got removed
+    istring <- paste0('m',11,'e',i)
+    if (exists(istring)) {
+      m11_runs[[i]] <- eval(parse(text=paste0(istring,"$stats")))
+    }
+  }
   if (!is.null(m11_runs[[i]])) {
     m11_stats <- rbind(m11_stats, 
                       data.frame(m=11, rp=i, name="LWb1a1",
@@ -1599,7 +1631,13 @@ m11_stats
 
 ```{r gatherresultsm12, cache=F}
 m12_stats <- data.frame()
-for (i in 1:length(m12_runs)) {
+for (i in 1:length(m12_runs)) {  
+  if (is.null(m12_runs[[i]])) { # Add this to add back ones that are completed but somehow got removed
+    istring <- paste0('m',12,'e',i)
+    if (exists(istring)) {
+      m12_runs[[i]] <- eval(parse(text=paste0(istring,"$stats")))
+    }
+  }
   if (!is.null(m12_runs[[i]])) {
     m12_stats <- rbind(m12_stats, 
                       data.frame(m=12, rp=i, name="LWb1a0",
@@ -1629,7 +1667,13 @@ m13_stats
 
 ```{r gatherresultsm14, cache=F}
 m14_stats <- data.frame()
-for (i in 1:length(m14_runs)) {
+for (i in 1:length(m14_runs)) {  
+  if (is.null(m14_runs[[i]])) { # Add this to add back ones that are completed but somehow got removed
+    istring <- paste0('m',14,'e',i)
+    if (exists(istring)) {
+      m14_runs[[i]] <- eval(parse(text=paste0(istring,"$stats")))
+    }
+  }
   if (!is.null(m14_runs[[i]])) {
     m14_stats <- rbind(m14_stats, 
                       data.frame(m=14, rp=i, name="sALCb1",
