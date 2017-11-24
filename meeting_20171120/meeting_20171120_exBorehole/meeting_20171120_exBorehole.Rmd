@@ -1599,7 +1599,13 @@ m11_stats
 
 ```{r gatherresultsm12, cache=F}
 m12_stats <- data.frame()
-for (i in 1:length(m12_runs)) {
+for (i in 1:length(m12_runs)) {  
+  if (is.null(m12_runs[[i]])) { # Add this to add back ones that are completed but somehow got removed
+    istring <- paste0('m',12,'e',i)
+    if (exists(istring)) {
+      m12_runs[[i]] <- eval(parse(text=paste0(istring,"$stats")))
+    }
+  }
   if (!is.null(m12_runs[[i]])) {
     m12_stats <- rbind(m12_stats, 
                       data.frame(m=12, rp=i, name="LWb1a0",
