@@ -1722,7 +1722,7 @@ m17_runs[[i]] <- m17e10
 m18_runfunc <- function() {
   adapt.concept2.sFFLHD.R6$new(D=D,b=3,L=3,func=func, obj="desirability", des_func=des_func_grad_norm2_mean, 
                                alpha_des=1, weight_const=0, take_until_maxpvar_below=1, 
-                               package="LOOEC-laGP_GauPro-laGP", design='sFFLHD', 
+                               package="LOOEC-GauPro_kernel", design='sFFLHD', 
                                selection_method="max_des_red_all", nugget=1e-6, 
                                actual_des_func=actual_des_func, 
                                verbose=0, nconsider=c(Inf,Inf,Inf), nconsider_random=c(0),
@@ -1819,7 +1819,7 @@ m18_runs[[i]] <- m18e10
 m19_runfunc <- function() {
   adapt.concept2.sFFLHD.R6$new(D=D,b=3,L=3,func=func, obj="desirability", des_func=des_func_grad_norm2_mean, 
                                alpha_des=1, weight_const=0, take_until_maxpvar_below=1, 
-                               package="LOOEC-laGP_GauPro-laGP", design='sFFLHD', 
+                               package="LOOEC-GauPro_kernel", design='sFFLHD', 
                                selection_method="max_des", nugget=1e-6, 
                                actual_des_func=actual_des_func, 
                                verbose=0, nconsider=c(Inf,Inf,Inf), nconsider_random=c(0),

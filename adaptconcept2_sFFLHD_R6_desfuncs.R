@@ -346,6 +346,8 @@ des_func_grad_norm2_mean <- function(mod, XX, return_se=F) {
   } else if ("IGP_laGP_GauPro_kernel" %in% class(mod)) {
     # des <- mod$mod.extra$GauPro$mod$grad_norm2_dist(XX=XX)$mean
     des <- mod$mod.extra$GauPro$mod$grad_norm2_mean(XX=XX)
+  } else if ("IGP_LOOEC_GauPro_kernel" %in% class(mod)) {
+    des <- mod$mod$grad_norm2_mean(XX=XX)
   } else {
     stop("des_func_grad_norm2_mean only works with GauPro_kernel_model or laGP_GauPro_kernel")
   }
