@@ -2204,7 +2204,8 @@ m19_stats
 
 ```{r gatherresults, cache=F}
 m_stats <- rbind(m1_stats, m2_stats, m3_stats, m4_stats, m5_stats, m6_stats, m7_stats, m8_stats,
-                 m9_stats, m10_stats, m11_stats, m12_stats, m13_stats, m14_stats)
+                 m9_stats, m10_stats, m11_stats, m12_stats, m13_stats, m14_stats,
+                 m15_stats, m16_stats, m17_stats, m18_stats, m19_stats)
 ```
 
 
