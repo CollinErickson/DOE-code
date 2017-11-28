@@ -1424,7 +1424,7 @@ m14_runs[[i]] <- m14e10$stats
 
 
 
-## @@@, $E[g^2]$, SMED sFFLHD b=3
+## OTL, $E[g^2]$, SMED sFFLHD b=3
 
 ```{r m15_runfunc}
 m15_runfunc <- function() {
@@ -1521,7 +1521,7 @@ m15_runs[[i]] <- m15e10
 
 
 
-## @@@, $E[g^2]$, SMED D-adjust sFFLHD b=3
+## OTL, $E[g^2]$, SMED D-adjust sFFLHD b=3
 
 ```{r m16_runfunc}
 m16_runfunc <- function() {
@@ -1618,7 +1618,7 @@ m16_runs[[i]] <- m16e10
 
 
 
-## @@@, $E[g^2]$, Max w*s sFFLHD b=3
+## OTL, $E[g^2]$, Max w*s sFFLHD b=3
 
 ```{r m17_runfunc}
 m17_runfunc <- function() {
@@ -1715,7 +1715,7 @@ m17_runs[[i]] <- m17e10
 
 
 
-## @@@, $E[g^2]$, LOOEC IntWerror sFFLHD b=3
+## OTL, $E[g^2]$, LOOEC IntWerror sFFLHD b=3
 
 ```{r m18_runfunc}
 m18_runfunc <- function() {
@@ -1812,7 +1812,7 @@ m18_runs[[i]] <- m18e10
 
 
 
-## @@@, $E[g^2]$,  LOOEC max w*s, sFFLHD b=3
+## OTL, $E[g^2]$,  LOOEC max w*s, sFFLHD b=3
 
 ```{r m19_runfunc}
 m19_runfunc <- function() {
