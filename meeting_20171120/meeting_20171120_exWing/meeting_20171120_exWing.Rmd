@@ -1430,7 +1430,7 @@ m14_runs[[i]] <- m14e10$stats
 m15_runfunc <- function() {
   adapt.concept2.sFFLHD.R6$new(D=D,b=3,L=3,func=func, obj="desirability", des_func=des_func_grad_norm2_mean, 
                                alpha_des=1, weight_const=0, take_until_maxpvar_below=1, 
-                               package=GP_package, design='sFFLHD', 
+                               package=GP_package, design='sFFLHD_Lflex', 
                                selection_method="SMED", nugget=1e-6, 
                                actual_des_func=actual_des_func, 
                                verbose=0, nconsider=c(Inf,Inf,Inf), nconsider_random=c(0),
@@ -1527,7 +1527,7 @@ m15_runs[[i]] <- m15e10
 m16_runfunc <- function() {
   adapt.concept2.sFFLHD.R6$new(D=D,b=3,L=3,func=func, obj="desirability", des_func=des_func_grad_norm2_mean, 
                                alpha_des=1, weight_const=0, take_until_maxpvar_below=1, 
-                               package=GP_package, design='sFFLHD', 
+                               package=GP_package, design='sFFLHD_Lflex', 
                                selection_method="SMED", nugget=1e-6, useSMEDtheta=TRUE, 
                                actual_des_func=actual_des_func, 
                                verbose=0, nconsider=c(Inf,Inf,Inf), nconsider_random=c(0),
@@ -1624,7 +1624,7 @@ m16_runs[[i]] <- m16e10
 m17_runfunc <- function() {
   adapt.concept2.sFFLHD.R6$new(D=D,b=3,L=3,func=func, obj="desirability", des_func=des_func_grad_norm2_mean, 
                                alpha_des=1, weight_const=0, take_until_maxpvar_below=1, 
-                               package=GP_package, design='sFFLHD', 
+                               package=GP_package, design='sFFLHD_Lflex', 
                                selection_method="max_des", nugget=1e-6, 
                                actual_des_func=actual_des_func, 
                                verbose=0, nconsider=c(Inf,Inf,Inf), nconsider_random=c(0),
@@ -1721,7 +1721,7 @@ m17_runs[[i]] <- m17e10
 m18_runfunc <- function() {
   adapt.concept2.sFFLHD.R6$new(D=D,b=3,L=3,func=func, obj="desirability", des_func=des_func_grad_norm2_mean, 
                                alpha_des=1, weight_const=0, take_until_maxpvar_below=1, 
-                               package="LOOEC-GauPro_kernel", design='sFFLHD', 
+                               package="LOOEC-GauPro_kernel", design='sFFLHD_Lflex', 
                                selection_method="max_des_red_all", nugget=1e-6, 
                                actual_des_func=actual_des_func, 
                                verbose=0, nconsider=c(Inf,Inf,Inf), nconsider_random=c(0),
@@ -1818,7 +1818,7 @@ m18_runs[[i]] <- m18e10
 m19_runfunc <- function() {
   adapt.concept2.sFFLHD.R6$new(D=D,b=3,L=3,func=func, obj="desirability", des_func=des_func_grad_norm2_mean, 
                                alpha_des=1, weight_const=0, take_until_maxpvar_below=1, 
-                               package="LOOEC-GauPro_kernel", design='sFFLHD', 
+                               package="LOOEC-GauPro_kernel", design='sFFLHD_Lflex', 
                                selection_method="max_des", nugget=1e-6, 
                                actual_des_func=actual_des_func, 
                                verbose=0, nconsider=c(Inf,Inf,Inf), nconsider_random=c(0),
