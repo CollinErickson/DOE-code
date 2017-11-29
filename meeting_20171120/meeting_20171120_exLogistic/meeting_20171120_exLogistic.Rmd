@@ -21,6 +21,29 @@ source("adaptconcept2_sFFLHD_R6.R")
 
 * Add on one at a time (sFFLHD batch size not 1)
 
+## Last week (11/20)
+
+* Added 9-14 (one at a time)
+
+* Some were missing
+
+## This week (11/29)
+
+* Fixed missing runs
+
+* Made it twice as fast
+
+* Added 15-19 (all use sFFLHD, b=3)
+
+  - 15: SMED
+  
+  - 16: SMED with dimension distance adjustment
+  
+  - 17: Max weighted error (no integration)
+  
+  - 18: Max IntWerror reduction (1) using LOOEC for better error predictions
+  
+  - 19: Max Werror (17) using LOOEC for better error predictions
 
 
 ```{r runfunc}
