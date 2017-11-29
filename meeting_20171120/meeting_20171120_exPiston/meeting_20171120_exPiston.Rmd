@@ -2192,7 +2192,8 @@ for (i in 1:length(m19_runs)) {
   if (is.null(m19_runs[[i]])) { # Add this to add back ones that are completed but somehow got removed
     istring <- paste0('m',19,'e',i)
     if (exists(istring)) {
-      m19_runs[[i]] <- eval(parse(text=paste0(istring,"$stats")))
+      # m19_runs[[i]] <- eval(parse(text=paste0(istring,"$stats")))
+      m19_runs[[i]] <- eval(parse(text=paste0(istring)))
     }
   }
   if (!is.null(m19_runs[[i]])) {
