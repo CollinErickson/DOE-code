@@ -2189,6 +2189,12 @@ m18_stats
 ```{r gatherresultsm19, cache=F}
 m19_stats <- data.frame()
 for (i in 1:length(m19_runs)) {
+  if (is.null(m19_runs[[i]])) { # Add this to add back ones that are completed but somehow got removed
+    istring <- paste0('m',19,'e',i)
+    if (exists(istring)) {
+      m19_runs[[i]] <- eval(parse(text=paste0(istring,"$stats")))
+    }
+  }
   if (!is.null(m19_runs[[i]])) {
     m19_stats <- rbind(m19_stats, 
                         data.frame(m=19, rp=i, name="swb3a1L",
