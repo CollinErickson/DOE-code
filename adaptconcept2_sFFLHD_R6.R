@@ -124,6 +124,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
     #weight_func = NULL, # weight function: 1 + alpha_des * des_func()
     weight_const = NULL,
     #werror_func = NULL, # weighted error function: sigmahat * (1+alpha_des*des_func())
+    error_power = NULL, # 
     selection_method = NULL, # string
     nconsider = NULL,
     nconsider_random = NULL,
@@ -149,6 +150,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
                          verbose = 0,
                          design_seed=numeric(0),
                          weight_const=1,
+                         error_power=1,
                          nconsider=Inf, nconsider_random=0, # CHANGE BACK TO INF for nconsider
                          ...) {
       self$iteration <- 1
@@ -165,6 +167,8 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       self$selection_method <- selection_method
       self$des_func_fast <- des_func_fast
       self$weight_const <- weight_const
+      self$error_power <- error_power
+      if (is.null(error_power) || !(error_power %in% c(1,2))) {stop("error_power must be 1 or 2")}
       self$verbose <- verbose
       self$nconsider <- nconsider
       self$nconsider_random <- nconsider_random
@@ -202,7 +206,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       if(is.null(package)) {self$package <- "laGP"}
       else {self$package <- package}
       self$mod <- IGP(package = self$package, estimate.nugget=TRUE, nugget=nugget)
-      self$stats <- list(iteration=c(),n=c(),pvar=c(),mse=c(), ppu=c(), minbatch=c(), pamv=c(), actual_intwerror=c(), intwerror=c(), intwerror01=c())
+      self$stats <- list(iteration=c(),n=c(),pvar=c(),mse=c(), ppu=c(), minbatch=c(), pamv=c(), actual_intwerror=c(), actual_intwvar=c(), intwerror=c(), intwvar=c(), intwerror01=c())
       self$obj_nu <- NaN
       
       # set objective function according to obj
@@ -454,15 +458,22 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
      self$stats$ppu <- c(self$stats$ppu, nrow(self$X) / (nrow(self$X) + nrow(self$Xopts)))
      self$stats$minbatch <- c(self$stats$minbatch, if (length(self$batch.tracker>0)) min(self$batch.tracker) else 0)
      self$stats$pamv <- c(self$stats$pamv, self$mod$prop.at.max.var())
-     self$stats$actual_intwerror <- c(self$stats$actual_intwerror, self$actual_intwerror_func())
+     # self$stats$actual_intwerror <- c(self$stats$actual_intwerror, self$actual_intwerror_func())
+     aiwef <- self$actual_intwerror_func(error_power=c(1,2))
+     self$stats$actual_intwerror <- c(self$stats$actual_intwerror, aiwef[[1]])
+     self$stats$actual_intwvar <- c(self$stats$actual_intwvar, aiwef[[2]])
      if (!is.null(self$des_func)) {
-       self$stats$intwerror <- c(self$stats$intwerror, self$intwerror_func())
+       # self$stats$intwerror <- c(self$stats$intwerror, self$intwerror_func())
+       iwf <- self$intwerror_func(error_power=c(1,2))
+       self$stats$intwerror <- c(self$stats$intwerror, iwf[[1]])
+       self$stats$intwvar <- c(self$stats$intwvar, iwf[[2]])
        self$stats$intwerror01 <- c(self$stats$intwerror01, NaN) # Not using now, should be sped up anyways 
                                                                 # by doing at the same time as intwerror, 
                                                                 # bad to do it this way 
                                                                 # self$intwerror_func(weight_const=0,alpha=1))
      } else {
        self$stats$intwerror <- c(self$stats$intwerror, NaN)
+       self$stats$intwvar <- c(self$stats$intwvar, NaN)
        self$stats$intwerror01 <- c(self$stats$intwerror01, NaN)
      }
     },
@@ -1198,20 +1209,33 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
     }
   },
   # The weighted error function sigmahat * (1 + alpha * delta())
-  werror_func = function(..., XX, mod=self$mod, des_func=self$des_func, alpha=self$alpha_des, weight_const=self$weight_const, weight_func=self$weight_func) {
+  werror_func = function(..., XX, mod=self$mod, des_func=self$des_func, alpha=self$alpha_des, weight_const=self$weight_const, weight_func=self$weight_func, error_power=self$error_power) {
     err <- mod$predict.se(XX)
     if (exists("use_true_for_error") && use_true_for_error) {
       if (runif(1) < .01) print("Using true error #9258332")
       err <- abs(mod$predict(XX) - apply(XX, 1, self$func))
     }
-    err * weight_func(XX=XX, mod=mod, des_func=des_func, alpha=alpha,weight_const=weight_const)
+    weight_func_out <- weight_func(XX=XX, mod=mod, des_func=des_func, alpha=alpha,weight_const=weight_const)
+    if (length(error_power) == 1 && error_power == 1) {
+      err * weight_func_out
+    } else if (length(error_power) == 1 && error_power == 2) {
+      err^2 * weight_func_out
+    } else if (length(error_power) == 2 && error_power == c(1,2)) {
+      list(err * weight_func_out,
+           err^2 * weight_func_out)
+    } else {stop("error_power not recognized in werror_func #825376")}
   },
-  intwerror_func = function(..., XX=NULL, N=1e4, mod=self$mod, des_func=self$des_func, alpha=self$alpha_des, weight_const=self$weight_const, weight_func=self$weight_func){
+  intwerror_func = function(..., XX=NULL, N=1e4, mod=self$mod, des_func=self$des_func, alpha=self$alpha_des, weight_const=self$weight_const, weight_func=self$weight_func, error_power=self$error_power){
     # use self$func instead of self$mod to get actual value
     if (is.null(XX)) {
       XX <- simple.LHS(N, self$D) #matrix(runif(n*self$D), ncol=self$D)
     }
-    mean(self$werror_func(XX=XX, mod=mod, des_func=des_func, alpha=alpha,weight_const=weight_const))
+    werror_func_out <- self$werror_func(XX=XX, mod=mod, des_func=des_func, alpha=alpha,weight_const=weight_const, error_power=error_power)
+    if (is.list(werror_func_out)) {
+      sapply(werror_func_out, mean)
+    } else {
+      mean(werror_func_out)
+    }
   },
   int_pvar_red_for_opts = function(..., Xopts, XX=NULL, N=1e4, mod=self$mod, des_func=self$des_func, alpha=self$alpha_des, weight_const=self$weight_const, weight_func=self$weight_func, delta_pvar_func=mean){
     # use self$func instead of self$mod to get actual value
@@ -1246,7 +1270,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
     # Now letting you pass in func, can weight them, or sqrt * weight
     delta_pvar_func(reds)
   },
-  actual_intwerror_func = function(..., N=2e3, mod=self$mod, f=self$func) {
+  actual_intwerror_func = function(..., N=2e3, mod=self$mod, f=self$func, error_power=self$error_power) {
     if (is.null(self$actual_des_func)) { # Return NaN if user doesn't give actual_des_func
       return(NaN)
     }
@@ -1256,7 +1280,14 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
     abserr <- abs(ZZ - ZZ.actual)
     # TODO LATER Have actual_des_func return ZZ to save time
     weight <- self$weight_const + self$alpha_des * self$actual_des_func(XX=XX, mod=mod)
-    mean(weight * abserr)
+    if (length(error_power) == 1 && error_power == 1) {
+      mean(weight * abserr)
+    } else if (length(error_power) == 1 && error_power == 2) {
+      mean(weight * abserr^2)
+    } else if (length(error_power) == 2 && error_power == c(1,2)) {
+      list(mean(weight * abserr),
+           mean(weight * abserr^2))
+    } else {stop("error_power not recognized in actual_intwerror_func #20497")}
   },
   print_results = function() { browser()
     best_index <- which.max(self$Z)
@@ -1411,5 +1442,8 @@ if (F) {
   set.seed(3); csa(); a <- adapt.concept2.sFFLHD.R6$new(D=2,L=3,func=banana, obj="desirability", des_func=des_func_grad_norm2_mean, alpha_des=1e2, n0=30, take_until_maxpvar_below=.9, package="laGP_GauPro_kernel", design='given',X0=MaxPro::MaxProLHD(n=20,p=2,total_iter=1e4)$Design,Xopts=as.matrix(reshape::expand.grid.df(data.frame(a=0:10),data.frame(b=0:10)))[sample(1:11^2),]/10, selection_method="max_des_red_all_best"); a$run(1)
   
   set.seed(2); csa(); a <- adapt.concept2.sFFLHD.R6$new(D=1,L=1,func=Vectorize(function(x){x}), obj="desirability", des_func=get_des_func_grad_norm2_mean_alpha(alpha=1), alpha_des=1,weight_const=0, n0=2, take_until_maxpvar_below=1, package="GauPro_kernel", design='given', selection_method="max_des_red_all", Xopts=matrix(c(.5,lhs::maximinLHS(n=40,k=1)),ncol=1)); a$run(1)
+
+  # banana, grad_norm2_mean, laGP_GauPro_kernel
+  set.seed(2); csa(); a <- adapt.concept2.sFFLHD.R6$new(D=2,L=3,func=banana, obj="desirability", des_func=des_func_grad_norm2_mean, actual_des_func=actual_des_func_grad_norm2_mean_banana, alpha_des=1e2, n0=30, take_until_maxpvar_below=.9, package="laGP_GauPro_kernel", design='sFFLHD', selection_method="max_des_red_all_best"); a$run(1)
   
 }
