@@ -850,6 +850,10 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
      newL
    },
   select_new_points_from_max_des_red = function() {
+    # Use max weighted error reduction to select batch of points from self$Xopts
+    # Returns indices of points to use from Xopts
+    
+    # gpc is a temp version of the model to add points to
     if (self$package == 'laGP') {
       gpc <- IGP::IGP(X = self$X, Z=self$Z, package='laGP', d=1/self$mod$theta(), g=self$mod$nugget(), no_update=TRUE)
     } else if (self$package == 'laGP_GauPro') {
@@ -897,12 +901,11 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
         cf(function(X)self$werror_func(mod=gpc, XX=X), batchmax=Inf, afterplotfunc=function(){points(self$X, col=3, pch=2);points(self$Xopts[-Xopts_to_consider,], col=4,pch=3);text(self$Xopts[Xopts_to_consider,])})
       }
     }
-    if (exists("browser_max_des")) {if (browser_max_des) {browser()}}
     
     # Can start with none and select one at time, or start with random and replace
     if (self$selection_method %in% c("max_des_red", "ALC")) {
       bestL <- c() # Start with none
-    } else if (self$selection_method %in% c("max_des_red_all", "ALC_all")) { # Start with L and replace
+    } else if (self$selection_method %in% c("max_des_red_all", "ALC_all")) { # Start with random L and replace
       bestL <- sample(Xopts_to_consider, size = self$b, replace = FALSE)
     } else if (self$selection_method %in% c("max_des_red_all_best", "ALC_all_best")) { # Start with best L and replace
       if (self$selection_method %in% c("ALC_all_best")) {print("using ALC_all_best")
@@ -917,7 +920,6 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
     }
     #int_points <- lapply(1:10, function(iii) {simple.LHS(1e3, self$D)})
     int_points <- simple.LHS(1e4, self$D)
-    # int_des_weight_func <- function() {mean(self$desirability_func(gpc,int_points))}
     
     # Make separate int_werror_func for ALC
     if (substr(self$selection_method, 1, 3) == "ALC") {print("Using ALC")
@@ -956,7 +958,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       }
       
       int_werror_vals <- rep(Inf, nrow(self$Xopts))
-      if (self$selection_method == "max_des_red") { # Don't have current value, so don't start with anything
+      if (self$selection_method %in% c("max_des_red", "ALC")) { # Don't have current value, so don't start with anything
         r_star <- NA # Track best index
         int_werror_vals_star <- Inf # Track best value
       } else { # Start with ell and replace
@@ -993,25 +995,8 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
         } else {
           gpc$update(Xall = rbind(X_with_bestL, self$Xopts[r, ,drop=F]), Zall=c(Z_with_bestL, Znotrun_preds[r]), restarts=0, no_update=TRUE)
         }
-        
-        # This false chunk shows the distribution of change in desirability of points
-        if (F) {
-          close.screen(all=T) # This messes up the plotting, probably will have to restart after
-          xxx <- matrix(runif(1000*self$D), ncol=self$D) # Create random points
-          plot(self$werror_func(mod=gpc, XX=xxx), self$werror_func(mod=self$mod, XX=xxx))
-          pdiff <- -self$werror_func(mod=gpc, XX=xxx) + self$werror_func(mod=self$mod, XX=xxx)
-          pda <- pdiff #abs(pdiff)
-          summary(pda)
-          which.max(pda)
-          rbind(xxx[which.max(pda),], self$Xopts[r, , drop=FALSE])
-          xxxdists <- sqrt(rowSums(sweep(xxx,2,self$Xopts[r,, drop=FALSE])^2))
-          plot(xxxdists, pda)
-        }
-        
+
         int_werror_vals_r <- int_werror_func()
-        if (inherits(try({if (int_werror_vals_r < int_werror_vals_star) 12}), "try-error")) {
-          browser()
-        }
         if (int_werror_vals_r < int_werror_vals_star) {
           int_werror_vals_star <- int_werror_vals_r
           r_star <- r
@@ -1025,7 +1010,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       # csa(); plot(pvs, pvs2); lmp <- lm(pvs2~pvs); lmp
      
       # Reduce the number to consider if large
-      if (T) {#browser()
+      if (T) {
         if (ell < self$b) {
          numtokeep <- self$nconsider[min(length(self$nconsider), ell+1)] + 1 - self$b # b-1 selected that aren't in consideration
          Xopts_to_consider <- order(int_werror_vals,decreasing = F)[1:min(length(int_werror_vals), numtokeep)]
@@ -1043,7 +1028,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
         }
       }
 
-      if (self$selection_method == "max_des_red") { # if starting with none and adding one
+      if (self$selection_method %in% c("max_des_red", "ALC")) { # if starting with none and adding one
        bestL <- c(bestL, r_star)
       } else { # if starting with L and replacing as go
        bestL[ell] <- r_star
@@ -1052,7 +1037,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       if (ell < self$b || TRUE) { # REMOVE THIS FOR SPEED
         Xnewone <- self$Xopts[r_star, , drop=FALSE]
         Znewone <- Znotrun_preds[r_star] #gpc$predict(Xnewone)
-        if (self$selection_method == "max_des_red") {
+        if (self$selection_method %in% c("max_des_red", "ALC")) {
           if (F) {
            cbind(self$Xopts, int_werror_vals)
            i1 <- 1
@@ -1073,9 +1058,6 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
            }
           }
         } else {
-          # X_with_bestL[nrow(self$X) + ell,] <- self$Xopts[r_star, ]
-          # Z_with_bestL[nrow(self$X) + ell] <- Znotrun_preds[r_star]
-          # Fixing this
           X_with_bestL <- rbind(X_with_bestL, self$Xopts[r_star, ])
           Z_with_bestL <- c(Z_with_bestL, Znotrun_preds[r_star])
           if (self$package == 'laGP') {
@@ -1085,7 +1067,6 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
            gpc$update(Xall=X_with_bestL, Zall=Z_with_bestL, restarts=0, no_update=TRUE)
           }
         }
-        #print(Xnewone);
         cat("\tSelected", r_star, Xnewone, Znewone, "\n");
         #cf(function(xx) self$desirability_func(gpc, xx), batchmax=1e3, pts=self$Xopts)
         #gpc$update(Xall=X_with_bestL, Zall=Z_with_bestL, restarts=0)
@@ -1111,11 +1092,6 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
         cf(function(X)self$werror_func(mod=gpc, XX=X), batchmax=Inf, afterplotfunc=function(){points(self$X, col=3, pch=2);points(self$Xopts[-Xopts_to_consider,], col=4,pch=3);points(self$Xopts[Xopts_to_consider,]);points(self$Xopts[bestL,], col=1,pch=19, cex=2);text(self$Xopts[bestL,], col=2,pch=19, cex=2)})
       }
       close.screen(all=TRUE)
-    }
-    if (exists("browser_max_des")) {
-      if (browser_max_des) {
-        browser()
-      }
     }
     
     newL <- bestL
