@@ -850,7 +850,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
      newL
    },
   select_new_points_from_max_des_red = function() {
-    return(self$select_new_points_from_max_des_red2())
+    if (usemed2) return(self$select_new_points_from_max_des_red2())
     # Use max weighted error reduction to select batch of points from self$Xopts
     # Returns indices of points to use from Xopts
     
@@ -1111,7 +1111,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
     rm(gpc, bestL, Xnewone, Znewone)
     newL
   },
-  select_new_points_from_max_des_red2 = function() {browser()
+  select_new_points_from_max_des_red2 = function() {#browser()
     # ONLY FOR MAX_DES_RED_BEST AND GAUPRO KERNEL
     # Use max weighted error reduction to select batch of points from self$Xopts
     # Returns indices of points to use from Xopts
@@ -1192,7 +1192,6 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       cat(paste0('starting iter ', ell,'/',self$b, ', considering ', length(unique(Xopts_to_consider,bestL)), "/", nrow(self$Xopts), ', bestL is ', paste0(bestL, collapse = ' '), '\n'))
       
       Xopts_inds_to_consider <- setdiff(Xopts_to_consider, bestL[-ell]) # -ell to consider one currently in place
-      browser()
       int_werror_red_vals <- sapply(Xopts_inds_to_consider, function(ind) {
         int_werror_red_func(add_point_index=ind)
         }
@@ -1208,11 +1207,6 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
         order(int_werror_red_vals, decreasing=T)[1:min(length(int_werror_red_vals), numtokeep)]
       }
       
-      # if (ell < self$b) {
-      #   numtokeep <- if (ell==1) 30 else if (ell==2) 25 else if (ell==3) 20 else if (ell>=4) {15} else NA
-      #   Xopts_to_consider <- order(int_werror_vals,decreasing = F)[1:min(length(int_werror_vals), numtokeep)]
-      # }
-      
       # Add back in some random ones
       numrandtoadd <- self$nconsider_random[min(length(self$nconsider_random), ell+1)]
       if (numrandtoadd > 0 && length(setdiff(1:nrow(self$Xopts), Xopts_to_consider)) > numrandtoadd) {
@@ -1224,7 +1218,6 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       if (ell < self$b || TRUE) { # REMOVE THIS FOR SPEED
         Xnewone <- self$Xopts[r_star, , drop=FALSE]
         Znewone <- Znotrun_preds[r_star] #gpc$predict(Xnewone)
-        
         # X_with_bestL <- rbind(X_with_bestL, self$Xopts[r_star, ])
         # Z_with_bestL <- c(Z_with_bestL, Znotrun_preds[r_star])
         # gpc$update(Xall=X_with_bestL, Zall=Z_with_bestL, restarts=0, no_update=TRUE)
