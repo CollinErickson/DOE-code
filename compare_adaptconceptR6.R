@@ -27,6 +27,8 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
                        #  default is to use Sys.time() to get seed.
     design_seed_start = NULL,
     folder_created = FALSE,
+    folder_path = NULL,
+    folder_name = NULL,
     outdf = data.frame(),
     outrawdf = data.frame(),
     plotdf = data.frame(),
@@ -45,6 +47,9 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
     number_runs = NULL,
     completed_runs = NULL,
     pass_list = NULL,
+    parallel = NULL,
+    parallel_cores = NULL,
+    parallel_cluster = NULL,
     initialize = function(func, D, L, b=NULL, batches=10, reps=5, 
                           obj=c("nonadapt", "grad"), 
                           #plot_after=c(), plot_every=c(),
@@ -57,9 +62,11 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
                           package="laGP",
                           selection_method='SMED',
                           design='sFFLHD',
-                          des_func=NA, alpha_des=NaN, weight_const=1,
+                          des_func=NA, alpha_des=1, weight_const=0,
                           actual_des_func=NULL,
                           pass_list=list() # List of things to pass to adapt concept for each
+                          , folder_name,
+                          parallel=FALSE, parallel_cores="detect"
                           ) {#browser()
       self$func <- func
       self$D <- D
@@ -87,6 +94,15 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
       self$weight_const <- weight_const
       self$actual_des_func <- actual_des_func
       self$pass_list <- pass_list
+      self$parallel <- parallel
+      self$parallel_cores <- parallel_cores
+      if (self$parallel) { # For now assume using parallel package
+        if (parallel_cores == "detect") {
+          self$parallel_cores <- parallel::detectCores()
+        } else {
+          self$parallel_cores <- parallel_cores
+        }
+      }
       #browser()
       if (is.null(func_string)) {
         if (is.character(func)) {func_string <- func}
@@ -95,6 +111,7 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
         else {stop("Function error 325932850")}
       }
       self$func_string <- func_string
+      self$set_folder_name(folder_name=folder_name)
       
       if (any(is.function(func))) {
         
@@ -102,7 +119,7 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
       # browser()
       self$rungrid <- reshape::expand.grid.df(
                    data.frame(
-                     func=func_string, func_string=func_string, func_num=1:length(func)
+                     func=func_string, func_string=func_string, func_num=1:length(func), stringsAsFactors=FALSE
                    ),
                    data.frame(D),data.frame(L), data.frame(b),
                    data.frame(repl=1:reps, seed=if(!is.null(seed_start)) seed_start+1:reps-1 else NA,
@@ -144,31 +161,82 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
       self$completed_runs <- rep(FALSE, self$number_runs)
       #self$outrawdf <- data.frame()
     },
-    create_output_folder = function(timestamp = FALSE) {
-      folderTime0 <- gsub(" ","_", Sys.time())
-      folderTime <- gsub(":","-", folderTime0)
-      #t1 <- c(self$func_string,"_D=",self$D,"_L=",self$L,"_B=",self$batches,"_R=",self$reps,"_n0=",self$n0,
-      #        "_F=",c(rbind(self$forces,"-",self$force_vals)))
-      t1 <- c(self$func_string,"_D=",self$D,"_L=",self$L,"_b=",self$b,"_B=",self$batches,"_R=",self$reps,"_n0=",self$n0,
-              "_Fold=",self$force_old,"_Fpvar=",self$force_pvar)
-      if (!is.null(self$seed_start)) {t1 <- c(t1,"_","S=",self$seed_start)}
-      self$folderName <- if (timestamp) {paste0(c(t1,"_",folderTime), collapse = "")} else {t1}
-      self$folder_path <- paste0("./compare_adaptconcept_output/",self$folderName)
-      dir.create(path = self$folder_path)
-      self$folder_created = TRUE
-      
+    set_folder_name = function(folder_name, add_timestamp=FALSE) {#browser()
+      if (missing(folder_name)) {
+        folderTime0 <- gsub(" ","_", Sys.time())
+        folderTime <- gsub(":","-", folderTime0)
+        t1 <- c(self$func_string,"_D=",self$D,"_L=",self$L,"_b=",self$b,"_B=",self$batches,"_R=",self$reps,"_n0=",self$n0,
+                "_Fold=",self$force_old,"_Fpvar=",self$force_pvar)
+        if (!is.null(self$seed_start)) {t1 <- c(t1,"_","S=",self$seed_start)}
+        if (add_timestamp) {t1 <- c(t1,"_",folderTime)}
+        folder_name <- paste0(t1, collapse = "")
+      }
+      self$folder_name <- folder_name
+      self$folder_path <- paste0("./compare_adaptconcept_output/",self$folder_name)
     },
-    run_all = function(redo = FALSE, noplot=FALSE) {
+    create_output_folder = function(add_timestamp = FALSE) {
+      if (self$folder_created) {return(invisible(self))}
+      if (!dir.exists(self$folder_path)) {
+        dir.create(path = self$folder_path)
+        self$folder_created = TRUE
+      } else {
+        stop("Error, folder already exists but folder_created==FALSE")
+      }
+      invisible(self)
+    },
+    run_all = function(redo = FALSE, noplot=FALSE, save_every=FALSE, run_order,
+                       parallel=self$parallel, parallel_temp_save=FALSE) {
       if (!redo) { # Only run ones that haven't been run yet
         to_run <- which(self$completed_runs == FALSE)
       } else {
         to_run <- 1:self$number_runs
       }
-      sapply(to_run,function(ii){self$run_one(ii, noplot=noplot)})
+      # Set run order
+      if (missing(run_order)) { # random for parallel for load balancing
+        if (self$parallel) {run_order <- "random"}
+        else {run_order <- "inorder"}
+      }
+      if (run_order == "inorder") {} # Leave it in order
+      else if (run_order == "reverse") {to_run <- rev(to_run)}
+      else if (run_order == "random") {to_run <- sample(to_run)}
+      else {stop("run_order not recognized #567128")}
+      # Run, handle parallel differently
+      if (parallel) {
+        if (is.null(self$parallel_cluster)) {
+          self$parallel_cluster <- parallel::makeCluster(spec = self$parallel_cores, type = "SOCK")
+        }
+        if (parallel_temp_save) {self$create_output_folder()}
+        parout <- parallel::clusterApplyLB(
+          cl=self$parallel_cluster,
+          to_run,
+          function(ii){
+            tempout <- self$run_one(ii, is_parallel=TRUE)
+            if (parallel_temp_save) {
+              saveRDS(object=tout, file=paste0(self$folder_path,"/parallel_temp_output_",ii,".rds"))
+            }
+            tempout
+          })
+        lapply(parout, function(oneout) {do.call(self$add_result_of_one, oneout)})
+        parallel::stopCluster(self$parallel_cluster)
+        self$parallel_cluster <- NULL
+        if (parallel_temp_save) {
+          sapply(to_run,
+                 function(ii) {
+                   unlink(paste0(self$folder_path,"/parallel_temp_output_",ii,".rds"))
+                 })
+          self$delete_save_folder_if_empty()
+        }
+      } else {
+        # sapply(to_run,function(ii){self$run_one(ii, noplot=noplot)})
+        for (ii in to_run) {
+          self$run_one(ii, noplot=noplot)
+          if (save_every) {self$save_self()}
+        }
+      }
       self$postprocess_outdf()
       invisible(self)
     },
-    run_one = function(irow=NULL, save_output=self$save_output, noplot=FALSE) {#browser()
+    run_one = function(irow=NULL, save_output=self$save_output, noplot=FALSE, is_parallel=FALSE) {#browser()
       if (is.null(irow)) { # If irow not given, set to next not run
         if (any(self$completed_runs == FALSE)) {
           irow <- which(self$completed_runs == 0)[1]
@@ -190,10 +258,21 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
       #else if (row_grid$func == "RFF") {row_grid$func <- RFF_get(D=self$D)}
       #else {stop("No function given")}
       # browser()
+      
+      # If parallel, need to source file
+      if (is_parallel) {
+        source("adaptconcept2_sFFLHD_R6.R")
+      }
+      
       input_list <- c(lapply(self$rungridlist, function(x)x[[irow]]), self$pass_list)
       u <- do.call(adapt.concept2.sFFLHD.R6$new, input_list)
-      #browser()
+      # browser()
+      
+      # Run and time it
+      start_time <- Sys.time()
       systime <- system.time(u$run(row_grid$batches,noplot=noplot))
+      end_time <- Sys.time()
+      
       #browser()
       newdf0 <- data.frame(batch=u$stats$iteration, mse=u$stats$mse, 
                            pvar=u$stats$pvar, pamv=u$stats$pamv,
@@ -202,6 +281,8 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
                            #obj=row_grid$obj, 
                            num=paste0(row_grid$obj,row_grid$repl),
                            time = systime[3], #repl=row_grid$repl,
+                           start_time=start_time, end_time=end_time,
+                           run_number=irow,
                            #force_old=row_grid$force_old, force_pvar=row_grid$force_pvar,
                            force2=paste0(row_grid$force_old, '_', row_grid$force_pvar),
                            
@@ -209,11 +290,19 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
                            stringsAsFactors = FALSE
       )
       newdf1 <- cbind(row_grid, newdf0, row.names=NULL)
-      #if (browsernow) {browser()}
-      #self$outdf <- rbind(self$outdf, newdf1)
+      u$delete()
+      if (is_parallel) {
+        return(list(irow=irow, newdf1=newdf1))
+      }
+      self$add_result_of_one(irow=irow, newdf1=newdf1)
+      invisible(self)
+    },
+    add_result_of_one = function(irow, newdf1, save_output=self$save_output) {
+      
       if (nrow(self$outrawdf) == 0) { # If outrawdf not yet created, created blank df with correct names and size
         self$outrawdf <- as.data.frame(matrix(data=NA, nrow=nrow(self$rungrid) * self$batches, ncol=ncol(newdf1)))
         colnames(self$outrawdf) <- colnames(newdf1)
+        for (i in 1:ncol(self$outrawdf)) {class(self$outrawdf[,i]) <- class(newdf1[1,i])}
       }
       self$outrawdf[((irow-1)*self$batches+1):(irow*self$batches), ] <- newdf1
       #stop("Here it is adding some columns wrong, force2 should be 0_0 and I think it is as newdf0, but it shows up as 1 in final df")
@@ -223,10 +312,8 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
         } else { #create file
           write.table(x=newdf1, file=paste0(self$folder_path,"/data_cat.csv"),append=F, sep=",", col.names=T)
         }
-      }  
-      u$delete()
+      }
       self$completed_runs[irow] <- TRUE
-      invisible(self)
     },
     postprocess_outdf = function(save_output=self$save_output) {#browser()
       self$outdf <- self$outrawdf
@@ -356,14 +443,56 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
       self$plot_AWE_over_batch(save_output=save_output)
       invisible(self)
     },
-    saveRDS = function(filename) {
-      saveRDS(self, file = filename)
-    }, # Do I want to save an R object?
-    load = function() {
-      self$outdf = read.csv()
-      self$postprocess_outdf()
+    plot_run_times = function() {
+      print(
+        ggplot2::ggplot(self$outrawdf) +
+          ggplot2::geom_segment(
+            ggplot2::aes(x=start_time, xend=end_time,
+                         y=run_number, yend=run_number)) +
+          ggplot2::xlab("Start and end time") +
+          ggplot2::ylab("Run number")
+      )
       invisible(self)
+    },
+    save_self = function(object_name="object") {browser() # Save compare R6 object
+      file_path <- paste0(self$folder_path,"/",object_name,".rds")
+      cat("Saving to ", file_path, "\n")
+      # self$create_save_folder_if_nonexistent()
+      self$create_output_folder()
+      saveRDS(object = self, file = file_path)
+    },
+    # create_save_folder_if_nonexistent = function() {
+    #   if (!dir.exists(self$folder_path)) {
+    #     dir.create(self$folder_path)
+    #   }
+    # },
+    delete_save_folder_if_empty = function() {
+      if (length(list.files(path=self$folder_path, all.files = TRUE, no.. = TRUE)) == 0) {
+        unlink(self$folder_path, recursive = TRUE)
+      } else {
+        stop("Folder is not empty")
+      }
+    },
+    recover_parallel_temp_save = function() {
+      # Read in and save
+      for (ii in 1:nrow(self$rungrid)) {
+        # Check for file
+        file_ii <- paste0(self$folder_path,"/parallel_temp_output_",ii,".rds")
+        if (file.exists(file_ii)) {
+          # Read in
+          oneout <- readRDS(file=file_ii)
+          do.call(self$add_result_of_one, oneout)
+          # Delete it
+          unlink(file_ii)
+        }
+      }
+      self$delete_save_folder_if_empty()
     }
+    # load = function() {
+    #   self$outdf = read.csv()
+    #   self$postprocess_outdf()
+    #   invisible(self)
+    # }
   )
 )
 
