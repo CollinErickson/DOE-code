@@ -212,7 +212,7 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
           function(ii){
             tempout <- self$run_one(ii, is_parallel=TRUE)
             if (parallel_temp_save) {
-              saveRDS(object=tout, file=paste0(self$folder_path,"/parallel_temp_output_",ii,".rds"))
+              saveRDS(object=tempout, file=paste0(self$folder_path,"/parallel_temp_output_",ii,".rds"))
             }
             tempout
           })
@@ -273,11 +273,12 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
       systime <- system.time(u$run(row_grid$batches,noplot=noplot))
       end_time <- Sys.time()
       
-      #browser()
+      # browser()
       newdf0 <- data.frame(batch=u$stats$iteration, mse=u$stats$mse, 
                            pvar=u$stats$pvar, pamv=u$stats$pamv,
                            pred_intwerror=u$stats$intwerror,
                            actual_intwerror=u$stats$actual_intwerror,
+                           n=u$stats$n,
                            #obj=row_grid$obj, 
                            num=paste0(row_grid$obj,row_grid$repl),
                            time = systime[3], #repl=row_grid$repl,
@@ -310,6 +311,7 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
         if (file.exists(paste0(self$folder_path,"/data_cat.csv"))) { # append new row
           write.table(x=newdf1, file=paste0(self$folder_path,"/data_cat.csv"),append=T, sep=",", col.names=F)
         } else { #create file
+          self$create_output_folder()
           write.table(x=newdf1, file=paste0(self$folder_path,"/data_cat.csv"),append=F, sep=",", col.names=T)
         }
       }
@@ -343,7 +345,7 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
       )
       
       if (self$save_output) {write.csv(self$outdf, paste0(self$folder_path,"/data.csv"))} 
-      
+      if (self$save_output) {self$save_self()}
       invisible(self)
     },
     plot_MSE_over_batch = function(save_output = self$save_output, legend_labels=NULL) {
@@ -454,7 +456,7 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
       )
       invisible(self)
     },
-    save_self = function(object_name="object") {browser() # Save compare R6 object
+    save_self = function(object_name="object") { # Save compare R6 object
       file_path <- paste0(self$folder_path,"/",object_name,".rds")
       cat("Saving to ", file_path, "\n")
       # self$create_save_folder_if_nonexistent()
@@ -470,7 +472,7 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
       if (length(list.files(path=self$folder_path, all.files = TRUE, no.. = TRUE)) == 0) {
         unlink(self$folder_path, recursive = TRUE)
       } else {
-        stop("Folder is not empty")
+        # stop("Folder is not empty")
       }
     },
     recover_parallel_temp_save = function() {
@@ -487,6 +489,11 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
         }
       }
       self$delete_save_folder_if_empty()
+    },
+    parallel_efficiency = function() {
+      sum(self$enddf$time) / 
+        as.numeric(max(self$enddf$end_time) - min(self$enddf$start_time),
+                   unit='secs')
     }
     # load = function() {
     #   self$outdf = read.csv()
