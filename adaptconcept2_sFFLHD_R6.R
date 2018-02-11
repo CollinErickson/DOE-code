@@ -143,13 +143,13 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
                          take_until_maxpvar_below=NULL,
                          design="sFFLHD",
                          selection_method, X0=NULL, Xopts=NULL,
-                         des_func, des_func_fast=TRUE, alpha_des,
+                         des_func, des_func_fast=TRUE, alpha_des=1,
                          new_batches_per_batch=5,
                          parallel=FALSE, parallel_cores="detect",
                          nugget=1e-6,
                          verbose = 0,
                          design_seed=numeric(0),
-                         weight_const=1,
+                         weight_const=0,
                          error_power=1,
                          nconsider=Inf, nconsider_random=0, # CHANGE BACK TO INF for nconsider
                          ...) {
@@ -158,7 +158,9 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       self$L <- L
       self$b <- if (is.null(b)) L else b
       self$new_batches_per_batch <- new_batches_per_batch
-      self$func <- func
+      self$func <- if (is.function(func)) func 
+                   else if (is.character(func)) get(func)
+                   else stop("Bad func #6293")
       self$func_run_together <- func_run_together
       self$func_fast <- func_fast
       self$force_old <- force_old
@@ -237,7 +239,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
         }
       } else if (self$obj == "nonadapt") {
         # use next batch only
-      } else if (self$obj %in% c("desirability", "des")) {
+      } else if (self$obj %in% c("desirability", "des")) {#browser()
         self$obj <- "desirability"
         if (missing(des_func)) {stop("Must give in des_func when using desirability")}
         self$des_func <- des_func
@@ -850,6 +852,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
      newL
    },
   select_new_points_from_max_des_red = function() {
+    usemed2 <- (T && (self$selection_method == "max_des_red_all_best"))
     if (usemed2) return(self$select_new_points_from_max_des_red2())
     # Use max weighted error reduction to select batch of points from self$Xopts
     # Returns indices of points to use from Xopts
@@ -1403,7 +1406,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
   },
   actual_intwerror_func = function(..., N=2e3, mod=self$mod, f=self$func, error_power=self$error_power) {
     if (is.null(self$actual_des_func)) { # Return NaN if user doesn't give actual_des_func
-      return(NaN)
+      return(rep(NaN, length(error_power)))
     }
     XX <- simple.LHS(n = N,d = self$D)
     ZZ <- mod$predict(XX)
