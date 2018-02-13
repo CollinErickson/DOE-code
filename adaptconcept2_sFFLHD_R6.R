@@ -1179,11 +1179,16 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
     
     # Make separate int_werror_func for ALC
     int_points_numdes <- self$des_func(XX=int_points, mod=gpc)
-    int_werror_red_func <- function(add_point_index) {
+    int_werror_red_func <- function(add_point_index) { # Old slower version
       add_point <- self$Xopts[add_point_index, ]
       # mean(self$werror_func(XX=int_points, mod=gpc, des_func=int_points_numdes))
       # mean((self$weight_const+self$alpha_des*int_points_numdes)*gpc$predict.var(int_points))
       mean((self$weight_const+self$alpha_des*int_points_numdes)*gpc$mod$pred_var_reduction(add_point=add_point, pred_points=int_points))
+    }
+    int_werrors_red_func <- function(add_points_indices) { # New faster, same results, version
+      add_points <- self$Xopts[add_points_indices, ]
+      # mean((self$weight_const+self$alpha_des*int_points_numdes)*gpc$mod$pred_var_reductions(add_points=add_points, pred_points=int_points))
+      colMeans(sweep(gpc$mod$pred_var_reductions(add_points=add_points, pred_points=int_points), 1, (self$weight_const+self$alpha_des*int_points_numdes), `*`))
     }
 
     # X_with_bestL <- self$X
@@ -1195,10 +1200,13 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       cat(paste0('starting iter ', ell,'/',self$b, ', considering ', length(unique(Xopts_to_consider,bestL)), "/", nrow(self$Xopts), ', bestL is ', paste0(bestL, collapse = ' '), '\n'))
       
       Xopts_inds_to_consider <- setdiff(Xopts_to_consider, bestL[-ell]) # -ell to consider one currently in place
-      int_werror_red_vals <- sapply(Xopts_inds_to_consider, function(ind) {
-        int_werror_red_func(add_point_index=ind)
-        }
-      )
+      # Old version, is 6x slower
+        # int_werror_red_vals <- sapply(Xopts_inds_to_consider, function(ind) {
+        #   int_werror_red_func(add_point_index=ind)
+        #   }
+        # )
+      # Faster version 6x, does all at once
+      int_werror_red_vals <- int_werrors_red_func(add_points_indices=Xopts_inds_to_consider)
       r_star <- Xopts_inds_to_consider[which.max(int_werror_red_vals)]
       # print("Here are int_werror_vals")
       print(cbind(1:length(int_werror_red_vals), Xopts_inds_to_consider, int_werror_red_vals))
@@ -1579,5 +1587,6 @@ if (F) {
 
   # banana, grad_norm2_mean, laGP_GauPro_kernel
   set.seed(2); csa(); a <- adapt.concept2.sFFLHD.R6$new(D=2,L=3,func=banana, obj="desirability", des_func=des_func_grad_norm2_mean, actual_des_func=actual_des_func_grad_norm2_mean_banana, alpha_des=1e2, n0=30, take_until_maxpvar_below=.9, package="laGP_GauPro_kernel", design='sFFLHD', selection_method="max_des_red_all_best"); a$run(1)
+  set.seed(2); csa(); pv1 <- profvis::profvis({a <- adapt.concept2.sFFLHD.R6$new(D=2,L=3,func=banana, obj="desirability", des_func=des_func_grad_norm2_mean, actual_des_func=actual_des_func_grad_norm2_mean_banana, alpha_des=1, weight_const=0, n0=15, package="laGP_GauPro_kernel", design='sFFLHD', selection_method="max_des_red_all_best"); a$run(10, noplot=T)})
   
 }
