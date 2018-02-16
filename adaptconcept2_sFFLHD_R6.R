@@ -852,7 +852,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
      newL
    },
   select_new_points_from_max_des_red = function() {
-    usemed2 <- (T && (self$selection_method == "max_des_red_all_best"))
+    usemed2 <- (T && (self$selection_method == "max_des_red_all_best")) # && self$error_power==2)
     if (usemed2) return(self$select_new_points_from_max_des_red2())
     # Use max weighted error reduction to select batch of points from self$Xopts
     # Returns indices of points to use from Xopts
@@ -941,13 +941,12 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
         #   when it involves sampling stuff, so the intwerror values will
         #   fluctuate if you recalculate each time. And that is slower.
         int_points_numdes <- self$des_func(XX=int_points, mod=gpc)
-        int_werror_func <- function() {
-          mean(self$werror_func(XX=int_points, mod=gpc, des_func=int_points_numdes))
-        }
-      } else {
+        
+        # Running different versions to make it faster
+        # This is basic slow version
         if (TRUE || !(self$package %in% c("laGP_GauPro_kernel", "GauPro_kernel"))) {
           int_werror_func <- function() {
-            mean(self$werror_func(XX=int_points, mod=gpc))
+            mean(self$werror_func(XX=int_points, mod=gpc, des_func=int_points_numdes))
           }
         } else { # Want to get fast update werror
           int_werror_func <- function(xadd) {browser()
@@ -959,6 +958,10 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
             } else {stop("No error power")}
             mean(self$werror_func(XX=int_points, mod=gpc))
           }
+        }
+      } else {
+        int_werror_func <- function() {
+          mean(self$werror_func(XX=int_points, mod=gpc))
         }
       }
     }
@@ -1114,8 +1117,8 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
     rm(gpc, bestL, Xnewone, Znewone)
     newL
   },
-  select_new_points_from_max_des_red2 = function() {#browser()
-    # ONLY FOR MAX_DES_RED_BEST AND GAUPRO KERNEL
+  select_new_points_from_max_des_red2 = function() {
+    # ONLY FOR MAX_DES_RED_BEST AND GAUPRO KERNEL AND error_power 2
     # Use max weighted error reduction to select batch of points from self$Xopts
     # Returns indices of points to use from Xopts
     
@@ -1129,6 +1132,9 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       stop("select_new_points_from_max_des_red2 doesn't work when package not laGP_GauPro_kernel")
       gpc <- self$mod$clone(deep=TRUE)
     }
+    # if (self$error_power != 2) {
+    #   stop("Not for error_power != 2 #83721")
+    # }
     # Get indices of points to consider, take most recent
     # Xopts_to_consider <- 1:nrow(self$Xopts)
     if (self$nconsider[1] < nrow(self$Xopts)) {
@@ -1179,17 +1185,33 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
     
     # Make separate int_werror_func for ALC
     int_points_numdes <- self$des_func(XX=int_points, mod=gpc)
-    int_werror_red_func <- function(add_point_index) { # Old slower version
-      add_point <- self$Xopts[add_point_index, ]
-      # mean(self$werror_func(XX=int_points, mod=gpc, des_func=int_points_numdes))
-      # mean((self$weight_const+self$alpha_des*int_points_numdes)*gpc$predict.var(int_points))
-      mean((self$weight_const+self$alpha_des*int_points_numdes)*gpc$mod$pred_var_reduction(add_point=add_point, pred_points=int_points))
-    }
-    int_werrors_red_func <- function(add_points_indices) { # New faster, same results, version
-      add_points <- self$Xopts[add_points_indices, ]
-      # mean((self$weight_const+self$alpha_des*int_points_numdes)*gpc$mod$pred_var_reductions(add_points=add_points, pred_points=int_points))
-      colMeans(sweep(gpc$mod$pred_var_reductions(add_points=add_points, pred_points=int_points), 1, (self$weight_const+self$alpha_des*int_points_numdes), `*`))
-    }
+    if (self$error_power==1) {
+      int_werror_red_func <- function(add_point_index) { # Old slower version
+        add_point <- self$Xopts[add_point_index, ] # Next line negative since it uses which.max
+        -mean((self$weight_const+self$alpha_des*int_points_numdes)*sqrt(gpc$mod$pred_var_after_adding_points(add_point=add_point, pred_points=int_points)))
+      }
+    } else if (self$error_power==2) {
+      int_werror_red_func <- function(add_point_index) { # Old slower version
+        add_point <- self$Xopts[add_point_index, ]
+        # mean(self$werror_func(XX=int_points, mod=gpc, des_func=int_points_numdes))
+        # mean((self$weight_const+self$alpha_des*int_points_numdes)*gpc$predict.var(int_points))
+        mean((self$weight_const+self$alpha_des*int_points_numdes)*gpc$mod$pred_var_reduction(add_point=add_point, pred_points=int_points))
+      }
+    } else {stop("#01922")}
+    # Set function to calculate int_werrors_reduction
+    if (self$error_power == 1) {
+      int_werrors_red_func <- function(add_points_indices) { # New faster, same results, version
+        add_points <- self$Xopts[add_points_indices, ]
+        # Need negative since it isn't reduction, it is total value
+        -colMeans(sweep(sqrt(gpc$mod$pred_var_after_adding_points_sep(add_points=add_points, pred_points=int_points)), 1, (self$weight_const+self$alpha_des*int_points_numdes), `*`))
+      }
+    } else if (self$error_power == 2) {
+      int_werrors_red_func <- function(add_points_indices) { # New faster, same results, version
+        add_points <- self$Xopts[add_points_indices, ]
+        # mean((self$weight_const+self$alpha_des*int_points_numdes)*gpc$mod$pred_var_reductions(add_points=add_points, pred_points=int_points))
+        colMeans(sweep(gpc$mod$pred_var_reductions(add_points=add_points, pred_points=int_points), 1, (self$weight_const+self$alpha_des*int_points_numdes), `*`))
+      }
+    } else {stop("Error power must be 1 or 2 #2847134")}
 
     # X_with_bestL <- self$X
     # Z_with_bestL <- self$Z
@@ -1588,5 +1610,6 @@ if (F) {
   # banana, grad_norm2_mean, laGP_GauPro_kernel
   set.seed(2); csa(); a <- adapt.concept2.sFFLHD.R6$new(D=2,L=3,func=banana, obj="desirability", des_func=des_func_grad_norm2_mean, actual_des_func=actual_des_func_grad_norm2_mean_banana, alpha_des=1e2, n0=30, take_until_maxpvar_below=.9, package="laGP_GauPro_kernel", design='sFFLHD', selection_method="max_des_red_all_best"); a$run(1)
   set.seed(2); csa(); pv1 <- profvis::profvis({a <- adapt.concept2.sFFLHD.R6$new(D=2,L=3,func=banana, obj="desirability", des_func=des_func_grad_norm2_mean, actual_des_func=actual_des_func_grad_norm2_mean_banana, alpha_des=1, weight_const=0, n0=15, package="laGP_GauPro_kernel", design='sFFLHD', selection_method="max_des_red_all_best"); a$run(10, noplot=T)})
-  
+  # borehole
+  set.seed(3); csa(); pvbh1 <- profvis::profvis({a <- adapt.concept2.sFFLHD.R6$new(D=8,L=4,func=borehole, obj="desirability", des_func=des_func_grad_norm2_mean, actual_des_func=get_num_actual_des_func_grad_norm2_mean(borehole), alpha_des=1, weight_const=0, n0=20, package="laGP_GauPro_kernel", design='sFFLHD_Lflex', selection_method="max_des_red_all_best"); a$run(15, noplot=T)}, interval = .1)
 }
