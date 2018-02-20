@@ -1565,6 +1565,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
 
 if (F) {
   # For older examples see "adaptconcept2_old_runs.R"
+  
   # banana, grad_norm2_mean, laGP_GauPro_kernel
   set.seed(2); csa(); a <- adapt.concept2.sFFLHD.R6$new(D=2,L=3,func=banana,
                         obj="desirability", des_func=des_func_grad_norm2_mean,
@@ -1572,6 +1573,7 @@ if (F) {
                         alpha_des=1e2, n0=30, take_until_maxpvar_below=.9,
                         package="laGP_GauPro_kernel", design='sFFLHD',
                         selection_method="max_des_red_all_best"); a$run(1)
+  # Do profvis of above for 10 batches
   set.seed(2); csa(); pv1 <- profvis::profvis({
     a <- adapt.concept2.sFFLHD.R6$new(D=2,L=3,func=banana,
           obj="desirability", des_func=des_func_grad_norm2_mean,
@@ -1583,7 +1585,8 @@ if (F) {
   set.seed(3); csa(); pvbh1 <- profvis::profvis({
     a <- adapt.concept2.sFFLHD.R6$new(D=8,L=4,func=borehole, 
       obj="desirability", des_func=des_func_grad_norm2_mean, 
-      actual_des_func=get_num_actual_des_func_grad_norm2_mean(borehole),
+      # actual_des_func=get_num_actual_des_func_grad_norm2_mean(borehole),
+      actual_des_func=actual_des_func_grad_norm2_mean_borehole,
       alpha_des=1, weight_const=0, n0=20, package="laGP_GauPro_kernel",
       design='sFFLHD_Lflex', selection_method="max_des_red_all_best");
     a$run(15, noplot=T)}, interval = .1)

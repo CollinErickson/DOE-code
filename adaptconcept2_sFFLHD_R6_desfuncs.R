@@ -466,10 +466,36 @@ actual_des_func_grad_norm2_mean_quad_peaks <- function(XX, mod) {
     sum(numDeriv::grad(quad_peaks, x) ^ 2)
   })
 }
+actual_des_func_grad_norm2_mean_borehole <- function(XX, mod) {#browser()
+  bhd <- deriv(~ 2 * pi * cc * (dd - ff) /
+                 (log(bb / aa) *
+                    (1 + 2 * gg * cc / (log(bb / aa) * aa^2 * hh) +
+                       cc / ee)), c("aa", "bb", "cc", "dd", "ee", "ff", "gg", "hh"))
+  nameslist <- list("aa", "bb", "cc", "dd", "ee", "ff", "gg", "hh")
+  scale_low <- c(.05,100,63070,990,63.1,700,1120,9855)
+  scale_high <- c(.15,50000,115600,1110,116,820,1680,12045)
+  scalediff <- scale_high - scale_low
+  apply(XX, 1, function(x) {
+    sum((attr(eval(expr = bhd, envir = setNames(as.list(x * (scalediff) + scale_low), nameslist)), "gradient") * scalediff) ^ 2)
+  })
+}
 get_num_actual_des_func_grad_norm2_mean <- function(funcforgrad) {
   function(XX, mod) {
     apply(XX, 1, function(x) {
       sum(numDeriv::grad(funcforgrad, x) ^ 2)
     })
   }
+}
+test_des_func_grad_norm2_mean <- function(func, actual, d, n=1e3) {#browser()
+  xx <- lhs::randomLHS(n=n, k=d)
+  getfunc <- get_num_actual_des_func_grad_norm2_mean(func)
+  actualtime <- system.time(actualvals <- actual(xx))[3]
+  gettime <- system.time(getvals <- getfunc(xx))[3]
+  plot(actualvals, getvals, main="Should be on diag line, else error")
+  cat(paste0("Correlation between values is ",cor(actualvals, getvals),"\n"))
+  cat(paste0("Your function runs in ",actualtime, ", numeric result runs in ",gettime,"\n"))
+}
+if (F) {
+  test_des_func_grad_norm2_mean(banana, actual_des_func_grad_norm2_mean_banana, d=2)
+  test_des_func_grad_norm2_mean(borehole, actual_des_func_grad_norm2_mean_borehole, d=8)
 }
