@@ -165,7 +165,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
                          new_batches_per_batch=5,
                          parallel=FALSE, parallel_cores="detect",
                          nugget=1e-6,
-                         verbose = 0,
+                         verbose = 1,
                          design_seed=numeric(0),
                          weight_const=0,
                          error_power=1,
@@ -334,7 +334,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       i <- 1
       while(i <= maxit) {
         if (self$verbose >= 1) {
-          cat(paste('Starting iteration', self$iteration, "\n"))
+          cat(paste('Starting iteration', self$iteration, "at", Sys.time(), "\n"))
         }
         iplotit <- ((i == maxit) | !plotlastonly) & !noplot
         self$run1(plotit=iplotit)
@@ -935,7 +935,9 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
        if (ell < self$b) {
          Xnewone <- self$Xopts[bestopt, , drop=FALSE]
          Znewone = gpc$predict(Xnewone)
-         print(Xnewone);print(Znewone);
+         if (self$verbose >= 2) {
+           print(Xnewone);print(Znewone);
+         }
          #cf(function(xx) self$desirability_func(gpc, xx),
          #  batchmax=1e3, pts=self$Xopts)
          gpc$update(Xnew=Xnewone, Znew=Znewone, restarts=0, no_update=TRUE)
@@ -1092,10 +1094,12 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
     Znotrun_preds <- gpc$predict(self$Xopts) # Need to use the predictions
                                              #  before each is added
     for (ell in 1:self$b) {
-      cat(paste0('starting iter ', ell,'/',self$b, ', considering ',
-                 length(unique(Xopts_to_consider,bestL)), "/", 
-                 nrow(self$Xopts), ', bestL is ', 
-                 paste0(bestL, collapse = ' '), '\n'))
+      if (self$verbose >= 2) {
+        cat(paste0('starting iter ', ell,'/',self$b, ', considering ',
+                   length(unique(Xopts_to_consider,bestL)), "/", 
+                   nrow(self$Xopts), ', bestL is ', 
+                   paste0(bestL, collapse = ' '), '\n'))
+      }
       
       # The surrogate values
       if (exists("use_true_for_surrogates") && use_true_for_surrogates) {
@@ -1160,7 +1164,9 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
         int_werror_vals[r] <- int_werror_vals_r
       }
       # print("Here are int_werror_vals")
-      print(cbind(1:length(int_werror_vals), int_werror_vals))
+      if (self$verbose >= 2) {
+        print(cbind(1:length(int_werror_vals), int_werror_vals))
+      }
       
       # See if pvar reduction by shortcut is same as full, it is now,
       #              4 sec vs 8 sec so faster
@@ -1254,13 +1260,17 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
                       no_update=TRUE)
           }
         }
-        cat("\tSelected", r_star, Xnewone, Znewone, "\n");
+        if (self$verbose >= 2) {
+          cat("\tSelected", r_star, Xnewone, Znewone, "\n")
+        }
         #cf(function(xx) self$desirability_func(gpc, xx), batchmax=1e3, 
         #  pts=self$Xopts)
         #gpc$update(Xall=X_with_bestL, Zall=Z_with_bestL, restarts=0)
       }
     }
-    cat("Selected:", bestL, "\n")
+    if (self$verbose >= 2) {
+      cat("Selected:", bestL, "\n")
+    }
     if (self$D == 2 && self$verbose >1) {
       if (dontplotfunc) {
         screen(2)
@@ -1425,10 +1435,12 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       # gpc set with X and bestL excluding spot under consideration
       gpc$update(Xall=rbind(self$X, self$Xopts[bestL[-ell], ]), 
                  Zall=c(self$Z, Znotrun_preds[bestL[-ell]]))
-      cat(paste0('starting iter ', ell,'/',self$b, ', considering ',
-                 length(unique(Xopts_to_consider,bestL)), "/", 
-                 nrow(self$Xopts), ', bestL is ', 
-                 paste0(bestL, collapse = ' '), '\n'))
+      if (self$verbose >= 2) {
+        cat(paste0('starting iter ', ell,'/',self$b, ', considering ',
+                   length(unique(Xopts_to_consider,bestL)), "/", 
+                   nrow(self$Xopts), ', bestL is ', 
+                   paste0(bestL, collapse = ' '), '\n'))
+      }
       
       # -ell to consider one currently in place
       Xopts_inds_to_consider <- setdiff(Xopts_to_consider, bestL[-ell])
@@ -1442,8 +1454,10 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
                                                     Xopts_inds_to_consider)
       r_star <- Xopts_inds_to_consider[which.max(int_werror_red_vals)]
       # print("Here are int_werror_vals")
-      print(cbind(1:length(int_werror_red_vals), Xopts_inds_to_consider, 
-                  int_werror_red_vals))
+      if (self$verbose >= 2) {
+        print(cbind(1:length(int_werror_red_vals), Xopts_inds_to_consider, 
+                    int_werror_red_vals))
+      }
       
       # Reduce the number to consider if large
       if (ell < self$b) {
@@ -1476,13 +1490,17 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
         # Z_with_bestL <- c(Z_with_bestL, Znotrun_preds[r_star])
         # gpc$update(Xall=X_with_bestL, Zall=Z_with_bestL, 
         #                         restarts=0, no_update=TRUE)
-        cat("\tSelected", r_star, Xnewone, Znewone, "\n");
+        if (self$verbose >= 2) {
+          cat("\tSelected", r_star, Xnewone, Znewone, "\n")
+        }
         #cf(function(xx) self$desirability_func(gpc, xx), batchmax=1e3, 
         #                                       pts=self$Xopts)
         #gpc$update(Xall=X_with_bestL, Zall=Z_with_bestL, restarts=0)
       }
     }
-    cat("Selected:", bestL, "\n")
+    if (self$verbose >= 2) {
+      cat("Selected:", bestL, "\n")
+    }
     if (self$D == 2 && self$verbose >1) {
       if (dontplotfunc) {
         gpc$update(Xall=rbind(self$X, self$Xopts[bestL, ]),
