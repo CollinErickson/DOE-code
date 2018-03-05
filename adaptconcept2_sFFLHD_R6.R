@@ -948,7 +948,6 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
      newL
    },
   select_new_points_from_max_des_red = function() {
-    # Trying to get this to work for all methods
     # Use max weighted error reduction to select batch of points from self$Xopts
     # Returns indices of points to use from Xopts
     
@@ -959,17 +958,16 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
     } else if (self$package == "GauPro_kernel") {
       gpc <- self$mod$clone(deep=TRUE)
     } else {
-      browser()
-      # TODO: check this and set nugget too
-      gpc <- GauPro::GauPro_kernel_model$new(X=self$X, Z=self$Z,
-                      kernel=GauPro::Gaussian$new(D=self$D,
-                                                  s2=self$mod$s2(), s2_est=FALSE,
-                                            beta=log(self$mod$theta(),10),
-                                            beta_est=F),
-                      trend=GauPro::trend_c$new(D=self$D,
-                                                m=self$mod$mean(),
-                                                m_est=FALSE),
-                      no_update=TRUE, nug=self$mod$nugget(), nug.est=FALSE)
+      gpc <- IGP::IGP_GauPro_kernel$new(
+        X=self$X, Z=self$Z,
+        kernel=GauPro::Gaussian$new(D=self$D,
+                                    s2=self$mod$s2(), s2_est=FALSE,
+                                    beta=log(self$mod$theta(),10),
+                                    beta_est=F),
+        trend=GauPro::trend_c$new(D=self$D,
+                                  m=self$mod$mean(),
+                                  m_est=FALSE),
+        no_update=TRUE, nugget=self$mod$nugget(), estimate.nugget=FALSE)
     }
     # Get indices of points to consider, take most recent
     # Xopts_to_consider <- 1:nrow(self$Xopts)
