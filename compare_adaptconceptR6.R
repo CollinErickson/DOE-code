@@ -26,7 +26,7 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
     seed_start = NULL, # Start with seed to make comparisons much better, 
                        #  default is to use Sys.time() to get seed.
     design_seed_start = NULL,
-    folder_created = FALSE,
+    # folder_created = FALSE,
     folder_path = NULL,
     folder_name = NULL,
     outdf = data.frame(),
@@ -175,12 +175,12 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
       self$folder_path <- paste0("./compare_adaptconcept_output/",self$folder_name)
     },
     create_output_folder = function(add_timestamp = FALSE) {
-      if (self$folder_created) {return(invisible(self))}
+      # if (self$folder_created) {return(invisible(self))}
       if (!dir.exists(self$folder_path)) {
         dir.create(path = self$folder_path)
-        self$folder_created = TRUE
+        # self$folder_created = TRUE
       } else {
-        stop("Error, folder already exists but folder_created==FALSE")
+        # stop("Error, folder already exists but folder_created==FALSE")
       }
       invisible(self)
     },
