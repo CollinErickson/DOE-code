@@ -13,13 +13,17 @@ if (T) {
     ban1$recover_parallel_temp_save()
   } else { # Otherwise create new
     print("ban1 doesn't exist, creating new")
-    which_matches <- which(substr(commandArgs(),1,18) == "number_of_threads=")
-    if (length(which_matches) == 1) {
-      parallel_cores <- as.integer(substr(commandArgs()[which_matches], 19, 21))
+    if (Sys.info()['sysname'] == "Windows") {
+      parallel_cores <- 'detect'
     } else {
-      parallel_cores <- 1
+      which_matches <- which(substr(commandArgs(),1,18) == "number_of_threads=")
+      if (length(which_matches) == 1) {
+        parallel_cores <- as.integer(substr(commandArgs()[which_matches], 19, 21))
+      } else {
+        parallel_cores <- 1
+      }
     }
-    ban1 <- compare.adaptR6$new(func='banana', reps=2, batches=20, D=2, L=2, n0=15, 
+    ban1 <- compare.adaptR6$new(func='banana', reps=2, batches=4, D=2, L=2, n0=15, 
                                 obj=c("nonadapt","func","desirability"), 
                                 selection_method=c("nonadapt",'SMED', 'max_des_red_all_best'),
                                 design=c('sFFLHD', 'sFFLHD', 'sFFLHD'),
@@ -27,7 +31,8 @@ if (T) {
                                 actual_des_func='actual_des_func_grad_norm2_mean_banana',
                                 alpha_des=1, weight_const=0,
                                 package="laGP_GauPro_kernel", seed=756,
-                                parallel=(parallel_cores>1), parallel_cores=parallel_cores, save_output=FALSE
+                                parallel=T, # always do parallel for temp_save
+                                parallel_cores=parallel_cores, save_output=FALSE
     )
   }
   # Run all, save temps
