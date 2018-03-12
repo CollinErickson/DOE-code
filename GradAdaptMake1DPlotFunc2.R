@@ -71,8 +71,11 @@ make1Dplots2 <- function(f, x=c(0,.5,1), x2=c(.25,.75),
 
     
     # First plot
-    min1 <- min(a_ylower)
-    max1 <- max(a_yupper)
+    # Use same max and min for both plots
+    if (i==1) {
+      min1 <- min(a_ylower)
+      max1 <- max(a_yupper)
+    }
     lwd1 <- 3
     if (colorplot) {
       plot(a, a_ylower, col=3, type='l', xlab='x', ylab='y', ylim=c(min1, max1), lwd=lwd1)
