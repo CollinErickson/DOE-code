@@ -35,6 +35,7 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
     enddf = data.frame(),
     meandf = data.frame(),
     meanlogdf = data.frame(),
+    endmeandf = data.frame(),
     rungrid = data.frame(),
     rungridlist = list(),
     package = NULL,
@@ -342,6 +343,16 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
                       function(tdf){
                         exp(colMeans(log(tdf[,meanColNames])))
                       }
+      )
+      self$endmeandf <- plyr::ddply(
+        self$enddf, 
+        splitColNames, 
+        function(tdf){
+          c(
+            colMeans(tdf[,meanColNames])
+            , setNames(summary(tdf$actual_intwerror), paste("actual_intwerror", c("Min", "Q1","Med","Mean","Q3","Max"), sep = '_'))
+          )
+        }
       )
       
       if (self$save_output) {write.csv(self$outdf, paste0(self$folder_path,"/data.csv"))} 
