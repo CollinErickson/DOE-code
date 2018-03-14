@@ -370,7 +370,6 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
                         exp(colMeans(log(tdf[,meanColNames])))
                       }
       )
-      browser()
       self$endmeandf <- plyr::ddply(
         self$enddf, 
         splitColNames, 

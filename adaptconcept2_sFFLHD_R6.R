@@ -79,7 +79,7 @@ library(magrittr)
 #' @section Methods:
 #' \describe{
 #'   \item{Documentation}{For full documentation of each method go to
-#'   https://github.com/CollinErickson/bSMED}
+#'   https://github.com/CollinErickson/DOE-Code}
 #'   \item{\code{new(X, Z, corr="Gauss", verbose=0, separable=T, 
 #'   useC=F,useGrad=T,
 #'          parallel=T, nug.est=T, ...)}}{This method is used to create object
@@ -913,7 +913,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       bestL <- SMED_selectYC(n=self$b, X0=self$X, Xopt=self$Xopts, Y0=Y0,
                              Yopt=Yopt,
                              theta=if (self$useSMEDtheta) {self$mod$theta()}
-                                   else {rep(1,2)})
+                                   else {rep(1,ncol(self$X))})
       newL <- bestL
       newL
     },
