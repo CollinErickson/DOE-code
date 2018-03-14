@@ -100,6 +100,8 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
       if (self$parallel) { # For now assume using parallel package
         if (parallel_cores == "detect") {
           self$parallel_cores <- parallel::detectCores()
+        } else if (parallel_cores == "detect-1") {
+          self$parallel_cores <- parallel::detectCores() - 1
         } else {
           self$parallel_cores <- parallel_cores
         }
@@ -223,7 +225,7 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
           cl=self$parallel_cluster,
           to_run,
           function(ii){
-            tempout <- self$run_one(ii, is_parallel=TRUE)
+            tempout <- self$run_one(ii, is_parallel=TRUE, noplot=TRUE)
             if (parallel_temp_save) {
               saveRDS(object=tempout, file=paste0(self$folder_path,"/parallel_temp_output_",ii,".rds"))
             }
@@ -515,6 +517,7 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
       # self$create_save_folder_if_nonexistent()
       self$create_output_folder()
       saveRDS(object = self, file = file_path)
+      invisible(self)
     },
     # create_save_folder_if_nonexistent = function() {
     #   if (!dir.exists(self$folder_path)) {
@@ -527,9 +530,11 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
       } else {
         # stop("Folder is not empty")
       }
+      invisible(self)
     },
-    recover_parallel_temp_save = function() {
+    recover_parallel_temp_save = function(save_if_any_recovered=TRUE) {
       # Read in and save
+      any_recovered <- FALSE
       for (ii in 1:nrow(self$rungrid)) {
         # Check for file
         file_ii <- paste0(self$folder_path,"/parallel_temp_output_",ii,".rds")
@@ -539,9 +544,14 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
           do.call(self$add_result_of_one, oneout)
           # Delete it
           unlink(file_ii)
+          any_recovered <- TRUE
         }
       }
+      if (any_recovered && save_if_any_recovered) {
+        self$save_self()
+      }
       self$delete_save_folder_if_empty()
+      invisible(self)
     },
     parallel_efficiency = function() {
       sum(self$enddf$time) / 
