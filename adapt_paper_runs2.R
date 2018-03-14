@@ -23,25 +23,35 @@ if (T) {
         parallel_cores <- 1
       }
     }
-    ban1 <- compare.adaptR6$new(func='banana', reps=2, batches=4, D=2, L=2, n0=15, 
-                                obj=c("nonadapt","func","desirability"), 
-                                selection_method=c("nonadapt",'SMED', 'max_des_red_all_best'),
-                                design=c('sFFLHD', 'sFFLHD', 'sFFLHD'),
+    ban1 <- compare.adaptR6$new(func='banana', reps=20, batches=20, D=2, L=2, n0=15, 
+                                obj=c("nonadapt","nonadapt","desirability","desirability"), 
+                                selection_method=c("nonadapt", "nonadapt", 'SMED', 'max_des_red_all_best'),
+                                design=c("sobol", 'sFFLHD', 'sFFLHD', 'sFFLHD'),
                                 des_func='des_func_grad_norm2_mean',
                                 actual_des_func='actual_des_func_grad_norm2_mean_banana',
                                 alpha_des=1, weight_const=0,
-                                package="laGP_GauPro_kernel", seed=756,
+                                package="laGP_GauPro_kernel",
+                                seed_start=756, design_seed_start=856,
                                 parallel=T, # always do parallel for temp_save
                                 parallel_cores=parallel_cores, save_output=FALSE
     )
   }
   # Run all, save temps
   print("Running all ban1")
-  ban1$run_all(parallel_temp_save=TRUE, noplot=TRUE)
+  ban1$run_all(parallel_temp_save=TRUE, noplot=TRUE, run_order="reverse")
   print("Finished ban1, saving")
   ban1$save_self()
   if (F) {
     ban1$plot_run_times()
     ban1$plot(save_output = F)
+  }
+  if (F) {
+    # make table for paper
+    source('.//compare_adapt_table.R')
+    print(get_xtable(ban1, caption="Comparison of methods on the Banana function",
+                     label="bananatable"),
+          sanitize.text.function=identity, digits=4,
+          include.rownames=FALSE
+          )
   }
 }
