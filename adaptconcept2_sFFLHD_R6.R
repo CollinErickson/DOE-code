@@ -827,7 +827,9 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
           self$plot_ppu(statsdf=statsdf, cex=cex)
           
           # 4 grad vs pvar
-          self$plot_des_v_acc(cex=cex, cex.axis=cex)
+          if (!is.null(self$des_func)) {
+            self$plot_des_v_acc(cex=cex, cex.axis=cex)
+          }
         }
         par(mar=oparmar)
         par(mfrow=oparmfrow)
