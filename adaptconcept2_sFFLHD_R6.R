@@ -1073,10 +1073,18 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
         int_werrors_red_func <- function(add_points_indices) {
           # New faster, same results, version
           add_points <- self$Xopts[add_points_indices, ]
+          # Calculate pred vars after adding points
+          pvaaps <- gpc$mod$pred_var_after_adding_points_sep(
+            add_points=add_points, pred_points=int_points)
+          # Some will be a little less than 0, gives NaN for sqrt
+          sum_neg <- sum(c(pvaaps)<0)
+          if (sum_neg > 0) {
+            cat("    pvaaps: ",sum_neg,"/",length(pvaaps),
+                "are negative, setting to zero", "\n")
+          }
+          pvaaps <- pmax(pvaaps, 0)
           # Need negative since it isn't reduction, it is total value
-          -colMeans(sweep(sqrt(
-            gpc$mod$pred_var_after_adding_points_sep(
-              add_points=add_points, pred_points=int_points)), 1, 
+          -colMeans(sweep(sqrt(pvaaps), 1, 
             (self$weight_const+self$alpha_des*int_points_numdes), `*`))
         }
       } else if (self$error_power == 2) {
@@ -1194,6 +1202,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
         # if starting with none and adding one
         bestL <- c(bestL, r_star)
       } else { # if starting with L and replacing as go
+        if (length(r_star) != 1) {stop("Error in choosing r_star #95882")}
         bestL[ell] <- r_star
       }
       
@@ -1444,7 +1453,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
            mean(weight * abserr^2))
     } else {stop("error_power not recognized in actual_intwerror_func #20497")}
   },
-  print_results = function() { browser()
+  print_results = function() {
     best_index <- which.max(self$Z)
     bestZ <- self$Z[best_index]
     bestX <- self$X[best_index, ]
