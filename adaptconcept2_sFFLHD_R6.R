@@ -1161,14 +1161,19 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
         gpc$update(Xall=rbind(self$X, self$Xopts[bestL,,drop=F]),
                    Zall=c(self$Z, Znotrun_preds[bestL]),
                    no_update=TRUE)
+        # Consider all except bestL
+        Xopts_inds_to_consider <- setdiff(Xopts_to_consider, bestL)
       } else { # if starting with L and replacing as go
         # Remove one under consideration for replacement
         gpc$update(Xall=rbind(self$X, self$Xopts[bestL[-ell],,drop=F]),
                    Zall=c(self$Z, Znotrun_preds[bestL[-ell]]),
                    no_update=TRUE)
+        # Consider all except bestL, add back in one that might be replaced
+        Xopts_inds_to_consider <- setdiff(Xopts_to_consider, bestL[-ell])
       }
       # browser()
       Xopts_inds_to_consider <- setdiff(Xopts_to_consider, bestL)
+      # Xopts_inds_to_consider <- setdiff(Xopts_to_consider, bestL)
       int_werror_red_vals <- int_werrors_red_func(
         add_points_indices = Xopts_inds_to_consider)
       
