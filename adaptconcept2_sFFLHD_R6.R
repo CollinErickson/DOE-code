@@ -922,6 +922,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
    select_new_points_from_max_des = function() {
      # take point with max desirability, update model, requires using se or 
      #   pvar so adding a point goes to zero
+     # ALM is active learning Cohn, just picks highest pvar (equiv to se)
      gpc <- self$mod$clone(deep=TRUE)
      bestL <- c()
      for (ell in 1:self$b) {
@@ -1119,28 +1120,28 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       }
       
       int_werror_vals <- rep(Inf, nrow(self$Xopts))
-      if (self$selection_method %in% c("max_des_red", "ALC")) {
+      # if (self$selection_method %in% c("max_des_red", "ALC")) {
         # Don't have current value, so don't start with anything
         # r_star <- NA # Track best index
         # int_werror_vals_star <- Inf # Track best value
-      } else { # Start with ell and replace
+      # } else { # Start with ell and replace
         # r_star <- bestL[ell]
-        if (ell == 1) { # First time need to calculate current integrated des
+        # if (ell == 1) { # First time need to calculate current integrated des
           # X_with_bestL <- rbind(X_with_bestL, self$Xopts[bestL, , drop=F])
           # Z_with_bestL <- c(Z_with_bestL, Znotrun_preds[bestL])
           # gpc$update(Xall=X_with_bestL, Zall=Z_with_bestL, restarts=0,
           #            no_update=TRUE)
           # int_werror_vals_star <- int_werror_func()
-        } else { # After that it just stays as star value
+        # } else { # After that it just stays as star value
           # essentially int_des_weight_star <- int_des_weight_star
-        }
+        # }
         # Need to remove ell of bestL from X since it is being replaced
         # Store current selection in IDWs,
         #   but not actually using it for anything
         # int_werror_vals[bestL[ell]] <- int_werror_vals_star 
         # X_with_bestL <- rbind(self$X, self$Xopts[bestL[-ell], , drop=F])
         # Z_with_bestL <- c(self$Z, Znotrun_preds[bestL[-ell]])
-      }
+      # }
       
       # for (r in setdiff(Xopts_to_consider, bestL)) {
       #   # gpc$update(Xall = rbind(X_with_bestL, self$Xopts[r, ,drop=F]),
@@ -1168,7 +1169,8 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       }
       # browser()
       Xopts_inds_to_consider <- setdiff(Xopts_to_consider, bestL)
-      int_werror_red_vals <- int_werrors_red_func(add_points_indices = Xopts_inds_to_consider)
+      int_werror_red_vals <- int_werrors_red_func(
+        add_points_indices = Xopts_inds_to_consider)
       
       r_star <- Xopts_inds_to_consider[which.max(int_werror_red_vals)]
       
@@ -1209,19 +1211,19 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       if (ell < self$b || TRUE) { # REMOVE THIS FOR SPEED
         Xnewone <- self$Xopts[r_star, , drop=FALSE]
         Znewone <- Znotrun_preds[r_star] #gpc$predict(Xnewone)
-        if (self$selection_method %in% c("max_des_red", "ALC")) {
+        # if (self$selection_method %in% c("max_des_red", "ALC")) {
           # X_with_bestL <- rbind(X_with_bestL, Xnewone)
           # Z_with_bestL <- c(Z_with_bestL, Znewone)
           # if (T) { # REMOVE THIS FOR SPEED
           #   gpc$update(Xall=X_with_bestL, Zall=Z_with_bestL, restarts=0,
           #              no_update=TRUE)
           # }
-        } else {
+        # } else {
           # X_with_bestL <- rbind(X_with_bestL, self$Xopts[r_star, ])
           # Z_with_bestL <- c(Z_with_bestL, Znotrun_preds[r_star])
           # gpc$update(Xall=X_with_bestL, Zall=Z_with_bestL, restarts=0,
                      # no_update=TRUE)
-        }
+        # }
         if (self$verbose >= 2) {
           cat("\tSelected", r_star, Xnewone, Znewone, "\n")
         }
