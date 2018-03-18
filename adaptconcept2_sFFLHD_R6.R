@@ -457,11 +457,14 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
           # standard min energy
           newL <- self$select_new_points_from_SMED()
           reason <- "SMED"
-        } else if (self$selection_method == "max_des" || 
-                   self$selection_method == "ALM") {
+        } else if (self$selection_method %in% c("max_des", "max_des_all",
+                                                "max_des_all_best", "ALM",
+                                                "ALM_all", "ALM_all_best")) {
           # take point with max desirability, update model, requires using se
           #   or pvar so adding a point goes to zero
-          newL <- self$select_new_points_from_max_des()
+          # newL <- self$select_new_points_from_max_des()
+          # Moved this into des_red even though it isn't a reduction
+          newL <- self$select_new_points_from_max_des_red()
           reason <- "max_des"
         } else if (self$selection_method %in% 
                      c("max_des_red", "max_des_red_all", "max_des_red_all_best",
@@ -1022,84 +1025,111 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
     
     # Can start with none and select one at time, 
     #   or start with random and replace
-    if (self$selection_method %in% c("max_des_red", "ALC")) {
+    # TODO make variable for none, all, and best
+    if (self$selection_method %in% c("max_des_red", "ALC", "max_des", "ALM")) {
       bestL <- c() # Start with none
-    } else if (self$selection_method %in% c("max_des_red_all", "ALC_all")) {
+    } else if (self$selection_method %in% c("max_des_red_all", "ALC_all",
+                                            "max_des_all", "ALM_all")) {
       # Start with random L and replace
       bestL <- sample(Xopts_to_consider, size = self$b, replace = FALSE)
     } else if (self$selection_method %in% 
-               c("max_des_red_all_best", "ALC_all_best")) {
+               c("max_des_red_all_best", "ALC_all_best",
+                 "max_des_all_best", "ALM_all_best")) {
       # Start with best L and replace
-      if (self$selection_method %in% c("ALC_all_best")) {
+      if (self$selection_method %in% c("ALC_all_best", "ALM_all_best")) {
         print("using ALC_all_best")
         Xotc_werrors <- self$werror_func(
           XX = self$Xopts[Xopts_to_consider, , drop=FALSE], 
           des_func=function(XX, mod){rep(0, nrow(XX))}, 
           alpha=0, weight_const=1) #, weight_func=self$weight_func)
-      } else {
+      } else if (self$selection_method %in% c("max_des_red_all_best",
+                                              "max_des_all_best")) {
         Xotc_werrors <- self$werror_func(
           XX = self$Xopts[Xopts_to_consider, , drop=FALSE])
-      }
+      } else {stop("#92847")}
       bestL <- order(Xotc_werrors, decreasing = TRUE)[self$b:1] 
       # Make the biggest last so it is least likely to be replaced
     } else {
       browser("Selection method doesn't match up #92352583")
     }
     
-    # Random integration points from simple LHS
-    int_points <- simple.LHS(1e4, self$D)
-    
-    # Make separate int_werror_func for ALC
-    # if (substr(self$selection_method, 1, 3) == "ALC") {print("Using ALC")
-      # 
-      # int_werror_func <- function() {
-      #   mean(
-      #     self$werror_func(XX=int_points, mod=gpc, 
-      #                      des_func=function(XX, mod){rep(0, nrow(XX))},
-      #                      alpha=0, weight_const=1)
-      #   )
-      # }
-    # } else { # Not ALC, so max_des_red
-      # There can be alot of variability in calculating the desirability
-      #   when it involves sampling stuff, so the intwerror values will
-      #   fluctuate if you recalculate each time. And that is slower.
-      if (substr(self$selection_method, 1, 3) == "ALC") {print("Using ALC")
-        int_points_numdes <- rep(1, nrow(int_points))
-      } else {
-        int_points_numdes <- self$des_func(XX=int_points, mod=gpc)
+    uses_ALM <- self$selection_method %in% c("ALM", "ALM_all", "ALM_all_best",
+                                             "max_des", "max_des_all",
+                                             "max_des_all_best")
+    # TODO put line above earlier, and make sure selection method is valid
+    if (uses_ALM) { # max_des or ALM
+      browser()
+      add_points_weights <- self$weight_func(XX=self$Xopts)
+      # TODO rename int_werrors_red_func to obj_to_max
+      int_werrors_red_func <- function(add_points_indices) {
+        browser()
+        add_points <- self$Xopts[add_points_indices, ]
+        if (self$error_power==2) {
+          pp <- gpc$predict.var(XX=add_points)
+        } else {
+          pp <- gpc$predict.se(XX=add_points)
+        }
+        if (substr(self$selection_method, 1, 3) != "ALM") {
+          pp <- pp * add_points_weights[add_points_indices]
+        }
+        pp
       }
+    } else {
+      # Random integration points from simple LHS
+      int_points <- simple.LHS(1e4, self$D)
       
-      # Set function to calculate int_werrors_reduction
-      if (self$error_power == 1) {
-        int_werrors_red_func <- function(add_points_indices) {
-          # New faster, same results, version
-          add_points <- self$Xopts[add_points_indices, ]
-          # Calculate pred vars after adding points
-          pvaaps <- gpc$mod$pred_var_after_adding_points_sep(
-            add_points=add_points, pred_points=int_points)
-          # Some will be a little less than 0, gives NaN for sqrt
-          sum_neg <- sum(c(pvaaps)<0)
-          if (sum_neg > 0) {
-            cat("    pvaaps: ",sum_neg,"/",length(pvaaps),
-                "are negative, setting to zero", "\n")
+      # Make separate int_werror_func for ALC
+      # if (substr(self$selection_method, 1, 3) == "ALC") {print("Using ALC")
+        # 
+        # int_werror_func <- function() {
+        #   mean(
+        #     self$werror_func(XX=int_points, mod=gpc, 
+        #                      des_func=function(XX, mod){rep(0, nrow(XX))},
+        #                      alpha=0, weight_const=1)
+        #   )
+        # }
+      # } else { # Not ALC, so max_des_red
+        # There can be alot of variability in calculating the desirability
+        #   when it involves sampling stuff, so the intwerror values will
+        #   fluctuate if you recalculate each time. And that is slower.
+        if (substr(self$selection_method, 1, 3) == "ALC") {print("Using ALC")
+          int_points_numdes <- rep(1, nrow(int_points))
+        } else {
+          int_points_numdes <- self$des_func(XX=int_points, mod=gpc)
+        }
+        
+        # Set function to calculate int_werrors_reduction
+        if (self$error_power == 1) {
+          int_werrors_red_func <- function(add_points_indices) {
+            # New faster, same results, version
+            add_points <- self$Xopts[add_points_indices, ]
+            # Calculate pred vars after adding points
+            pvaaps <- gpc$mod$pred_var_after_adding_points_sep(
+              add_points=add_points, pred_points=int_points)
+            # Some will be a little less than 0, gives NaN for sqrt
+            sum_neg <- sum(c(pvaaps)<0)
+            if (sum_neg > 0) {
+              cat("    pvaaps: ",sum_neg,"/",length(pvaaps),
+                  "are negative, setting to zero", "\n")
+            }
+            pvaaps <- pmax(pvaaps, 0)
+            # Need negative since it isn't reduction, it is total value
+            -colMeans(sweep(sqrt(pvaaps), 1, 
+              (self$weight_const+self$alpha_des*int_points_numdes), `*`))
           }
-          pvaaps <- pmax(pvaaps, 0)
-          # Need negative since it isn't reduction, it is total value
-          -colMeans(sweep(sqrt(pvaaps), 1, 
-            (self$weight_const+self$alpha_des*int_points_numdes), `*`))
-        }
-      } else if (self$error_power == 2) {
-        int_werrors_red_func <- function(add_points_indices) {
-          # New faster, same results, version
-          add_points <- self$Xopts[add_points_indices, ]
-          # mean((self$weight_const+self$alpha_des*int_points_numdes)*
-          #  gpc$mod$pred_var_reductions(add_points=add_points, 
-          #                          pred_points=int_points))
-          colMeans(sweep(gpc$mod$pred_var_reductions(
-            add_points=add_points, pred_points=int_points), 1, 
-            (self$weight_const+self$alpha_des*int_points_numdes), `*`))
-        }
-      } else {stop("Error power must be 1 or 2 #282362")}
+        } else if (self$error_power == 2) {
+          int_werrors_red_func <- function(add_points_indices) {
+            # New faster, same results, version
+            add_points <- self$Xopts[add_points_indices, ]
+            # mean((self$weight_const+self$alpha_des*int_points_numdes)*
+            #  gpc$mod$pred_var_reductions(add_points=add_points, 
+            #                          pred_points=int_points))
+            colMeans(sweep(gpc$mod$pred_var_reductions(
+              add_points=add_points, pred_points=int_points), 1, 
+              (self$weight_const+self$alpha_des*int_points_numdes), `*`))
+          }
+        } else {stop("Error power must be 1 or 2 #282362")}
+    }
     # }
     # X_with_bestL <- self$X
     # Z_with_bestL <- self$Z
@@ -1156,7 +1186,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       #   int_werror_vals[r] <- int_werror_vals_r
       # }
       
-      if (self$selection_method %in% c("max_des_red", "ALC")) {
+      if (self$selection_method %in% c("max_des_red", "ALC", "max_des", "ALM")) {
         # if starting with none and adding one
         gpc$update(Xall=rbind(self$X, self$Xopts[bestL,,drop=F]),
                    Zall=c(self$Z, Znotrun_preds[bestL]),
@@ -1172,7 +1202,6 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
         Xopts_inds_to_consider <- setdiff(Xopts_to_consider, bestL[-ell])
       }
       # browser()
-      Xopts_inds_to_consider <- setdiff(Xopts_to_consider, bestL)
       # Xopts_inds_to_consider <- setdiff(Xopts_to_consider, bestL)
       int_werror_red_vals <- int_werrors_red_func(
         add_points_indices = Xopts_inds_to_consider)
@@ -1181,7 +1210,8 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       
       # print("Here are int_werror_vals")
       if (self$verbose >= 2) {
-        print(cbind(1:length(int_werror_red_vals), int_werror_red_vals))
+        # print(cbind(1:length(int_werror_red_vals), int_werror_red_vals))
+        print(cbind(Xopts_inds_to_consider, int_werror_red_vals))
       }
       
       # Reduce the number to consider if large
@@ -1205,7 +1235,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
                                       numrandtoadd, F))
       }
       
-      if (self$selection_method %in% c("max_des_red", "ALC")) {
+      if (self$selection_method %in% c("max_des_red", "ALC", "max_des", "ALM")) {
         # if starting with none and adding one
         bestL <- c(bestL, r_star)
       } else { # if starting with L and replacing as go
