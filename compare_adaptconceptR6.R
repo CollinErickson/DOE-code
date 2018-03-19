@@ -43,6 +43,7 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
     des_func=NULL,
     alpha_des = NULL,
     weight_const = NULL,
+    error_power = NULL,
     actual_des_func=NULL,
     design = NULL,
     number_runs = NULL,
@@ -64,6 +65,7 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
                           selection_method='SMED',
                           design='sFFLHD',
                           des_func=NA, alpha_des=1, weight_const=0,
+                          error_power=1,
                           actual_des_func=NULL,
                           pass_list=list() # List of things to pass to adapt concept for each
                           , folder_name,
@@ -93,6 +95,7 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
       self$des_func <- des_func
       self$alpha_des <- alpha_des
       self$weight_const <- weight_const
+      self$error_power <- error_power
       self$actual_des_func <- actual_des_func
       self$pass_list <- pass_list
       self$parallel <- parallel
@@ -101,7 +104,11 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
         if (parallel_cores == "detect") {
           self$parallel_cores <- parallel::detectCores()
         } else if (parallel_cores == "detect-1") {
-          self$parallel_cores <- parallel::detectCores() - 1
+          detectCor <- parallel::detectCores()
+          if (detectCor == 1) {
+            stop("Only 1 core detected, can't do 'detect-1'")
+          }
+          self$parallel_cores <- detectCor - 1
         } else {
           self$parallel_cores <- parallel_cores
         }
@@ -133,7 +140,8 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
                                           } else {NA}),
                    data.frame(reps),
                    data.frame(batches),
-                   data.frame(obj, selection_method, des_func, alpha_des, weight_const,
+                   data.frame(obj, selection_method, des_func,
+                              alpha_des, weight_const, error_power,
                               actual_des_func, #=deparse(substitute(actual_des_func)), 
                               actual_des_func_num=1:length(actual_des_func),
                               design,
@@ -295,6 +303,7 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
                            pvar=u$stats$pvar, pamv=u$stats$pamv,
                            pred_intwerror=u$stats$intwerror,
                            actual_intwerror=u$stats$actual_intwerror,
+                           actual_intwvar=u$stats$actual_intwvar,
                            n=u$stats$n,
                            #obj=row_grid$obj, 
                            num=paste0(row_grid$obj,row_grid$repl),
@@ -350,14 +359,15 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
       self$enddf <- self$outdf[self$outdf$batch == self$batches,]
       # Want to get mean of these columns across replicates
       meanColNames <- c("mse","pvar","pamv","rmse","prmse","pred_intwerror",
-                        "actual_intwerror")
+                        "actual_intwerror", "actual_intwvar")
       # Use these as ID, exclude repl, seed, and num and time
       splitColNames <- c("func","func_string","func_num","D","L","b",
                          "reps","batches",
                          "force_old","force_pvar","force2",
                          "n0","obj", "batch", "Group","package",
                          "selection_method", "design",
-                         "actual_des_func_num", "alpha_des", "weight_const")
+                         "actual_des_func_num", "alpha_des", "weight_const",
+                         "error_power")
       self$meandf <- plyr::ddply(
                        self$outdf, 
                        splitColNames, 
@@ -380,6 +390,10 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
             colMeans(tdf[,meanColNames])
             , setNames(summary(tdf$actual_intwerror),
                        paste("actual_intwerror",
+                             c("Min", "Q1","Med","Mean","Q3","Max"),
+                             sep = '_'))
+            , setNames(summary(tdf$actual_intwvar),
+                       paste("actual_intwvar",
                              c("Min", "Q1","Med","Mean","Q3","Max"),
                              sep = '_'))
           )
