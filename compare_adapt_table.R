@@ -1,9 +1,9 @@
 get_table <- function(self, error_power=2) {#browser()
   #  "Group", 
   if (error_power == 1) {
-    tab <- self$endmeandf[, c("selection_method","design","actual_intwerror_Q1", "actual_intwerror", "actual_intwerror_Q3")]
+    tab <- self$endmeandf[, c("selection_method","design","actual_intwerror_Q1", "actual_intwerror_Med", "actual_intwerror_Q3")]
   } else if (error_power ==2) {
-    tab <- self$endmeandf[, c("selection_method","design","actual_intwvar_Q1", "actual_intwvar", "actual_intwvar_Q3")]
+    tab <- self$endmeandf[, c("selection_method","design","actual_intwvar_Q1", "actual_intwvar_Med", "actual_intwvar_Q3")]
   } else {stop("No error_power #928444")}
   colnames(tab) <- c("Selection", "Candidates","$\\Psi(25\\%)$", "$\\Psi(50\\%)$", "$\\Psi(75\\%)$")
   # tab$Selection[tab$Selection == "desirability"] <- "Proposed"
