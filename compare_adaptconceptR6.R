@@ -364,7 +364,7 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
       splitColNames <- c("func","func_string","func_num","D","L","b",
                          "reps","batches",
                          "force_old","force_pvar","force2",
-                         "n0","obj", "batch", "Group","package",
+                         "n0","obj", "batch", "n", "Group","package",
                          "selection_method", "design",
                          "actual_des_func_num", "alpha_des", "weight_const",
                          "error_power")
