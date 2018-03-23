@@ -164,7 +164,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
                          des_func, des_func_fast=TRUE, alpha_des=1,
                          new_batches_per_batch=5,
                          parallel=FALSE, parallel_cores="detect",
-                         nugget=1e-6,
+                         nugget=1e-6, estimate.nugget = TRUE,
                          verbose = 1,
                          design_seed=numeric(0),
                          weight_const=0,
@@ -229,7 +229,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       
       if(is.null(package)) {self$package <- "laGP"}
       else {self$package <- package}
-      self$mod <- IGP(package = self$package, estimate.nugget=TRUE, 
+      self$mod <- IGP(package = self$package, estimate.nugget=estimate.nugget, 
                       nugget=nugget)
       self$stats <- list(iteration=c(),n=c(),pvar=c(),mse=c(), ppu=c(), 
                          minbatch=c(), pamv=c(), actual_intwerror=c(),
