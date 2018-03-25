@@ -696,6 +696,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       preds <- self$mod$predict(x, se=T)
       ylim <- c(min(preds$fit-2*preds$se), max(preds$fit+2*preds$se))
       plot(x, preds$fit, ylim=ylim, type='l', col='white', ylab="Z")
+      points(self$X, rep(ylim[1], length(self$X)))
       multicolor.title(c("Actual ","Pred ", "95% ", "Weight ", "Weight*sd"),
                        c(3,1,2,6,"cyan"))
       if (self$des_func_fast) {
@@ -1102,7 +1103,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
         if (self$error_power == 1) {
           int_werrors_red_func <- function(add_points_indices) {
             # New faster, same results, version
-            add_points <- self$Xopts[add_points_indices, ]
+            add_points <- self$Xopts[add_points_indices, , drop=FALSE]
             # Calculate pred vars after adding points
             pvaaps <- gpc$mod$pred_var_after_adding_points_sep(
               add_points=add_points, pred_points=int_points)
