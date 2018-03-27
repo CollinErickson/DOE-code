@@ -1516,7 +1516,7 @@ if (F) {
   set.seed(2); csa(); a <- adapt.concept2.sFFLHD.R6$new(D=2,L=3,func=banana,
                         obj="desirability", des_func=des_func_grad_norm2_mean,
                         actual_des_func=actual_des_func_grad_norm2_mean_banana,
-                        alpha_des=1e2, n0=30, take_until_maxpvar_below=.9,
+                        alpha_des=1e2, n0=12, take_until_maxpvar_below=.9,
                         package="laGP_GauPro_kernel", design='sFFLHD',
                         selection_method="max_des_red_all_best"); a$run(1)
   # Do profvis of above for 10 batches
@@ -1536,4 +1536,42 @@ if (F) {
       alpha_des=1, weight_const=0, n0=20, package="laGP_GauPro_kernel",
       design='sFFLHD_Lflex', selection_method="max_des_red_all_best");
     a$run(15, noplot=T)}, interval = .1)
+  
+  # branin, grad_norm2_mean, laGP_GauPro_kernel
+  set.seed(2); csa(); a <- adapt.concept2.sFFLHD.R6$new(
+    D=2,L=3,func=branin,
+    obj="desirability", des_func=des_func_grad_norm2_mean,
+    actual_des_func=get_num_actual_des_func_grad_norm2_mean(branin),
+    n0=6, alpha_des=1, weight_const=0,
+    package="laGP_GauPro_kernel", design='sFFLHD',
+    selection_method="max_des_red_all_best"); a$run(1)
+  a$run(5)
+  cf(a$mod$predict, batchmax=Inf, 
+     afterplotfunc=function() {
+       text(a$X[,1], a$X[,2], a$X_tracker$iteration_added)},
+     xlim=c(-.02,1.02), ylim=c(-.02,1.02), bar=T)
+  
+  # matt 1D function
+  matt <- function(x) {(-exp(x)*sin(4.8*x^4)^3)}
+  set.seed(0); csa(); a <- adapt.concept2.sFFLHD.R6$new(
+    D=1,L=3,func=matt,
+    obj="desirability", des_func=des_func_grad_norm2_mean,
+    actual_des_func=get_num_actual_des_func_grad_norm2_mean(matt),
+    n0=2, alpha_des=1, weight_const=0,
+    package="GauPro_kernel", design='sFFLHD',
+    selection_method="max_des_red_all_best"); a$run(1)
+  
+  # franke, grad_norm2_mean, laGP_GauPro_kernel
+  set.seed(2); csa(); a <- adapt.concept2.sFFLHD.R6$new(
+    D=2,L=3,func=franke,
+    obj="desirability", des_func=des_func_grad_norm2_mean,
+    actual_des_func=get_num_actual_des_func_grad_norm2_mean(branin),
+    n0=6, alpha_des=1, weight_const=0,
+    package="laGP_GauPro_kernel", design='sFFLHD',
+    selection_method="max_des_red_all_best"); a$run(1)
+  a$run(7)
+  cf(a$mod$predict, batchmax=Inf,
+     afterplotfunc=function() {
+       text(a$X[,1], a$X[,2], a$X_tracker$iteration_added)},
+     xlim=c(-.02,1.02), ylim=c(-.02,1.02), bar=T)
 }
