@@ -14,7 +14,7 @@ if (T) {
   } else { # Otherwise create new
     print("ban1 doesn't exist, creating new")
     if (Sys.info()['sysname'] == "Windows") {
-      parallel_cores <- 'detect'
+      parallel_cores <- 'detect-1'
     } else {
       which_matches <- which(substr(commandArgs(),1,18) == "number_of_threads=")
       if (length(which_matches) == 1) {
@@ -24,9 +24,9 @@ if (T) {
       }
     }
     ban1 <- compare.adaptR6$new(func='banana', reps=20, batches=20, D=2, L=2, n0=15, 
-                                obj=c("nonadapt","nonadapt","desirability","desirability"), 
-                                selection_method=c("nonadapt", "nonadapt", 'SMED', 'max_des_red_all_best'),
-                                design=c("sobol", 'sFFLHD', 'sFFLHD', 'sFFLHD'),
+                                obj=c("nonadapt","nonadapt","desirability","desirability", "desirability"), 
+                                selection_method=c("nonadapt", "nonadapt", 'SMED', 'max_des_red_all_best', 'max_des_red_all_best'),
+                                design=c("sobol", 'sFFLHD', 'sFFLHD', 'sFFLHD', 'sFFLHD'),
                                 des_func='des_func_grad_norm2_mean',
                                 actual_des_func='actual_des_func_grad_norm2_mean_banana',
                                 alpha_des=1, weight_const=0,
