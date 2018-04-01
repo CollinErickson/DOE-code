@@ -2,13 +2,13 @@
 # source('C:/Users/cbe117/Documents/GitHub/DOE-code/compare_adaptconceptR6.R')
 source('.//compare_adaptconceptR6.R')
 run_bran1 <- TRUE
-run_franke1 <- FALSE
-run_lim1 <- FALSE
+run_franke1 <- !TRUE
+run_lim1 <- !TRUE
 
 # Branin 6/2/20
 # In FALSE to avoid rerunning accidentally. readRDS it if already run
 if (run_bran1) {
-  bran1_file <- './/compare_adaptconcept_output//branin33_D=2_L=2_b=2_B=20_R=20_n0=15_Fold=0_Fpvar=0_S=10/object.rds'
+  bran1_file <- './/compare_adaptconcept_output//branin_D=2_L=3_b=3_B=8_R=30_n0=6_Fold=0_Fpvar=0_S=10/object.rds'
   # Check if already saved
   if (file.exists(bran1_file)) { # Load if saved, and recover
     print("bran1 already exists, loading")
@@ -64,7 +64,7 @@ if (run_bran1) {
 # Franke 6/2/20
 # In FALSE to avoid rerunning accidentally. readRDS it if already run
 if (run_franke1) {
-  franke1_file <- './/compare_adaptconcept_output//lim2002abcd_D=2_L=2_b=2_B=20_R=20_n0=15_Fold=0_Fpvar=0_S=10/object.rds'
+  franke1_file <- './/compare_adaptconcept_output//franke_D=2_L=3_b=3_B=8_R=30_n0=6_Fold=0_Fpvar=0_S=10/object.rds'
   # Check if already saved
   if (file.exists(franke1_file)) { # Load if saved, and recover
     print("franke1 already exists, loading")
@@ -120,7 +120,7 @@ if (run_franke1) {
 # Lim2002 6/2/20
 # In FALSE to avoid rerunning accidentally. readRDS it if already run
 if (run_lim1) {
-  lim1_file <- './/compare_adaptconcept_output//lim2002abcd_D=2_L=2_b=2_B=20_R=20_n0=15_Fold=0_Fpvar=0_S=10/object.rds'
+  lim1_file <- './/compare_adaptconcept_output//lim2002_D=2_L=3_b=3_B=8_R=30_n0=6_Fold=0_Fpvar=0_S=10/object.rds'
   # Check if already saved
   if (file.exists(lim1_file)) { # Load if saved, and recover
     print("lim1 already exists, loading")

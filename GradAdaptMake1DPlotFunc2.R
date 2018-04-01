@@ -132,6 +132,7 @@ f <- function(xx) TestFunctions::logistic(xx, offset=.8, scl=13)
 # make1Dplots(Vectorize(function(x) {if (x<.55) .1*sin(4*pi*x*10/11) else if (x<.65) (x-.55) else .1 +.1*(.65-x)}), x=c(0,.55,.65,1))
 
 # Matt and I created function below for paper
+# matt <- function(x) {(-exp(x)*sin(4.8*x^4)^3)} # curve(matt) # THIS IS IN PAPER, DON'T DELETE
 matt <- function(x) {(-exp(x)*sin(4.8*x^4)^3)} # curve(matt)
 # make1Dplots(matt, x=c(0,.7,.89,1))
 # make1Dplots2(matt, x=c(0,.7,.89,1), theta=20, sameplot = T)
