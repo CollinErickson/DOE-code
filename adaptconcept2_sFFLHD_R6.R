@@ -120,6 +120,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
     obj_func = NULL, # "function",
     obj_nu = NULL,
     n0 = NULL, # "numeric"
+    stage1batches = NULL, # numeric, number of stage 1 batches
     take_until_maxpvar_below = NULL, 
     package = NULL, # "character",
     force_old = NULL, # "numeric", 
@@ -154,23 +155,24 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
                     #   own variable
     verbose = NULL, # 0 prints only essential, 2 prints a lot
     
-    initialize = function(D,L,b=NULL, package=NULL, obj=NULL, n0=0, 
-                         force_old=0, force_pvar=0,
-                         useSMEDtheta=F, 
-                         func, func_run_together=FALSE, func_fast=TRUE,
-                         take_until_maxpvar_below=NULL,
-                         design="sFFLHD",
-                         selection_method, X0=NULL, Xopts=NULL,
-                         des_func, des_func_fast=TRUE, alpha_des=1,
-                         new_batches_per_batch=5,
-                         parallel=FALSE, parallel_cores="detect",
-                         nugget=1e-6, estimate.nugget = TRUE,
-                         verbose = 1,
-                         design_seed=numeric(0),
-                         weight_const=0,
-                         error_power=1,
-                         nconsider=Inf, nconsider_random=0,
-                         ...) {
+    initialize = function(D,L,b=NULL, package=NULL, obj=NULL,
+                          n0=0, stage1batches=NULL,
+                          force_old=0, force_pvar=0,
+                          useSMEDtheta=F, 
+                          func, func_run_together=FALSE, func_fast=TRUE,
+                          take_until_maxpvar_below=NULL,
+                          design="sFFLHD",
+                          selection_method, X0=NULL, Xopts=NULL,
+                          des_func, des_func_fast=TRUE, alpha_des=1,
+                          new_batches_per_batch=5,
+                          parallel=FALSE, parallel_cores="detect",
+                          nugget=1e-6, estimate.nugget = TRUE,
+                          verbose = 1,
+                          design_seed=numeric(0),
+                          weight_const=0,
+                          error_power=1,
+                          nconsider=Inf, nconsider_random=0,
+                          ...) {
       self$iteration <- 1
       self$D <- D
       self$L <- L
@@ -311,6 +313,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
         self$Z <- c(self$Z, apply(self$X,1,self$func))
         self$mod$update(Xall=self$X, Zall=self$Z)
       }
+      self$stage1batches <- stage1batches
 
       self$useSMEDtheta <- if (length(useSMEDtheta)==0) {FALSE} 
                            else {useSMEDtheta}
@@ -384,10 +387,16 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
           newL <- 1:self$b
           reason <- "Taking first b from Xopts since X is empty"
         }
-      }
       
+      #
+      } else if (!is.null(self$stage1batches) && 
+                 self$iteration <= self$stage1batches) {
+        cat("stage1batch adding\n")
+        self$add_new_batches_to_Xopts(num_batches_to_take = 1)
+        newL <- 1:self$b
+        reason <- "Taking next b since still stage 1"
       # If nonadaptive, just take first L from design
-      else if (self$selection_method %in% c("nonadapt", "noadapt")) {
+      } else if (self$selection_method %in% c("nonadapt", "noadapt")) {
         self$add_new_batches_to_Xopts(num_batches_to_take = 1)
         newL <- 1:self$b
         reason <- "Taking next b since nonadapt"
@@ -1566,10 +1575,10 @@ if (F) {
     D=2,L=3,func=franke,
     obj="desirability", des_func=des_func_grad_norm2_mean,
     actual_des_func=get_num_actual_des_func_grad_norm2_mean(branin),
-    n0=6, alpha_des=1, weight_const=0,
+    stage1batches=2, alpha_des=1, weight_const=0,
     package="laGP_GauPro_kernel", design='sFFLHD',
     selection_method="max_des_red_all_best"); a$run(1)
-  a$run(7)
+  a$run(14)
   cf(a$mod$predict, batchmax=Inf,
      afterplotfunc=function() {
        text(a$X[,1], a$X[,2], a$X_tracker$iteration_added)},
