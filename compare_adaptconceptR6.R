@@ -21,6 +21,7 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
     force_old = NULL,
     force_pvar = NULL, 
     n0 = NULL,#=0,
+    stage1batches = NULL,#=0
     save_output = NULL,#=F, 
     func_string = NULL,
     seed_start = NULL, # Start with seed to make comparisons much better, 
@@ -57,7 +58,7 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
                           #plot_after=c(), plot_every=c(),
                           #forces=c("old"),force_vals=c(0),
                           force_old=c(0), force_pvar=c(0),
-                          n0=0,
+                          n0=0, stage1batches=0,
                           save_output=F, func_string = NULL,
                           seed_start=as.numeric(Sys.time()),
                           design_seed_start=as.numeric(Sys.time()),
@@ -86,6 +87,7 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
       self$force_old <- force_old
       self$force_pvar <- force_pvar
       self$n0 <- n0
+      self$stage1batches <- stage1batches
       self$save_output <- save_output
       self$seed_start <- seed_start
       self$design_seed_start <- design_seed_start
@@ -149,6 +151,7 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
                    #data.frame(forces=forces,force_vals=force_vals),
                    data.frame(force_old,force_pvar),
                    data.frame(n0),
+                   data.frame(stage1batches),
                    data.frame(package, stringsAsFactors = FALSE)
                    #data.frame(selection_method, des_func, stringsAsFactors = FALSE)
                 )
@@ -189,7 +192,8 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
         folderTime <- gsub(":","-", folderTime0)
         t1 <- c(self$func_string,"_D=",self$D,"_L=",self$L,"_b=",self$b,
                 "_B=",self$batches,"_R=",self$reps,"_n0=",self$n0,
-                "_Fold=",self$force_old,"_Fpvar=",self$force_pvar)
+                # "_Fold=",self$force_old,"_Fpvar=",self$force_pvar,
+                "_s1b=",self$stage1batches)
         if (!is.null(self$seed_start)) {t1 <- c(t1,"_","S=",self$seed_start)}
         if (add_timestamp) {t1 <- c(t1,"_",folderTime)}
         folder_name <- paste0(t1, collapse = "")
