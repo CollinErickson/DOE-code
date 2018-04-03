@@ -1,3 +1,6 @@
+# This gave quartiles for each example,
+#  had to do as separate tables.
+
 get_table <- function(self, error_power=2) {#browser()
   #  "Group", 
   if (error_power == 1) {

@@ -392,13 +392,15 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
         function(tdf){
           c(
             colMeans(tdf[,meanColNames])
-            , setNames(summary(tdf$actual_intwerror),
+            , setNames(c(summary(tdf$actual_intwerror),
+                         sd(tdf$actual_intwerror)),
                        paste("actual_intwerror",
-                             c("Min", "Q1","Med","Mean","Q3","Max"),
+                             c("Min", "Q1","Med","Mean","Q3","Max","sd"),
                              sep = '_'))
-            , setNames(summary(tdf$actual_intwvar),
+            , setNames(c(summary(tdf$actual_intwvar),
+                         sd(tdf$actual_intwvar)),
                        paste("actual_intwvar",
-                             c("Min", "Q1","Med","Mean","Q3","Max"),
+                             c("Min", "Q1","Med","Mean","Q3","Max","sd"),
                              sep = '_'))
           )
         }
