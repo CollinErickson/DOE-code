@@ -1570,11 +1570,11 @@ if (F) {
     package="GauPro_kernel", design='sFFLHD',
     selection_method="max_des_red_all_best"); a$run(1)
   
-  # franke, grad_norm2_mean, laGP_GauPro_kernel
+  # limnonpoly, grad_norm2_mean, laGP_GauPro_kernel
   set.seed(2); csa(); a <- adapt.concept2.sFFLHD.R6$new(
-    D=2,L=3,func=franke,
+    D=2,L=3,func=limnonpoly,
     obj="desirability", des_func=des_func_grad_norm2_mean,
-    actual_des_func=get_num_actual_des_func_grad_norm2_mean(branin),
+    actual_des_func=NULL,#get_num_actual_des_func_grad_norm2_mean(),
     stage1batches=2, alpha_des=1, weight_const=0,
     package="laGP_GauPro_kernel", design='sFFLHD',
     selection_method="max_des_red_all_best"); a$run(1)
