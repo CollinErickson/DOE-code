@@ -1,8 +1,8 @@
 # Comparisons for adapt paper
 # source('C:/Users/cbe117/Documents/GitHub/DOE-code/compare_adaptconceptR6.R')
 source('.//compare_adaptconceptR6.R')
-run_bran1 <- TRUE
-run_franke1 <- TRUE
+run_bran1 <- !TRUE
+run_franke1 <- !TRUE
 run_lim1 <- TRUE
 
 # Branin 6/2/20
@@ -28,10 +28,14 @@ if (run_bran1) {
     }
     bran1 <- compare.adaptR6$new(func='branin', reps=30, batches=10, D=2, L=3,
                                  n0=0, stage1batches=2, 
-                                obj=c("nonadapt","desirability","desirability", "desirability"), 
-                                selection_method=c("nonadapt", 'SMED', 'ALC_all_best', 'max_des_red_all_best'),
-                                design=c('sFFLHD', 'sFFLHD', 'sFFLHD', 'sFFLHD'),
-                                des_func='des_func_grad_norm2_mean',
+                                # obj=c("nonadapt","desirability","desirability", "desirability"), 
+                                # selection_method=c("nonadapt", 'SMED', 'ALC_all_best', 'max_des_red_all_best'),
+                                # design=c('sFFLHD', 'sFFLHD', 'sFFLHD', 'sFFLHD'),
+                                obj=c("nonadapt","nonadapt","desirability","desirability", "desirability"), 
+                                selection_method=c("nonadapt","nonadapt", 'ALC_all_best', 'max_des_red_all_best', 'max_des_red_all_best'),
+                                design=c('sFFLHD', "sobol", 'sFFLHD', 'sFFLHD', 'sFFLHD'),
+                                des_func=c('des_func_grad_norm2_mean','des_func_grad_norm2_mean','des_func_grad_norm2_mean',
+                                           'des_func_mean_grad_norm2','des_func_grad_norm2_mean'),
                                 actual_des_func='get_num_actual_des_func_grad_norm2_mean(branin)',
                                 alpha_des=1, weight_const=0,
                                 package="laGP_GauPro_kernel",
@@ -85,10 +89,15 @@ if (run_franke1) {
     }
     franke1 <- compare.adaptR6$new(func='franke', reps=30, batches=10, D=2, L=3,
                                    n0=0, stage1batches=2,
-                                  obj=c("nonadapt","desirability","desirability", "desirability"), 
-                                  selection_method=c("nonadapt", 'SMED', 'ALC_all_best', 'max_des_red_all_best'),
-                                  design=c('sFFLHD', 'sFFLHD', 'sFFLHD', 'sFFLHD'),
-                                  des_func='des_func_grad_norm2_mean',
+                                  # obj=c("nonadapt","desirability","desirability", "desirability"), 
+                                  # selection_method=c("nonadapt", 'SMED', 'ALC_all_best', 'max_des_red_all_best'),
+                                  # design=c('sFFLHD', 'sFFLHD', 'sFFLHD', 'sFFLHD'),
+                                  # des_func='des_func_grad_norm2_mean',
+                                  obj=c("nonadapt","nonadapt","desirability","desirability", "desirability"), 
+                                  selection_method=c("nonadapt","nonadapt", 'ALC_all_best', 'max_des_red_all_best', 'max_des_red_all_best'),
+                                  design=c('sFFLHD', "sobol", 'sFFLHD', 'sFFLHD', 'sFFLHD'),
+                                  des_func=c('des_func_grad_norm2_mean','des_func_grad_norm2_mean','des_func_grad_norm2_mean',
+                                             'des_func_mean_grad_norm2','des_func_grad_norm2_mean'),
                                   actual_des_func='get_num_actual_des_func_grad_norm2_mean(franke)',
                                   alpha_des=1, weight_const=0,
                                   package="laGP_GauPro_kernel",
@@ -142,10 +151,15 @@ if (run_lim1) {
     }
     lim1 <- compare.adaptR6$new(func='limnonpoly', reps=30, batches=10, D=2, L=3,
                                 n0=0, stage1batches=2, 
-                                obj=c("nonadapt","desirability","desirability", "desirability"), 
-                                selection_method=c("nonadapt", 'SMED', 'ALC_all_best', 'max_des_red_all_best'),
-                                design=c('sFFLHD', 'sFFLHD', 'sFFLHD', 'sFFLHD'),
-                                des_func='des_func_grad_norm2_mean',
+                                # obj=c("nonadapt","desirability","desirability", "desirability"), 
+                                # selection_method=c("nonadapt", 'SMED', 'ALC_all_best', 'max_des_red_all_best'),
+                                # design=c('sFFLHD', 'sFFLHD', 'sFFLHD', 'sFFLHD'),
+                                # des_func='des_func_grad_norm2_mean',
+                                obj=c("nonadapt","nonadapt","desirability","desirability", "desirability"), 
+                                selection_method=c("nonadapt","nonadapt", 'ALC_all_best', 'max_des_red_all_best', 'max_des_red_all_best'),
+                                design=c('sFFLHD', "sobol", 'sFFLHD', 'sFFLHD', 'sFFLHD'),
+                                des_func=c('des_func_grad_norm2_mean','des_func_grad_norm2_mean','des_func_grad_norm2_mean',
+                                           'des_func_mean_grad_norm2','des_func_grad_norm2_mean'),
                                 actual_des_func='get_num_actual_des_func_grad_norm2_mean(limnonpoly)',
                                 alpha_des=1, weight_const=0,
                                 package="laGP_GauPro_kernel",
