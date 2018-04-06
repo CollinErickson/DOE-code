@@ -1,14 +1,15 @@
 # Comparisons for adapt paper
 # source('C:/Users/cbe117/Documents/GitHub/DOE-code/compare_adaptconceptR6.R')
 source('.//compare_adaptconceptR6.R')
-run_bran1 <- !TRUE
-run_franke1 <- !TRUE
+run_bran1 <- TRUE
+run_franke1 <- TRUE
 run_lim1 <- TRUE
 
 # Branin 6/2/20
 # In FALSE to avoid rerunning accidentally. readRDS it if already run
 if (run_bran1) {
-  bran1_file <- './/compare_adaptconcept_output//branin_D=2_L=3_b=3_B=8_R=30_n0=6_Fold=0_Fpvar=0_S=10/object.rds'
+  # bran1_file <- './/compare_adaptconcept_output//branin_D=2_L=3_b=3_B=8_R=30_n0=6_Fold=0_Fpvar=0_S=10/object.rds'
+  bran1_file <- './/compare_adaptconcept_output//branin_D=2_L=3_b=3_B=10_R=100_n0=0_s1b=2_S=10/object.rds'
   # Check if already saved
   if (file.exists(bran1_file)) { # Load if saved, and recover
     print("bran1 already exists, loading")
@@ -26,7 +27,7 @@ if (run_bran1) {
         parallel_cores <- 1
       }
     }
-    bran1 <- compare.adaptR6$new(func='branin', reps=30, batches=10, D=2, L=3,
+    bran1 <- compare.adaptR6$new(func='branin', reps=100, batches=10, D=2, L=3,
                                  n0=0, stage1batches=2, 
                                 # obj=c("nonadapt","desirability","desirability", "desirability"), 
                                 # selection_method=c("nonadapt", 'SMED', 'ALC_all_best', 'max_des_red_all_best'),
@@ -69,7 +70,8 @@ if (run_bran1) {
 # Franke 6/2/20
 # In FALSE to avoid rerunning accidentally. readRDS it if already run
 if (run_franke1) {
-  franke1_file <- './/compare_adaptconcept_output//franke_D=2_L=3_b=3_B=8_R=30_n0=6_Fold=0_Fpvar=0_S=10/object.rds'
+  # franke1_file <- './/compare_adaptconcept_output//franke_D=2_L=3_b=3_B=8_R=30_n0=6_Fold=0_Fpvar=0_S=10/object.rds'
+  franke1_file <- './/compare_adaptconcept_output//franke_D=2_L=3_b=3_B=10_R=100_n0=0_s1b=2_S=10/object.rds'
   # Check if already saved
   if (file.exists(franke1_file)) { # Load if saved, and recover
     print("franke1 already exists, loading")
@@ -87,7 +89,7 @@ if (run_franke1) {
         parallel_cores <- 1
       }
     }
-    franke1 <- compare.adaptR6$new(func='franke', reps=30, batches=10, D=2, L=3,
+    franke1 <- compare.adaptR6$new(func='franke', reps=100, batches=10, D=2, L=3,
                                    n0=0, stage1batches=2,
                                   # obj=c("nonadapt","desirability","desirability", "desirability"), 
                                   # selection_method=c("nonadapt", 'SMED', 'ALC_all_best', 'max_des_red_all_best'),
@@ -131,7 +133,8 @@ if (run_franke1) {
 # Lim2002 6/2/20
 # In FALSE to avoid rerunning accidentally. readRDS it if already run
 if (run_lim1) {
-  lim1_file <- './/compare_adaptconcept_output//lim2002_D=2_L=3_b=3_B=8_R=30_n0=6_Fold=0_Fpvar=0_S=10/object.rds'
+  # lim1_file <- './/compare_adaptconcept_output//lim2002_D=2_L=3_b=3_B=8_R=30_n0=6_Fold=0_Fpvar=0_S=10/object.rds'
+  lim1_file <- './/compare_adaptconcept_output//limnonpoly_D=2_L=3_b=3_B=10_R=100_n0=0_s1b=2_S=10/object.rds'
   # Check if already saved
   if (file.exists(lim1_file)) { # Load if saved, and recover
     print("lim1 already exists, loading")
@@ -149,7 +152,7 @@ if (run_lim1) {
         parallel_cores <- 1
       }
     }
-    lim1 <- compare.adaptR6$new(func='limnonpoly', reps=30, batches=10, D=2, L=3,
+    lim1 <- compare.adaptR6$new(func='limnonpoly', reps=100, batches=10, D=2, L=3,
                                 n0=0, stage1batches=2, 
                                 # obj=c("nonadapt","desirability","desirability", "desirability"), 
                                 # selection_method=c("nonadapt", 'SMED', 'ALC_all_best', 'max_des_red_all_best'),
