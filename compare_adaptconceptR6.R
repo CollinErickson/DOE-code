@@ -369,7 +369,7 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
                          "reps","batches",
                          "force_old","force_pvar","force2",
                          "n0","obj", "batch", "n", "Group","package",
-                         "selection_method", "design",
+                         "selection_method", "design", "des_func",
                          "actual_des_func_num", "alpha_des", "weight_const",
                          "error_power")
       self$meandf <- plyr::ddply(

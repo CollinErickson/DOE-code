@@ -9,14 +9,18 @@ get_table <- function(self, error_power=2) {#browser()
     # tab[,3] <- paste(tab[,3], tab[,4], sep="+-")
     # tab[,4] <- NULL
   } else {stop("No error_power #9284454")}
-  cat("Dividing by sqrt(30)\n")
-  tab$actual_intwvar_sd <- tab$actual_intwvar_sd / sqrt(30)
+  cat("Dividing by sqrt(", self$reps, ")\n")
+  tab$actual_intwvar_sd <- tab$actual_intwvar_sd / sqrt(self$reps)
   colnames(tab) <- c("Selection", "Candidates","$\\Psi mean$","$\\Psi sd$")
   # tab$Selection[tab$Selection == "desirability"] <- "Proposed"
   tab$Selection[tab$Selection == "max_des_red_all_best"] <- "Proposed"
   tab$Selection[tab$Selection == "ALC_all_best"] <- 'IMSE'#"ALC"
-  tab$Selection[tab$Selection == "nonadapt"] <- "In order"
+  # tab$Selection[tab$Selection == "nonadapt"] <- "In order"
+  tab$Selection[tab$Selection == "nonadapt" & tab$Candidates=="sFFLHD"] <- "sFFLHD"
+  tab$Selection[tab$Selection == "nonadapt" & tab$Candidates=="sobol"] <- "Sobol"
   tab$Candidates[tab$Candidates == "sobol"] <- "Sobol"
+  # browser()
+  tab$Selection[tab$Selection == "Proposed" & self$endmeandf$des_func=="des_func_mean_grad_norm2"] <- "Plugin"
   colnames(tab) <- c("Method", "Candidates","$\\Psi mean$","$\\Psi sd$")
   tab
 }
@@ -46,7 +50,7 @@ get_xtable <- function(self1, self2, self3, caption=NULL, label=NULL, digits=3, 
   # Rescale mean and sd
   g1[,3:4] <- g1[,3:4]/1e6
   g2[,3:4] <- g2[,3:4]*1e3
-  g3[,3:4] <- g3[,3:4]*1e3
+  g3[,3:4] <- g3[,3:4]*1e2
   # Round to specified digits
   # gt2 <- round_df(gt, digits=digits, rnd=rnd)
   gr1 <- round_df(g1, digits=digits, rnd=rnd)
@@ -64,7 +68,7 @@ get_xtable <- function(self1, self2, self3, caption=NULL, label=NULL, digits=3, 
   # gt <- cbind(g1[,1:3], g2[,3], g3[,3])
   gt <- cbind(gr1[,c(1:2,5)], gr2[,5], gr3[,5], stringsAsFactors=F)
   # browser()
-  names(gt)[3:5] <- c('Branin ($\\times 10^{-6}$)', 'Franke ($\\times 10^{3}$)', 'Lim ($\\times 10^{3}$)')
+  names(gt)[3:5] <- c('Branin ($\\times 10^{-6}$)', 'Franke ($\\times 10^{3}$)', 'Lim ($\\times 10^{2}$)')
   
   # Bold smallest
   # bold_small_columns <- 3:5
@@ -83,20 +87,20 @@ get_xtable <- function(self1, self2, self3, caption=NULL, label=NULL, digits=3, 
   if (no_candidates) { # Don't print candidates column
     gt <- gt[,-2]
   }
-  kab <- xtable::xtable(gt, caption=caption, label=label, align="llccc")
+  kab <- xtable::xtable(gt, caption=caption, label=label, align="llrrr")
   # browser()
   kab
 }
 
 if (F) {
-  print(get_xtable(bran1, franke1, lim1, caption="Comparison of methods on three functions",
+  print(get_xtable(bran1, franke1, lim1, caption="Comparison of methods on three functions.",
                    label="datatable", no_candidates=TRUE, digits=2),
         sanitize.text.function=identity, #digits=4,
         include.rownames=FALSE
   )
   # Get title
   tp1 <- capture.output(
-    print(get_xtable(bran1, franke1, lim1, caption="Comparison of methods on three functions",
+    print(get_xtable(bran1, franke1, lim1, caption="Comparison of methods on three functions.",
                      label="datatable", no_candidates=TRUE, digits=2),
           sanitize.text.function=identity, #digits=4,
           include.rownames=FALSE
@@ -104,6 +108,6 @@ if (F) {
   )
   tp2 <- paste(tp1, collapse='\n')
   stringi::stri_sub(tp2, regexpr('\\hline', tp2)[1]-1, regexpr('\\hline', tp2)[1]-2
-                    ) <- ("\\hline\n & \\multicolumn{3}{c}{Average $\\Phi$ from 30 replicates} \\\\\n")
+                    ) <- paste0("\\hline\n & \\multicolumn{3}{c}{Average $\\Phi$ from ",bran1$reps," replicates} \\\\\n")
   cat(tp2)
 }
