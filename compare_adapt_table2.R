@@ -20,7 +20,7 @@ get_table <- function(self, error_power=2) {#browser()
   tab$Selection[tab$Selection == "nonadapt" & tab$Candidates=="sobol"] <- "Sobol"
   tab$Candidates[tab$Candidates == "sobol"] <- "Sobol"
   # browser()
-  tab$Selection[tab$Selection == "Proposed" & self$endmeandf$des_func=="des_func_mean_grad_norm2"] <- "Plugin"
+  tab$Selection[tab$Selection == "Proposed" & self$endmeandf$des_func=="des_func_mean_grad_norm2"] <- "Plug-in"
   colnames(tab) <- c("Method", "Candidates","$\\Psi mean$","$\\Psi sd$")
   tab
 }

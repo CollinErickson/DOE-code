@@ -99,23 +99,27 @@ make1Dplots2 <- function(f, x=c(0,.5,1), x2=c(.25,.75),
     # Second plot, all scaled already
     lwd2 <- 3
     if (colorplot2) {
-      plot(a, a_imse_scaled, col=1, type='l', lwd=lwd2, xlab='x', ylab="", main='Comparison of criteria', yaxt='n')
+      plot(a, a_imse_scaled, col=1, type='l', lwd=lwd2, xlab='x', ylab="",
+           # main='Comparison of criteria',
+           yaxt='n')
       points(a, a_plugin_scaled, col=2, type='l', lwd=lwd2)
       points(a, a_prop_scaled, col=3, type='l', lwd=lwd2)
     } else { # Use dashes, black and white
-      plot(a, a_imse_scaled, col=1, type='l', lwd=lwd2, xlab='x', ylab="", main='Comparison of criteria', yaxt='n', lty=1)
+      plot(a, a_imse_scaled, col=1, type='l', lwd=lwd2, xlab='x', ylab="",
+           # main='Comparison of criteria',
+           yaxt='n', lty=1)
       points(a, a_plugin_scaled, col=1, type='l', lwd=lwd2, lty=2)
       points(a, a_prop_scaled, col=1, type='l', lwd=lwd2, lty=3)
     }
     axis(side=2, labels=F) # This adds ticks back, maybe remove
     if (plotknown) {
       points(a, a_known_scaled, col=4, type='l', lwd=lwd2)
-      legend(x=.65, y=1.04, legend=c("IMSE", "Plugin", "Proposed", "Known"), fill=c(1,2,3,4))
+      legend(x=.65, y=1.04, legend=c("IMSE", "Plug-in", "Proposed", "Known"), fill=c(1,2,3,4))
     } else {
       if (colorplot2)
-        legend(x=.65, y=1.04, legend=c("IMSE", "Plugin", "Proposed"), fill=c(1,2,3))
+        legend(x=.65, y=1.04, legend=c("IMSE", "Plug-in", "Proposed"), fill=c(1,2,3))
       else
-        legend(x=.65, y=1.04, legend=c("IMSE", "Plugin", "Proposed"), lty=c(1,2,3), lwd=2)
+        legend(x=.65, y=1.04, legend=c("IMSE", "Plug-in", "Proposed"), lty=c(1,2,3), lwd=2)
     }
   }
   # Reset plot
@@ -136,6 +140,7 @@ f <- function(xx) TestFunctions::logistic(xx, offset=.8, scl=13)
 matt <- function(x) {(-exp(x)*sin(4.8*x^4)^3)} # curve(matt)
 # make1Dplots(matt, x=c(0,.7,.89,1))
 # make1Dplots2(matt, x=c(0,.7,.89,1), theta=20, sameplot = T)
+# Used for WSC paper
 make1Dplots2(matt, x=c(0,.7,1), sameplot = T, x2=c(.2,.4,.83,.6))
 
 # make1Dplots(function(x) {sin(4*pi*x)*x^2}, x=c(0,.6,.7,.89,1), theta=20, sameplot = T)
