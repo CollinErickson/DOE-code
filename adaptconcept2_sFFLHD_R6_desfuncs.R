@@ -466,6 +466,20 @@ actual_des_func_grad_norm2_mean_quad_peaks <- function(XX, mod) {
     sum(numDeriv::grad(quad_peaks, x) ^ 2)
   })
 }
+actual_des_func_grad_norm2_mean_beambending <- function(XX, mod) {
+  beamd <- deriv(~ 4e-9 * aa^3 / (bb * cc^3)
+                , namevec=c("aa", "bb", "cc"))
+  nameslist <- list("aa", "bb", "cc")
+  scale_low <- c(10,1,0.1)
+  scale_high <- c(20,2,0.2)
+  scalediff <- scale_high - scale_low
+  apply(XX, 1, function(x) {
+    sum((attr(eval(expr = beamd,
+                   envir = setNames(as.list(x * (scalediff) + scale_low),
+                                    nameslist)),
+              "gradient") * scalediff) ^ 2)
+  })
+}
 actual_des_func_grad_norm2_mean_OTL_Circuit <- function(XX, mod) {
   otld <- deriv(~ (((12*bb / (aa + bb)) + 0.74) * (ff * (ee + 9)) / ((ff * (ee + 9)) + cc)) +
                   (11.35 * cc / ((ff * (ee + 9)) + cc)) +
@@ -532,12 +546,14 @@ test_des_func_grad_norm2_mean <- function(func, actual, d, n=1e3) {
   actualtime <- system.time(actualvals <- actual(xx))[3]
   gettime <- system.time(getvals <- getfunc(xx))[3]
   plot(actualvals, getvals, main="Should be on diag line, else error")
-  cat(paste0("RMSE is ",sqrt(mean((actualvals-getvals)^2)),"\n"))
+  cat(paste0("RMSE is ",signif(sqrt(mean((actualvals-getvals)^2)),3),"\n"))
+  cat(paste0("Relative RMSE is ",signif(sqrt(mean((actualvals-getvals)^2)) / diff(range(actualvals)),3),"\n"))
   cat(paste0("Correlation between values is ",cor(actualvals, getvals),"\n"))
   cat(paste0("Your function runs in ",actualtime, ", numeric result runs in ",gettime,"\n"))
 }
 if (F) {
   test_des_func_grad_norm2_mean(banana, actual_des_func_grad_norm2_mean_banana, d=2)
+  test_des_func_grad_norm2_mean(beambending, actual_des_func_grad_norm2_mean_beambending, d=3)
   test_des_func_grad_norm2_mean(OTL_Circuit, actual_des_func_grad_norm2_mean_OTL_Circuit, d=6)
   test_des_func_grad_norm2_mean(piston, actual_des_func_grad_norm2_mean_piston, d=7)
   test_des_func_grad_norm2_mean(borehole, actual_des_func_grad_norm2_mean_borehole, d=8)
