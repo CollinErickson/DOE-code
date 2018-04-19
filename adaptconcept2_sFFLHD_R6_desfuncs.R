@@ -479,6 +479,17 @@ actual_des_func_grad_norm2_mean_borehole <- function(XX, mod) {#browser()
     sum((attr(eval(expr = bhd, envir = setNames(as.list(x * (scalediff) + scale_low), nameslist)), "gradient") * scalediff) ^ 2)
   })
 }
+actual_des_func_grad_norm2_mean_wingweight <- function(XX, mod) {#browser()
+  wwd <- deriv(~ 0.036 * Sw^.758 * Wfw^.0035 * (A/cos(Lambda*pi/180)^2)^.6 * q^.006 * lambda^.04 * (100*tc/cos(Lambda*pi/180))^-.3 * (Nz*Wdg)^.49 + Sw*Wp,
+               namevec=c("Sw", "Wfw", "A", "Lambda", "q", "lambda", "tc", "Nz", "Wdg", "Wp"))
+  nameslist <- list("Sw", "Wfw", "A", "Lambda", "q", "lambda", "tc", "Nz", "Wdg", "Wp")
+  scale_low <- c(150,220,6,-10,16,.5,.08,2.5,1700,.025)
+  scale_high <- c(200,300,10,10,45,1,.18,6,2500,.08)
+  scalediff <- scale_high - scale_low
+  apply(XX, 1, function(x) {
+    sum((attr(eval(expr = wwd, envir = setNames(as.list(x * (scalediff) + scale_low), nameslist)), "gradient") * scalediff) ^ 2)
+  })
+}
 get_num_actual_des_func_grad_norm2_mean <- function(funcforgrad) {
   function(XX, mod) {
     apply(XX, 1, function(x) {
@@ -492,10 +503,12 @@ test_des_func_grad_norm2_mean <- function(func, actual, d, n=1e3) {#browser()
   actualtime <- system.time(actualvals <- actual(xx))[3]
   gettime <- system.time(getvals <- getfunc(xx))[3]
   plot(actualvals, getvals, main="Should be on diag line, else error")
+  cat(paste0("RMSE is ",sqrt(mean((actualvals-getvals)^2)),"\n"))
   cat(paste0("Correlation between values is ",cor(actualvals, getvals),"\n"))
   cat(paste0("Your function runs in ",actualtime, ", numeric result runs in ",gettime,"\n"))
 }
 if (F) {
   test_des_func_grad_norm2_mean(banana, actual_des_func_grad_norm2_mean_banana, d=2)
   test_des_func_grad_norm2_mean(borehole, actual_des_func_grad_norm2_mean_borehole, d=8)
+  test_des_func_grad_norm2_mean(wingweight, actual_des_func_grad_norm2_mean_wingweight, d=10)
 }
