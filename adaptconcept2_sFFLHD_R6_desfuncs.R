@@ -466,7 +466,20 @@ actual_des_func_grad_norm2_mean_quad_peaks <- function(XX, mod) {
     sum(numDeriv::grad(quad_peaks, x) ^ 2)
   })
 }
-actual_des_func_grad_norm2_mean_borehole <- function(XX, mod) {#browser()
+actual_des_func_grad_norm2_mean_piston <- function(XX, mod) {
+  pisd <- deriv(~ 2*pi * sqrt(M / (k + S^2*P0*V0/T0*Ta/(S/(2*k) * 
+                  (sqrt((P0*S + 19.62*M -k*V0/S)^2+4*k*P0*V0/T0*Ta) -
+                     (P0*S + 19.62*M -k*V0/S)))^2))
+                , namevec=c("M", "S", "V0", "k", "P0", "Ta", "T0"))
+  nameslist <- list("M", "S", "V0", "k", "P0", "Ta", "T0")
+  scale_low <- c(30,.005,.002,1e3,9e4,290,340)
+  scale_high <- c(60,.02,.01,5e3,11e4,296,360)
+  scalediff <- scale_high - scale_low
+  apply(XX, 1, function(x) {
+    sum((attr(eval(expr = pisd, envir = setNames(as.list(x * (scalediff) + scale_low), nameslist)), "gradient") * scalediff) ^ 2)
+  })
+}
+actual_des_func_grad_norm2_mean_borehole <- function(XX, mod) {
   bhd <- deriv(~ 2 * pi * cc * (dd - ff) /
                  (log(bb / aa) *
                     (1 + 2 * gg * cc / (log(bb / aa) * aa^2 * hh) +
@@ -479,7 +492,7 @@ actual_des_func_grad_norm2_mean_borehole <- function(XX, mod) {#browser()
     sum((attr(eval(expr = bhd, envir = setNames(as.list(x * (scalediff) + scale_low), nameslist)), "gradient") * scalediff) ^ 2)
   })
 }
-actual_des_func_grad_norm2_mean_wingweight <- function(XX, mod) {#browser()
+actual_des_func_grad_norm2_mean_wingweight <- function(XX, mod) {
   wwd <- deriv(~ 0.036 * Sw^.758 * Wfw^.0035 * (A/cos(Lambda*pi/180)^2)^.6 * q^.006 * lambda^.04 * (100*tc/cos(Lambda*pi/180))^-.3 * (Nz*Wdg)^.49 + Sw*Wp,
                namevec=c("Sw", "Wfw", "A", "Lambda", "q", "lambda", "tc", "Nz", "Wdg", "Wp"))
   nameslist <- list("Sw", "Wfw", "A", "Lambda", "q", "lambda", "tc", "Nz", "Wdg", "Wp")
@@ -497,7 +510,7 @@ get_num_actual_des_func_grad_norm2_mean <- function(funcforgrad) {
     })
   }
 }
-test_des_func_grad_norm2_mean <- function(func, actual, d, n=1e3) {#browser()
+test_des_func_grad_norm2_mean <- function(func, actual, d, n=1e3) {
   xx <- lhs::randomLHS(n=n, k=d)
   getfunc <- get_num_actual_des_func_grad_norm2_mean(func)
   actualtime <- system.time(actualvals <- actual(xx))[3]
@@ -509,6 +522,7 @@ test_des_func_grad_norm2_mean <- function(func, actual, d, n=1e3) {#browser()
 }
 if (F) {
   test_des_func_grad_norm2_mean(banana, actual_des_func_grad_norm2_mean_banana, d=2)
+  test_des_func_grad_norm2_mean(piston, actual_des_func_grad_norm2_mean_piston, d=7)
   test_des_func_grad_norm2_mean(borehole, actual_des_func_grad_norm2_mean_borehole, d=8)
   test_des_func_grad_norm2_mean(wingweight, actual_des_func_grad_norm2_mean_wingweight, d=10)
 }
