@@ -466,6 +466,22 @@ actual_des_func_grad_norm2_mean_quad_peaks <- function(XX, mod) {
     sum(numDeriv::grad(quad_peaks, x) ^ 2)
   })
 }
+actual_des_func_grad_norm2_mean_OTL_Circuit <- function(XX, mod) {
+  otld <- deriv(~ (((12*bb / (aa + bb)) + 0.74) * (ff * (ee + 9)) / ((ff * (ee + 9)) + cc)) +
+                  (11.35 * cc / ((ff * (ee + 9)) + cc)) +
+                  (.74 * cc * (ff * (ee + 9)) / (((ff * (ee + 9)) + cc) * dd))
+                , namevec=c("aa", "bb", "cc", "dd", "ee", "ff"))
+  nameslist <- list("aa", "bb", "cc", "dd", "ee", "ff")
+  scale_low <- c(50,25,0.5,1.2,0.25,50)
+  scale_high <- c(150,70,3,2.5,1.2,300)
+  scalediff <- scale_high - scale_low
+  apply(XX, 1, function(x) {
+    sum((attr(eval(expr = otld,
+                   envir = setNames(as.list(x * (scalediff) + scale_low),
+                                    nameslist)),
+              "gradient") * scalediff) ^ 2)
+  })
+}
 actual_des_func_grad_norm2_mean_piston <- function(XX, mod) {
   pisd <- deriv(~ 2*pi * sqrt(M / (k + S^2*P0*V0/T0*Ta/(S/(2*k) * 
                   (sqrt((P0*S + 19.62*M -k*V0/S)^2+4*k*P0*V0/T0*Ta) -
@@ -522,6 +538,7 @@ test_des_func_grad_norm2_mean <- function(func, actual, d, n=1e3) {
 }
 if (F) {
   test_des_func_grad_norm2_mean(banana, actual_des_func_grad_norm2_mean_banana, d=2)
+  test_des_func_grad_norm2_mean(OTL_Circuit, actual_des_func_grad_norm2_mean_OTL_Circuit, d=6)
   test_des_func_grad_norm2_mean(piston, actual_des_func_grad_norm2_mean_piston, d=7)
   test_des_func_grad_norm2_mean(borehole, actual_des_func_grad_norm2_mean_borehole, d=8)
   test_des_func_grad_norm2_mean(wingweight, actual_des_func_grad_norm2_mean_wingweight, d=10)
