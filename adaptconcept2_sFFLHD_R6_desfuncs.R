@@ -466,6 +466,52 @@ actual_des_func_grad_norm2_mean_quad_peaks <- function(XX, mod) {
     sum(numDeriv::grad(quad_peaks, x) ^ 2)
   })
 }
+actual_des_func_grad_norm2_mean_branin <- function(XX, mod) {
+  brd <- deriv(~ 1 * (bb - (5.1/(4*pi^2)) * aa^2 + (5/pi) * aa - 6)^2 + 10 * (1 - (1/(8*pi))) * cos(aa) + 10
+               , namevec=c("aa", "bb"))
+  nameslist <- list("aa", "bb")
+  scale_low <- c(-5,0)
+  scale_high <- c(10,15)
+  scalediff <- scale_high - scale_low
+  apply(XX, 1, function(x) {
+    sum((attr(eval(expr = brd,
+                   envir = setNames(as.list(x * (scalediff) + scale_low),
+                                    nameslist)),
+              "gradient") * scalediff) ^ 2)
+  })
+}
+actual_des_func_grad_norm2_mean_franke <- function(XX, mod) {
+  frd <- deriv(~ 0.75 * exp(-(9 * aa - 2)^2 / 4 - (9 * bb - 2)^2 / 4) +
+                 0.75 * exp(-(9 * aa + 1)^2 / 49 - (9 * bb + 1)^2 / 10) +
+                 0.5 * exp(-(9 * aa - 7)^2 / 4 - (9 * bb - 3)^2 / 4) +
+                 -0.2 * exp(-(9 * aa - 4)^2 - (9 * bb - 7)^2)
+               , namevec=c("aa", "bb"))
+  nameslist <- list("aa", "bb")
+  scale_low <- c(0,0)
+  scale_high <- c(1,1)
+  scalediff <- scale_high - scale_low
+  apply(XX, 1, function(x) {
+    sum((attr(eval(expr = frd,
+                   envir = setNames(as.list(x * (scalediff) + scale_low),
+                                    nameslist)),
+              "gradient") * scalediff) ^ 2)
+  })
+}
+actual_des_func_grad_norm2_mean_limnonpoly <- function(XX, mod) {
+  limd <- deriv(~ ((30+5*aa*sin(5*aa))*(4+exp(-5*bb)) - 100) / 6
+                 , namevec=c("aa", "bb"))
+  nameslist <- list("aa", "bb")
+  scale_low <- c(0,0)
+  scale_high <- c(1,1)
+  scalediff <- scale_high - scale_low
+  apply(XX, 1, function(x) {
+    sum((attr(eval(expr = limd,
+                   envir = setNames(as.list(x * (scalediff) + scale_low),
+                                    nameslist)),
+              "gradient") * scalediff) ^ 2)
+  })
+}
+
 actual_des_func_grad_norm2_mean_beambending <- function(XX, mod) {
   beamd <- deriv(~ 4e-9 * aa^3 / (bb * cc^3)
                 , namevec=c("aa", "bb", "cc"))
@@ -553,6 +599,9 @@ test_des_func_grad_norm2_mean <- function(func, actual, d, n=1e3) {
 }
 if (F) {
   test_des_func_grad_norm2_mean(banana, actual_des_func_grad_norm2_mean_banana, d=2)
+  test_des_func_grad_norm2_mean(branin, actual_des_func_grad_norm2_mean_branin, d=2)
+  test_des_func_grad_norm2_mean(franke, actual_des_func_grad_norm2_mean_franke, d=2)
+  test_des_func_grad_norm2_mean(limnonpoly, actual_des_func_grad_norm2_mean_limnonpoly, d=2)
   test_des_func_grad_norm2_mean(beambending, actual_des_func_grad_norm2_mean_beambending, d=3)
   test_des_func_grad_norm2_mean(OTL_Circuit, actual_des_func_grad_norm2_mean_OTL_Circuit, d=6)
   test_des_func_grad_norm2_mean(piston, actual_des_func_grad_norm2_mean_piston, d=7)
