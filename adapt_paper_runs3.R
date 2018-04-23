@@ -6,7 +6,8 @@ source('.//compare_adaptconceptR6.R')
 # selection_method=c("nonadapt", 'SMED', 'ALC_all_best', 'max_des_red_all_best'),
 # design=c('sFFLHD', 'sFFLHD', 'sFFLHD', 'sFFLHD'),
 # des_func='des_func_grad_norm2_mean',
-objs <- c("nonadapt","nonadapt","desirability","desirability", "desirability", "desirability")
+objs <- c("nonadapt","nonadapt","desirability","desirability",
+          "desirability", "desirability")
 selection_methods <- c("nonadapt","nonadapt", 'ALC_all_best',
                        'max_des_red_all_best', 'max_des_red_all_best',
                        'SMED', 'max_des_all_best')
@@ -62,5 +63,20 @@ run_test <- function(funcstring, reps, batches, D, L, stage1batches,
   return(c1)
 }
 
-bran1 <- try(run_test(funcstring='branin', D=2, L=3, batches=5, reps=5, stage1batches=2, seed_start=123, design_seed_start=456))
-lim1 <- try(run_test(funcstring='limnonpoly', D=2, L=3, batches=5, reps=5, stage1batches=2, seed_start=123, design_seed_start=456))
+reps <- 100
+bran1 <- try(run_test(funcstring='branin', D=2, L=2, batches=10, reps=reps,
+                      stage1batches=3, seed_start=100, design_seed_start=1100))
+franke1 <- try(run_test(funcstring='franke', D=2, L=2, batches=10, reps=reps,
+                     stage1batches=3, seed_start=200, design_seed_start=1200))
+lim1 <- try(run_test(funcstring='limnonpoly', D=2, L=2, batches=10, reps=reps,
+                     stage1batches=3, seed_start=300, design_seed_start=1300))
+beam1 <- try(run_test(funcstring='beambending', D=3, L=3, batches=10, reps=reps,
+                     stage1batches=3, seed_start=400, design_seed_start=1400))
+otl1 <- try(run_test(funcstring='OTL_Circuit', D=6, L=4, batches=15, reps=reps,
+                     stage1batches=4, seed_start=500, design_seed_start=1500))
+piston1 <- try(run_test(funcstring='piston', D=7, L=5, batches=14, reps=reps,
+                     stage1batches=4, seed_start=600, design_seed_start=1600))
+bh1 <- try(run_test(funcstring='borehole', D=8, L=5, batches=16, reps=reps,
+                     stage1batches=5, seed_start=700, design_seed_start=1700))
+wing1 <- try(run_test(funcstring='wingweight', D=10, L=5, batches=20, reps=reps,
+                     stage1batches=6, seed_start=800, design_seed_start=1800))
