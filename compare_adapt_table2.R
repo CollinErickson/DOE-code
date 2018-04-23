@@ -1,3 +1,5 @@
+# This was used to create table for WSC 2018 paper.
+
 # Want only mean and for three different functions
 #  in a single table.
 get_table <- function(self, error_power=2) {#browser()
