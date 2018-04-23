@@ -7,7 +7,7 @@ source('.//compare_adaptconceptR6.R')
 # design=c('sFFLHD', 'sFFLHD', 'sFFLHD', 'sFFLHD'),
 # des_func='des_func_grad_norm2_mean',
 objs <- c("nonadapt","nonadapt","desirability","desirability",
-          "desirability", "desirability")
+          "desirability", "desirability", "desirability")
 selection_methods <- c("nonadapt","nonadapt", 'ALC_all_best',
                        'max_des_red_all_best', 'max_des_red_all_best',
                        'SMED', 'max_des_all_best')
