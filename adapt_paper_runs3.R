@@ -11,8 +11,8 @@ objs <- c("nonadapt","nonadapt","desirability","desirability",
 selection_methods <- c("nonadapt","nonadapt", 'ALC_all_best',
                        'max_des_red_all_best', 'max_des_red_all_best',
                        'SMED', 'max_des_all_best')
-designs <- c('sFFLHD', "sobol", 'sFFLHD', 'sFFLHD', 'sFFLHD',
-             'sFFLHD', 'sFFLHD')
+designs <- c('sFFLHD_Lflex', "sobol", 'sFFLHD_Lflex', 'sFFLHD_Lflex', 'sFFLHD_Lflex',
+             'sFFLHD_Lflex', 'sFFLHD_Lflex')
 des_funcs <- c('des_func_grad_norm2_mean','des_func_grad_norm2_mean',
                'des_func_grad_norm2_mean','des_func_mean_grad_norm2',
                'des_func_grad_norm2_mean','des_func_grad_norm2_mean',
