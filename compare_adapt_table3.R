@@ -74,7 +74,7 @@ get_xtable <- function(selfs, nams, caption=NULL, label=NULL, digits=3, rnd=T, n
                             ' ($\\times 10^{',
                             -scalebys,
                             '}$)')
-  names(gt)[3:9] <- nams_with_scale
+  names(gt)[2 + 1:length(nams)] <- nams_with_scale
   # c('Branin ($\\times 10^{-6}$)', 'Franke ($\\times 10^{3}$)', 'Lim ($\\times 10^{2}$)', '4','5','6','7')
   
   # Bold smallest
@@ -97,8 +97,29 @@ get_xtable <- function(selfs, nams, caption=NULL, label=NULL, digits=3, rnd=T, n
   if (no_candidates) { # Don't print candidates column
     gt <- gt[,-2]
   }
-  kab <- xtable::xtable(gt, caption=caption, label=label, align="llrrrrrrr")
+  
+  kab <- xtable::xtable(gt, caption=caption, label=label,
+                        align=paste0('ll',
+                                     do.call(paste0, as.list(rep('r', length(selfs))))))
   kab
+}
+# Version with added top row
+get_xtable2 <- function(selfs, nams, caption="Insert caption",
+                        label="datatable", no_candidates,
+                        digits) {
+  tp1 <- capture.output(
+    print(get_xtable(selfs=selfs, nams=nams, caption=caption,
+                     label=label, no_candidates=no_candidates, digits=digits),
+          sanitize.text.function=identity, #digits=4,
+          include.rownames=FALSE
+    )
+  )
+  tp2 <- paste(tp1, collapse='\n')
+  stringi::stri_sub(tp2, regexpr('\\hline', tp2)[1]-1, regexpr('\\hline', tp2)[1]-2
+  ) <- paste0("\\hline\n & \\multicolumn{",length(selfs),"}{c}{",
+              "Mean $\\Phi$ (std. error $\\Phi$) from ",
+              bran1$reps," replicates} \\\\\n")
+  cat(tp2)
 }
 
 if (F) {
@@ -109,6 +130,24 @@ if (F) {
         sanitize.text.function=identity, #digits=4,
         include.rownames=FALSE
   )
+  # Table with title row on top
+  get_xtable2(selfs=list(bran1, franke1, lim1, beam1, otl1, piston1, bh1), 
+              nams=c('Branin', 'Franke', 'Lim', 'Beam', 'OTL', 'Piston', 'Borehole'),
+              caption="Comparison of methods on three functions.",
+              label="datatable", no_candidates=TRUE, digits=2)
+  # Too wide split into two separate tables
+  get_xtable2(selfs=list(bran1, franke1, lim1, beam1), 
+              nams=c('Branin', 'Franke', 'Lim', 'Beam'),
+              caption="Comparison of methods on four functions.",
+              label="datatable1", no_candidates=TRUE, digits=2)
+  get_xtable2(selfs=list(otl1, piston1, bh1, wing1), 
+              nams=c('OTL','Piston', 'Borehole', 'Wing weight'),
+              caption="Comparison of methods on four functions.",
+              label="datatable2", no_candidates=TRUE, digits=2)
+  
+  
+  
+  
   # Get title
   tp1 <- capture.output(
     print(get_xtable(bran1, franke1, lim1, caption="Comparison of methods on three functions.",
