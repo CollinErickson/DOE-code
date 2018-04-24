@@ -54,12 +54,12 @@ get_xtable <- function(self1, self2, self3, self4, self5, self6, self7, caption=
   g6 <- get_table(self6)
   g7 <- get_table(self7)
   # Rescale mean and sd
-  g1[,3:4] <- g1[,3:4]/1e6
+  g1[,3:4] <- g1[,3:4]/1e7
   g2[,3:4] <- g2[,3:4]*1e3
-  g3[,3:4] <- g3[,3:4]*1e2
-  g4[,3:4] <- g4[,3:4]*1e2
-  g5[,3:4] <- g5[,3:4]*1e2
-  g6[,3:4] <- g6[,3:4]*1e2
+  g3[,3:4] <- g3[,3:4]*1e-1
+  g4[,3:4] <- g4[,3:4]*1e9
+  g5[,3:4] <- g5[,3:4]*1e3
+  g6[,3:4] <- g6[,3:4]*1e4
   g7[,3:4] <- g7[,3:4]*1e2
   # Round to specified digits
   # gt2 <- round_df(gt, digits=digits, rnd=rnd)
@@ -124,16 +124,16 @@ get_xtable <- function(self1, self2, self3, self4, self5, self6, self7, caption=
   gt[boldinds3 > 0.05, 5] <- paste0("\\textbf{", gt[boldinds3,5],"}")
   pvalues4 <- sapply(1:nrow(g4), function(i) {pnorm(-abs(((g4[wm4,3])-(g4[i,3])) / sqrt((g4[wm4,4]^2)+(g4[i,4]^2)))) * 2})
   boldinds4 <- pvalues4 > 0.05
-  gt[boldinds4 > 0.05, 5] <- paste0("\\textbf{", gt[boldinds4,6],"}")
+  gt[boldinds4 > 0.05, 6] <- paste0("\\textbf{", gt[boldinds4,6],"}")
   pvalues5 <- sapply(1:nrow(g5), function(i) {pnorm(-abs(((g5[wm5,3])-(g5[i,3])) / sqrt((g5[wm5,4]^2)+(g5[i,4]^2)))) * 2})
   boldinds5 <- pvalues5 > 0.05
-  gt[boldinds5 > 0.05, 5] <- paste0("\\textbf{", gt[boldinds5,7],"}")
+  gt[boldinds5 > 0.05, 7] <- paste0("\\textbf{", gt[boldinds5,7],"}")
   pvalues6 <- sapply(1:nrow(g6), function(i) {pnorm(-abs(((g6[wm6,3])-(g6[i,3])) / sqrt((g6[wm6,4]^2)+(g6[i,4]^2)))) * 2})
   boldinds6 <- pvalues6 > 0.05
-  gt[boldinds6 > 0.05, 5] <- paste0("\\textbf{", gt[boldinds6,8],"}")
+  gt[boldinds6 > 0.05, 8] <- paste0("\\textbf{", gt[boldinds6,8],"}")
   pvalues7 <- sapply(1:nrow(g7), function(i) {pnorm(-abs(((g7[wm7,3])-(g7[i,3])) / sqrt((g7[wm7,4]^2)+(g7[i,4]^2)))) * 2})
   boldinds7 <- pvalues7 > 0.05
-  gt[boldinds7 > 0.05, 5] <- paste0("\\textbf{", gt[boldinds7,9],"}")
+  gt[boldinds7 > 0.05, 9] <- paste0("\\textbf{", gt[boldinds7,9],"}")
   
   if (no_candidates) { # Don't print candidates column
     gt <- gt[,-2]
