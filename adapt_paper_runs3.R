@@ -51,9 +51,10 @@ run_test <- function(funcstring, reps, batches, D, L, stage1batches,
   if (file.exists(c1_file) && !startover) { # Load if saved, and recover
     print("c1 already exists, loading")
     c1 <- readRDS(c1_file)
-    c1$recover_parallel_temp_save()
+    c1$recover_parallel_temp_save(save_if_any_recovered=TRUE)
   } else { # Otherwise create new
     # Now it is created above and overwritten if not used
+    c1$recover_parallel_temp_save(save_if_any_recovered=TRUE)
   }
   # Run all, save temps
   print("Running all c1")
