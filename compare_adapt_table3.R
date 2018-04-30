@@ -2,8 +2,13 @@
 
 # Want only mean and for three different functions
 #  in a single table.
-get_table <- function(self, error_power=2) {#browser()
+get_table <- function(self, error_power=2, batches) {#browser()
   #  "Group", 
+  if (missing(batches)) {
+    self.endmeandf <- self$endmeandf
+  } else {
+    self.endmeandf <- postprocess_outdf(self, batches)
+  }
   if (error_power == 1) {warning("Probably wrong, should use power 2")
     tab <- self$endmeandf[, c("selection_method","design","actual_intwerror")]
   } else if (error_power ==2) {
