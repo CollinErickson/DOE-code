@@ -71,9 +71,9 @@ get_table <- function(self, error_power=2, batches) {#browser()
     self.endmeandf <- postprocess_outdf(self, batches)
   }
   if (error_power == 1) {warning("Probably wrong, should use power 2")
-    tab <- self$endmeandf[, c("selection_method","design","actual_intwerror")]
+    tab <- self.endmeandf[, c("selection_method","design","actual_intwerror")]
   } else if (error_power ==2) {
-    tab <- self$endmeandf[, c("selection_method","design", "actual_intwvar", "actual_intwvar_sd")]
+    tab <- self.endmeandf[, c("selection_method","design", "actual_intwvar", "actual_intwvar_sd")]
     # tab[,3] <- paste(tab[,3], tab[,4], sep="+-")
     # tab[,4] <- NULL
   } else {stop("No error_power #9284454")}
@@ -110,10 +110,11 @@ round_df <- function(df, digits, rnd=TRUE) {
   (df)
 }
 # xtable::xtable(gt)
-get_xtable <- function(selfs, nams, caption=NULL, label=NULL, digits=3, rnd=T, no_candidates=FALSE) {
+get_xtable <- function(selfs, nams, caption=NULL, label=NULL, digits=3,
+                       rnd=T, no_candidates=FALSE, batches) {
   
   # Get tables
-  gs <- lapply(selfs, get_table)
+  gs <- lapply(selfs, get_table, batches=batches)
   # Rescale mean and sd
   scalebys <- floor(sapply(gs, function(gi) {log(min(gi[,3]), 10)}))
   gs <- mapply(gs, scalebys, FUN=function(gi, si) {
@@ -172,10 +173,11 @@ get_xtable <- function(selfs, nams, caption=NULL, label=NULL, digits=3, rnd=T, n
 # Version with added top row
 get_xtable2 <- function(selfs, nams, caption="Insert caption",
                         label="datatable", no_candidates,
-                        digits) {
+                        digits, batches) {
   tp1 <- capture.output(
     print(get_xtable(selfs=selfs, nams=nams, caption=caption,
-                     label=label, no_candidates=no_candidates, digits=digits),
+                     label=label, no_candidates=no_candidates, digits=digits,
+                     batches=batches),
           sanitize.text.function=identity, #digits=4,
           include.rownames=FALSE
     )
