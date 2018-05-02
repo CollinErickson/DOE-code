@@ -81,9 +81,9 @@ get_table <- function(self, error_power=2, batches) {#browser()
   tab$actual_intwvar_sd <- tab$actual_intwvar_sd / sqrt(self$reps)
   colnames(tab) <- c("Selection", "Candidates","$\\Psi mean$","$\\Psi sd$")
   # tab$Selection[tab$Selection == "desirability"] <- "Proposed"
-  tab$Selection[tab$Selection == "max_des_red_all_best"] <- "Proposed"
+  tab$Selection[tab$Selection == "max_des_red_all_best"] <- "\\IMVSE{}"
   tab$Selection[tab$Selection == "ALC_all_best"] <- 'IMSE'#"ALC"
-  tab$Selection[tab$Selection == "max_des_all_best"] <- 'MVSE'#"ALC"
+  tab$Selection[tab$Selection == "max_des_all_best"] <- '\\VSE{}'#"ALC"
   # tab$Selection[tab$Selection == "nonadapt"] <- "In order"
   tab$Selection[tab$Selection == "nonadapt" & tab$Candidates=="sFFLHD"] <- "sFFLHD"
   tab$Selection[tab$Selection == "nonadapt" & tab$Candidates=="sobol"] <- "Sobol"
