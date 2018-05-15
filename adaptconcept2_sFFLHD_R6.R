@@ -678,11 +678,19 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       }
       
       # Blank plot with right values
-      plot(NULL, xlim=c(min(self$Z, Zplot.act), max(self$Z, Zplot.act)), 
-           ylim=c(min(Zused.pred-2*Zused.se, Zplot.pred-2*Zplot.se), 
-                  max(Zused.pred+2*Zused.se, Zplot.pred+2*Zplot.se)),
-           xlab="Z actual", ylab="Z predicted 95%")
-      legend(x = 'topleft', legend=c("Z", "ZZ"), col = c(2,1), pch=19)
+      if (self$func_fast) {
+        plot(NULL, xlim=c(min(self$Z, Zplot.act), max(self$Z, Zplot.act)), 
+             ylim=c(min(Zused.pred-2*Zused.se, Zplot.pred-2*Zplot.se), 
+                    max(Zused.pred+2*Zused.se, Zplot.pred+2*Zplot.se)),
+             xlab="Z actual", ylab="Z predicted 95%")
+        legend(x = 'topleft', legend=c("Z", "ZZ"), col = c(2,1), pch=19)
+      } else {
+        plot(NULL, xlim=c(min(self$Z), max(self$Z)), 
+             ylim=c(min(Zused.pred-2*Zused.se), 
+                    max(Zused.pred+2*Zused.se)),
+             xlab="Z actual", ylab="Z predicted 95%")
+        legend(x = 'topleft', legend=c("Z", "ZZ"), col = c(2,1), pch=19)
+      }
       
       # If fast, then plot values for random points
       if (self$func_fast) {
