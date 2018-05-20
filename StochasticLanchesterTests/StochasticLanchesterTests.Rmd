@@ -1,0 +1,420 @@
+---
+title: "Stochestic Lanchester"
+author: "Collin Erickson"
+date: "May 14, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, message=FALSE}
+# Need to be up folder to source file
+setwd(".//..")
+source('C://Users//cbe117//Documents//GitHub//DOE-code///adaptconcept2_sFFLHD_R6.R')
+
+```
+
+
+## Region 3
+
+
+```{r}
+datafilename3 <- ".//..//output_200K_region3.csv"
+datadf3 <- read.csv(datafilename3)
+
+datafunction3 <- function(x, outputcolumn=11) {
+  # cat(x, "\n")
+  which.ind <- which(c(apply(datadf3, 1, function(rr) {(all(abs(x-rr[1:4])<1e-8))})))
+  if (length(which.ind) != 1) {
+    browser("Not exactly one indice that matches")
+  }
+  datadf3[which.ind, outputcolumn]
+}
+x1 <- as.numeric(datadf3[8,1:4])
+datafunction3(x1)
+```
+
+```{r}
+names(datadf3)
+```
+
+### Battle duration
+
+Can't run, 171 NA
+
+```{r}
+summary(datadf3[,13])
+```
+
+
+```{r}
+pairs(datadf3[,c(1:4,13)])
+```
+
+
+```{r, eval=FALSE}
+set.seed(1); csa(); a <- adapt.concept2.sFFLHD.R6$new(
+  D=4,L=4, design_seed=6562780, func=function(x)datafunction3(x,outputcolumn=13), func_fast = F,
+  nugget = 1e-3,estimate.nugget = F,
+  obj="desirability", des_func=des_func_grad_norm2_mean,
+  actual_des_func=NULL,#get_num_actual_des_func_grad_norm2_mean(),
+  stage1batches=2, alpha_des=1, weight_const=0,
+  package="laGP_GauPro_kernel", design='sFFLHD',
+  error_power=2,
+  selection_method="max_des_red_all_best"
+  # selection_method="ALC_all_best"
+)
+a$run(12, plotlastonly=T)
+cf_highdim(a$mod$predict, D=4, pts=a$X)
+
+```
+
+### ler
+
+```{r}
+summary(datadf3[,15])
+```
+
+
+
+```{r}
+pairs(datadf3[,c(1:4,15)])
+```
+
+
+```{r}
+set.seed(1); csa(); a <- adapt.concept2.sFFLHD.R6$new(
+  D=4,L=4, design_seed=6562780, func=function(x)datafunction3(x,outputcolumn=15), func_fast = F,
+  nugget = 1e-3,estimate.nugget = F,
+  obj="desirability", des_func=des_func_grad_norm2_mean,
+  actual_des_func=NULL,#get_num_actual_des_func_grad_norm2_mean(),
+  stage1batches=2, alpha_des=1, weight_const=0,
+  package="laGP_GauPro_kernel", design='sFFLHD',
+  error_power=2,
+  selection_method="max_des_red_all_best"
+  # selection_method="ALC_all_best"
+)
+a$run(12, plotlastonly=T)
+cf_highdim(a$mod$predict, D=4, pts=a$X)
+
+```
+
+
+
+
+### recip ler
+
+```{r}
+pairs(datadf3[,c(1:4,17)])
+```
+
+
+```{r}
+set.seed(1); csa(); a <- adapt.concept2.sFFLHD.R6$new(
+  D=4,L=4, design_seed=6562780, func=function(x)datafunction3(x,outputcolumn=17), func_fast = F,
+  nugget = 1e-3,estimate.nugget = F,
+  obj="desirability", des_func=des_func_grad_norm2_mean,
+  actual_des_func=NULL,#get_num_actual_des_func_grad_norm2_mean(),
+  stage1batches=2, alpha_des=1, weight_const=0,
+  package="laGP_GauPro_kernel", design='sFFLHD',
+  error_power=2,
+  selection_method="max_des_red_all_best"
+  # selection_method="ALC_all_best"
+)
+a$run(12, plotlastonly=T)
+cf_highdim(a$mod$predict, D=4, pts=a$X)
+
+```
+
+
+
+
+#### Cleanup to avoid naming errors
+
+```{r}
+rm(datafilename3, datadf3, datafunction3)
+```
+
+
+
+## Region 4
+
+
+```{r}
+datafilename4 <- ".//..//output_200K_region4_try2.csv"
+datadf4 <- read.csv(datafilename4)
+
+datafunction4 <- function(x, outputcolumn=11) {
+  # cat(x, "\n")
+  which.ind <- which(c(apply(datadf4, 1, function(rr) {(all(abs(x-rr[1:4])<1e-8))})))
+  if (length(which.ind) != 1) {
+    browser("Not exactly one indice that matches")
+  }
+  datadf4[which.ind, outputcolumn]
+}
+x1 <- as.numeric(datadf4[8,1:4])
+datafunction4(x1)
+```
+
+```{r}
+names(datadf4)
+```
+
+### Battle duration
+
+No longer any NA
+
+```{r}
+summary(datadf4[,13])
+```
+
+
+```{r}
+pairs(datadf4[,c(1:4,13)])
+```
+
+
+```{r, eval=TRUE}
+set.seed(1); csa(); a <- adapt.concept2.sFFLHD.R6$new(
+  D=4,L=4, design_seed=6562780, func=function(x)datafunction4(x,outputcolumn=13), func_fast = F,
+  nugget = 1e-3,estimate.nugget = F,
+  obj="desirability", des_func=des_func_grad_norm2_mean,
+  actual_des_func=NULL,#get_num_actual_des_func_grad_norm2_mean(),
+  stage1batches=2, alpha_des=1, weight_const=0,
+  package="laGP_GauPro_kernel", design='sFFLHD',
+  error_power=2,
+  selection_method="max_des_red_all_best"
+  # selection_method="ALC_all_best"
+)
+a$run(12, plotlastonly=T)
+cf_highdim(a$mod$predict, D=4, pts=a$X)
+
+```
+
+### ler
+
+```{r}
+summary(datadf4[,15])
+```
+
+
+
+```{r}
+pairs(datadf4[,c(1:4,15)])
+```
+
+
+```{r}
+set.seed(1); csa(); a <- adapt.concept2.sFFLHD.R6$new(
+  D=4,L=4, design_seed=6562780, func=function(x)datafunction4(x,outputcolumn=15), func_fast = F,
+  nugget = 1e-3,estimate.nugget = F,
+  obj="desirability", des_func=des_func_grad_norm2_mean,
+  actual_des_func=NULL,#get_num_actual_des_func_grad_norm2_mean(),
+  stage1batches=2, alpha_des=1, weight_const=0,
+  package="laGP_GauPro_kernel", design='sFFLHD',
+  error_power=2,
+  selection_method="max_des_red_all_best"
+  # selection_method="ALC_all_best"
+)
+a$run(12, plotlastonly=T)
+cf_highdim(a$mod$predict, D=4, pts=a$X)
+
+```
+
+
+
+
+### recip ler
+
+```{r}
+pairs(datadf4[,c(1:4,17)])
+```
+
+
+```{r}
+set.seed(1); csa(); a <- adapt.concept2.sFFLHD.R6$new(
+  D=4,L=4, design_seed=6562780, func=function(x)datafunction4(x,outputcolumn=17), func_fast = F,
+  nugget = 1e-6,estimate.nugget = F,
+  obj="desirability", des_func=des_func_grad_norm2_mean,
+  actual_des_func=NULL,#get_num_actual_des_func_grad_norm2_mean(),
+  stage1batches=2, alpha_des=1, weight_const=0,
+  package="laGP_GauPro_kernel", design='sFFLHD',
+  error_power=2,
+  selection_method="max_des_red_all_best"
+  # selection_method="ALC_all_best"
+)
+a$run(12, plotlastonly=T)
+cf_highdim(a$mod$predict, D=4, pts=a$X)
+
+```
+
+```{r}
+c(
+  a$mod$mod.extra$GauPro$mod$nug,
+  a$mod$mod.extra$GauPro$mod$s2_hat,
+  a$mod$mod.extra$GauPro$mod$nug * 
+  a$mod$mod.extra$GauPro$mod$s2_hat
+)
+```
+
+
+
+### recip ler sd
+
+```{r}
+pairs(datadf4[,c(1:4,18)])
+```
+
+
+```{r}
+set.seed(1); csa(); a <- adapt.concept2.sFFLHD.R6$new(
+  D=4,L=4, design_seed=6562780, func=function(x)datafunction4(x,outputcolumn=18), func_fast = F,
+  nugget = 1e-6,estimate.nugget = F,
+  obj="desirability", des_func=des_func_grad_norm2_mean,
+  actual_des_func=NULL,#get_num_actual_des_func_grad_norm2_mean(),
+  stage1batches=2, alpha_des=1, weight_const=0,
+  package="laGP_GauPro_kernel", design='sFFLHD',
+  error_power=2,
+  selection_method="max_des_red_all_best"
+  # selection_method="ALC_all_best"
+)
+a$run(12, plotlastonly=T)
+cf_highdim(a$mod$predict, D=4, pts=a$X)
+
+```
+
+
+
+
+#### Cleanup to avoid naming errors
+
+```{r}
+rm(datafilename4, datadf4, datafunction4)
+```
+
+
+
+
+
+## Region 5
+
+
+```{r}
+datafilename5 <- ".//..//output_200K_region5.csv"
+datadf5 <- read.csv(datafilename5)
+
+datafunction5 <- function(x, outputcolumn=11) {
+  # cat(x, "\n")
+  which.ind <- which(c(apply(datadf5, 1, function(rr) {(all(abs(x-rr[1:4])<1e-8))})))
+  if (length(which.ind) != 1) {
+    browser("Not exactly one indice that matches")
+  }
+  datadf5[which.ind, outputcolumn]
+}
+x1 <- as.numeric(datadf5[8,1:4])
+datafunction5(x1)
+```
+
+```{r}
+names(datadf5)
+```
+
+### Battle duration
+
+No longer any NA
+
+```{r}
+summary(datadf5[,13])
+```
+
+
+```{r}
+pairs(datadf5[,c(1:4,13)])
+```
+
+
+```{r, eval=TRUE}
+set.seed(1); csa(); a <- adapt.concept2.sFFLHD.R6$new(
+  D=4,L=4, design_seed=6562780, func=function(x)datafunction5(x,outputcolumn=13), func_fast = F,
+  nugget = 1e-3,estimate.nugget = F,
+  obj="desirability", des_func=des_func_grad_norm2_mean,
+  actual_des_func=NULL,#get_num_actual_des_func_grad_norm2_mean(),
+  stage1batches=2, alpha_des=1, weight_const=0,
+  package="laGP_GauPro_kernel", design='sFFLHD',
+  error_power=2,
+  selection_method="max_des_red_all_best"
+  # selection_method="ALC_all_best"
+)
+a$run(12, plotlastonly=T)
+cf_highdim(a$mod$predict, D=4, pts=a$X)
+
+```
+
+### ler
+
+```{r}
+summary(datadf5[,15])
+```
+
+
+
+```{r}
+pairs(datadf5[,c(1:4,15)])
+```
+
+
+```{r}
+set.seed(1); csa(); a <- adapt.concept2.sFFLHD.R6$new(
+  D=4,L=4, design_seed=6562780, func=function(x)datafunction5(x,outputcolumn=15), func_fast = F,
+  nugget = 1e-3,estimate.nugget = F,
+  obj="desirability", des_func=des_func_grad_norm2_mean,
+  actual_des_func=NULL,#get_num_actual_des_func_grad_norm2_mean(),
+  stage1batches=2, alpha_des=1, weight_const=0,
+  package="laGP_GauPro_kernel", design='sFFLHD',
+  error_power=2,
+  selection_method="max_des_red_all_best"
+  # selection_method="ALC_all_best"
+)
+a$run(12, plotlastonly=T)
+cf_highdim(a$mod$predict, D=4, pts=a$X)
+
+```
+
+
+
+
+### recip ler
+
+```{r}
+pairs(datadf5[,c(1:4,17)])
+```
+
+
+```{r}
+set.seed(1); csa(); a <- adapt.concept2.sFFLHD.R6$new(
+  D=4,L=4, design_seed=6562780, func=function(x)datafunction5(x,outputcolumn=17), func_fast = F,
+  nugget = 1e-6,estimate.nugget = F,
+  obj="desirability", des_func=des_func_grad_norm2_mean,
+  actual_des_func=NULL,#get_num_actual_des_func_grad_norm2_mean(),
+  stage1batches=2, alpha_des=1, weight_const=0,
+  package="laGP_GauPro_kernel", design='sFFLHD',
+  error_power=2,
+  selection_method="max_des_red_all_best"
+  # selection_method="ALC_all_best"
+)
+a$run(12, plotlastonly=T)
+cf_highdim(a$mod$predict, D=4, pts=a$X)
+
+```
+
+```{r}
+c(
+  a$mod$mod.extra$GauPro$mod$nug,
+  a$mod$mod.extra$GauPro$mod$s2_hat,
+  a$mod$mod.extra$GauPro$mod$nug * 
+  a$mod$mod.extra$GauPro$mod$s2_hat
+)
+```
+
