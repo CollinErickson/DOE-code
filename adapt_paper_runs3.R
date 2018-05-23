@@ -64,40 +64,65 @@ run_test <- function(funcstring, reps, batches, D, L, stage1batches,
   return(c1)
 }
 
-reps <- 100
-bran1 <- try(run_test(funcstring='branin', D=2, L=2, batches=10, reps=reps,
-                      stage1batches=3, seed_start=100, design_seed_start=1100))
-franke1 <- try(run_test(funcstring='franke', D=2, L=2, batches=10, reps=reps,
-                     stage1batches=3, seed_start=200, design_seed_start=1200))
-lim1 <- try(run_test(funcstring='limnonpoly', D=2, L=2, batches=10, reps=reps,
-                     stage1batches=3, seed_start=300, design_seed_start=1300))
-beam1 <- try(run_test(funcstring='beambending', D=3, L=3, batches=10, reps=reps,
-                     stage1batches=3, seed_start=400, design_seed_start=1400))
-otl1 <- try(run_test(funcstring='OTL_Circuit', D=6, L=4, batches=15, reps=reps,
-                     stage1batches=4, seed_start=500, design_seed_start=1500))
-piston1 <- try(run_test(funcstring='piston', D=7, L=5, batches=14, reps=reps,
-                     stage1batches=4, seed_start=600, design_seed_start=1600))
-bh1 <- try(run_test(funcstring='borehole', D=8, L=5, batches=16, reps=reps,
-                     stage1batches=5, seed_start=700, design_seed_start=1700))
-wing1 <- try(run_test(funcstring='wingweight', D=10, L=5, batches=20, reps=reps,
-                     stage1batches=6, seed_start=800, design_seed_start=1800))
-
+# First runs, 100 reps, all up to 10*D
+if (F) {
+  reps <- 100
+  bran1 <- try(run_test(funcstring='branin', D=2, L=2, batches=10, reps=reps,
+                        stage1batches=3, seed_start=100, design_seed_start=1100))
+  franke1 <- try(run_test(funcstring='franke', D=2, L=2, batches=10, reps=reps,
+                       stage1batches=3, seed_start=200, design_seed_start=1200))
+  lim1 <- try(run_test(funcstring='limnonpoly', D=2, L=2, batches=10, reps=reps,
+                       stage1batches=3, seed_start=300, design_seed_start=1300))
+  beam1 <- try(run_test(funcstring='beambending', D=3, L=3, batches=10, reps=reps,
+                       stage1batches=3, seed_start=400, design_seed_start=1400))
+  otl1 <- try(run_test(funcstring='OTL_Circuit', D=6, L=4, batches=15, reps=reps,
+                       stage1batches=4, seed_start=500, design_seed_start=1500))
+  piston1 <- try(run_test(funcstring='piston', D=7, L=5, batches=14, reps=reps,
+                       stage1batches=4, seed_start=600, design_seed_start=1600))
+  bh1 <- try(run_test(funcstring='borehole', D=8, L=5, batches=16, reps=reps,
+                       stage1batches=5, seed_start=700, design_seed_start=1700))
+  wing1 <- try(run_test(funcstring='wingweight', D=10, L=5, batches=20, reps=reps,
+                       stage1batches=6, seed_start=800, design_seed_start=1800))
+}
 
 # Run again with 400 reps and 20*D points
-reps2 <- 400
-bran1 <- try(run_test(funcstring='branin', D=2, L=2, batches=2*10, reps=reps2,
-                      stage1batches=3, seed_start=100, design_seed_start=1100))
-franke1 <- try(run_test(funcstring='franke', D=2, L=2, batches=2*10, reps=reps2,
-                        stage1batches=3, seed_start=200, design_seed_start=1200))
-lim1 <- try(run_test(funcstring='limnonpoly', D=2, L=2, batches=2*10, reps=reps2,
-                     stage1batches=3, seed_start=300, design_seed_start=1300))
-beam1 <- try(run_test(funcstring='beambending', D=3, L=3, batches=2*10, reps=reps2,
-                      stage1batches=3, seed_start=400, design_seed_start=1400))
-otl1 <- try(run_test(funcstring='OTL_Circuit', D=6, L=4, batches=2*15, reps=reps2,
-                     stage1batches=4, seed_start=500, design_seed_start=1500))
-piston1 <- try(run_test(funcstring='piston', D=7, L=5, batches=2*14, reps=reps2,
-                        stage1batches=4, seed_start=600, design_seed_start=1600))
-bh1 <- try(run_test(funcstring='borehole', D=8, L=5, batches=2*16, reps=reps2,
-                    stage1batches=5, seed_start=700, design_seed_start=1700))
-wing1 <- try(run_test(funcstring='wingweight', D=10, L=5, batches=2*20, reps=reps2,
-                      stage1batches=6, seed_start=800, design_seed_start=1800))
+if (F) {
+  reps2 <- 400
+  bran1 <- try(run_test(funcstring='branin', D=2, L=2, batches=2*10, reps=reps2,
+                        stage1batches=3, seed_start=100, design_seed_start=1100))
+  franke1 <- try(run_test(funcstring='franke', D=2, L=2, batches=2*10, reps=reps2,
+                          stage1batches=3, seed_start=200, design_seed_start=1200))
+  lim1 <- try(run_test(funcstring='limnonpoly', D=2, L=2, batches=2*10, reps=reps2,
+                       stage1batches=3, seed_start=300, design_seed_start=1300))
+  beam1 <- try(run_test(funcstring='beambending', D=3, L=3, batches=2*10, reps=reps2,
+                        stage1batches=3, seed_start=400, design_seed_start=1400))
+  otl1 <- try(run_test(funcstring='OTL_Circuit', D=6, L=4, batches=2*15, reps=reps2,
+                       stage1batches=4, seed_start=500, design_seed_start=1500))
+  piston1 <- try(run_test(funcstring='piston', D=7, L=5, batches=2*14, reps=reps2,
+                          stage1batches=4, seed_start=600, design_seed_start=1600))
+  bh1 <- try(run_test(funcstring='borehole', D=8, L=5, batches=2*16, reps=reps2,
+                      stage1batches=5, seed_start=700, design_seed_start=1700))
+  wing1 <- try(run_test(funcstring='wingweight', D=10, L=5, batches=2*20, reps=reps2,
+                        stage1batches=6, seed_start=800, design_seed_start=1800))
+}
+
+# Do 400 reps and now 40*D points. Adding 0 to end of all seeds too.
+if (T) {
+  reps2 <- 400
+  bran1   <- try(run_test(funcstring='branin',      D=2,  L=2, batches=4*10, reps=reps2,
+                          stage1batches=3, seed_start=1000, design_seed_start=11000))
+  franke1 <- try(run_test(funcstring='franke',      D=2,  L=2, batches=4*10, reps=reps2,
+                          stage1batches=3, seed_start=2000, design_seed_start=12000))
+  lim1    <- try(run_test(funcstring='limnonpoly',  D=2,  L=2, batches=4*10, reps=reps2,
+                          stage1batches=3, seed_start=3000, design_seed_start=13000))
+  beam1   <- try(run_test(funcstring='beambending', D=3,  L=3, batches=4*10, reps=reps2,
+                          stage1batches=3, seed_start=4000, design_seed_start=14000))
+  otl1    <- try(run_test(funcstring='OTL_Circuit', D=6,  L=4, batches=4*15, reps=reps2,
+                          stage1batches=4, seed_start=5000, design_seed_start=15000))
+  piston1 <- try(run_test(funcstring='piston',      D=7,  L=5, batches=4*14, reps=reps2,
+                          stage1batches=4, seed_start=6000, design_seed_start=16000))
+  bh1     <- try(run_test(funcstring='borehole',    D=8,  L=5, batches=4*16, reps=reps2,
+                          stage1batches=5, seed_start=7000, design_seed_start=17000))
+  wing1   <- try(run_test(funcstring='wingweight',  D=10, L=5, batches=4*20, reps=reps2,
+                          stage1batches=6, seed_start=8000, design_seed_start=18000))
+}
