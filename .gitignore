@@ -110,5 +110,6 @@ meeting_20171120/meeting_20171120_ex*/meeting_20171120_ex*.html
 meeting_20171120/meeting_20171120_ex*/meeting_20171120_ex*.md
 
 # Ignoring some data files from Stochastic Lanchester
-StochasticLanchesterTests/StochasticLanchesterTests\.html
-LanchesterDataFiles/
+StochasticLanchester/StochasticLanchesterTests/StochasticLanchesterTests\.html
+StochasticLanchester/LanchesterDataFiles/
+
