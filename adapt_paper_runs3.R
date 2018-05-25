@@ -58,9 +58,10 @@ run_test <- function(funcstring, reps, batches, D, L, stage1batches,
   }
   # Run all, save temps
   print("Running all c1")
+  already_run <- sum(c1$completed_runs)
   c1$run_all(parallel_temp_save=TRUE, noplot=TRUE, run_order="reverse")
   print("Finished c1, saving")
-  c1$save_self()
+  if (sum(c1$completed_runs) > already_run) {c1$save_self()}
   return(c1)
 }
 
