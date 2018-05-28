@@ -11,7 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r, message=FALSE}
 # Need to be up folder to source file
-setwd(".//..")
+setwd(".//..//..")
 source('C://Users//cbe117//Documents//GitHub//DOE-code///adaptconcept2_sFFLHD_R6.R')
 
 ```
@@ -21,7 +21,7 @@ source('C://Users//cbe117//Documents//GitHub//DOE-code///adaptconcept2_sFFLHD_R6
 
 
 ```{r}
-datafilename3 <- ".//..//output_200K_region3.csv"
+datafilename3 <- ".//..//LanchesterDataFiles//output_200K_region3.csv"
 datadf3 <- read.csv(datafilename3)
 
 datafunction3 <- function(x, outputcolumn=11) {
@@ -143,7 +143,7 @@ rm(datafilename3, datadf3, datafunction3)
 
 
 ```{r}
-datafilename4 <- ".//..//output_200K_region4_try2.csv"
+datafilename4 <- ".//..//LanchesterDataFiles//output_200K_region4_try2.csv"
 datadf4 <- read.csv(datafilename4)
 
 datafunction4 <- function(x, outputcolumn=11) {
@@ -302,7 +302,7 @@ rm(datafilename4, datadf4, datafunction4)
 
 
 ```{r}
-datafilename5 <- ".//..//output_200K_region5.csv"
+datafilename5 <- ".//..//LanchesterDataFiles//output_200K_region5.csv"
 datadf5 <- read.csv(datafilename5)
 
 datafunction5 <- function(x, outputcolumn=11) {
@@ -417,4 +417,41 @@ c(
   a$mod$mod.extra$GauPro$mod$s2_hat
 )
 ```
+
+### Average out others
+
+```{r}
+avg_grad_norm2_mean <- function(x, ds, reps=1e3) {
+  x4 <- numeric(4)
+  x4[ds] <- x
+  notds <- setdiff(1:4, ds)
+  mean(
+    replicate(reps, {
+      x4[notds] <- runif(2)
+      a$mod$mod.extra$GauPro$mod$grad_norm2_mean(matrix(x4, ncol=4))
+    })
+  )
+}
+avg_grad_norm2_mean_lhd <- function(x, ds, reps=1e3) {
+  x4 <- numeric(4)
+  x4[ds] <- x
+  notds <- setdiff(1:4, ds)
+  XX <- simple.LHS(reps, 2)
+  X4 <- matrix(nrow=reps, ncol=4)
+  X4[, ds[1]] <- x[1]
+  X4[, ds[2]] <- x[2]
+  X4[, notds] <- XX
+  mean(a$mod$mod.extra$GauPro$mod$grad_norm2_mean(X4))
+}
+summary(replicate(10, avg_grad_norm2_mean_lhd(c(.4,.4), 1:2, reps=1e4)))
+```
+
+```{r}
+cf(function(x) avg_grad_norm2_mean_lhd(x, 1:2, reps=1e4))
+cf(function(x) avg_grad_norm2_mean_lhd(x, 3:4, reps=1e2), n=8)
+cf_highdim(function(x)a$mod$mod.extra$GauPro$mod$grad_norm2_mean(matrix(x, ncol=4)), 4, average=T, average_reps = 1e2, average_matrix = T, n=8)
+```
+
+
+
 
