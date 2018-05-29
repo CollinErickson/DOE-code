@@ -54,7 +54,7 @@ pairs(datadf3[,c(1:4,13)])
 ```
 
 
-```{r, eval=FALSE}
+```{r 3_dur, eval=FALSE}
 set.seed(1); csa(); a <- adapt.concept2.sFFLHD.R6$new(
   D=4,L=4, design_seed=6562780, func=function(x)datafunction3(x,outputcolumn=13), func_fast = F,
   nugget = 1e-3,estimate.nugget = F,
@@ -68,7 +68,7 @@ set.seed(1); csa(); a <- adapt.concept2.sFFLHD.R6$new(
 )
 a$run(12, plotlastonly=T)
 cf_highdim(a$mod$predict, D=4, pts=a$X)
-
+rm(a)
 ```
 
 ### ler
@@ -84,7 +84,7 @@ pairs(datadf3[,c(1:4,15)])
 ```
 
 
-```{r}
+```{r 3_ler, cache=TRUE}
 set.seed(1); csa(); a <- adapt.concept2.sFFLHD.R6$new(
   D=4,L=4, design_seed=6562780, func=function(x)datafunction3(x,outputcolumn=15), func_fast = F,
   nugget = 1e-3,estimate.nugget = F,
@@ -98,7 +98,7 @@ set.seed(1); csa(); a <- adapt.concept2.sFFLHD.R6$new(
 )
 a$run(12, plotlastonly=T)
 cf_highdim(a$mod$predict, D=4, pts=a$X)
-
+rm(a)
 ```
 
 
@@ -111,7 +111,7 @@ pairs(datadf3[,c(1:4,17)])
 ```
 
 
-```{r}
+```{r 3_rler, cache=TRUE}
 set.seed(1); csa(); a <- adapt.concept2.sFFLHD.R6$new(
   D=4,L=4, design_seed=6562780, func=function(x)datafunction3(x,outputcolumn=17), func_fast = F,
   nugget = 1e-3,estimate.nugget = F,
@@ -125,7 +125,7 @@ set.seed(1); csa(); a <- adapt.concept2.sFFLHD.R6$new(
 )
 a$run(12, plotlastonly=T)
 cf_highdim(a$mod$predict, D=4, pts=a$X)
-
+rm(a)
 ```
 
 
@@ -176,7 +176,7 @@ pairs(datadf4[,c(1:4,13)])
 ```
 
 
-```{r, eval=TRUE}
+```{r 4_dur, eval=TRUE, cache=TRUE}
 set.seed(1); csa(); a <- adapt.concept2.sFFLHD.R6$new(
   D=4,L=4, design_seed=6562780, func=function(x)datafunction4(x,outputcolumn=13), func_fast = F,
   nugget = 1e-3,estimate.nugget = F,
@@ -190,7 +190,7 @@ set.seed(1); csa(); a <- adapt.concept2.sFFLHD.R6$new(
 )
 a$run(12, plotlastonly=T)
 cf_highdim(a$mod$predict, D=4, pts=a$X)
-
+rm(a)
 ```
 
 ### ler
@@ -206,7 +206,7 @@ pairs(datadf4[,c(1:4,15)])
 ```
 
 
-```{r}
+```{r 4_ler, cache=TRUE}
 set.seed(1); csa(); a <- adapt.concept2.sFFLHD.R6$new(
   D=4,L=4, design_seed=6562780, func=function(x)datafunction4(x,outputcolumn=15), func_fast = F,
   nugget = 1e-3,estimate.nugget = F,
@@ -220,7 +220,7 @@ set.seed(1); csa(); a <- adapt.concept2.sFFLHD.R6$new(
 )
 a$run(12, plotlastonly=T)
 cf_highdim(a$mod$predict, D=4, pts=a$X)
-
+rm(a)
 ```
 
 
@@ -233,7 +233,7 @@ pairs(datadf4[,c(1:4,17)])
 ```
 
 
-```{r}
+```{r 4_rler, cache=TRUE}
 set.seed(1); csa(); a <- adapt.concept2.sFFLHD.R6$new(
   D=4,L=4, design_seed=6562780, func=function(x)datafunction4(x,outputcolumn=17), func_fast = F,
   nugget = 1e-6,estimate.nugget = F,
@@ -247,16 +247,13 @@ set.seed(1); csa(); a <- adapt.concept2.sFFLHD.R6$new(
 )
 a$run(12, plotlastonly=T)
 cf_highdim(a$mod$predict, D=4, pts=a$X)
-
-```
-
-```{r}
-c(
+print(c(
   a$mod$mod.extra$GauPro$mod$nug,
   a$mod$mod.extra$GauPro$mod$s2_hat,
   a$mod$mod.extra$GauPro$mod$nug * 
   a$mod$mod.extra$GauPro$mod$s2_hat
-)
+))
+rm(a)
 ```
 
 
@@ -268,7 +265,7 @@ pairs(datadf4[,c(1:4,18)])
 ```
 
 
-```{r}
+```{r 4_rlersd, cache=TRUE}
 set.seed(1); csa(); a <- adapt.concept2.sFFLHD.R6$new(
   D=4,L=4, design_seed=6562780, func=function(x)datafunction4(x,outputcolumn=18), func_fast = F,
   nugget = 1e-6,estimate.nugget = F,
@@ -282,7 +279,7 @@ set.seed(1); csa(); a <- adapt.concept2.sFFLHD.R6$new(
 )
 a$run(12, plotlastonly=T)
 cf_highdim(a$mod$predict, D=4, pts=a$X)
-
+rm(a)
 ```
 
 
@@ -335,7 +332,7 @@ pairs(datadf5[,c(1:4,13)])
 ```
 
 
-```{r, eval=TRUE}
+```{r 5_dur, cache=TRUE}
 set.seed(1); csa(); a <- adapt.concept2.sFFLHD.R6$new(
   D=4,L=4, design_seed=6562780, func=function(x)datafunction5(x,outputcolumn=13), func_fast = F,
   nugget = 1e-3,estimate.nugget = F,
@@ -349,7 +346,7 @@ set.seed(1); csa(); a <- adapt.concept2.sFFLHD.R6$new(
 )
 a$run(12, plotlastonly=T)
 cf_highdim(a$mod$predict, D=4, pts=a$X)
-
+rm(a)
 ```
 
 ### ler
@@ -365,7 +362,7 @@ pairs(datadf5[,c(1:4,15)])
 ```
 
 
-```{r}
+```{r 5_ler, cache=T}
 set.seed(1); csa(); a <- adapt.concept2.sFFLHD.R6$new(
   D=4,L=4, design_seed=6562780, func=function(x)datafunction5(x,outputcolumn=15), func_fast = F,
   nugget = 1e-3,estimate.nugget = F,
@@ -379,7 +376,7 @@ set.seed(1); csa(); a <- adapt.concept2.sFFLHD.R6$new(
 )
 a$run(12, plotlastonly=T)
 cf_highdim(a$mod$predict, D=4, pts=a$X)
-
+rm(a)
 ```
 
 
@@ -393,7 +390,7 @@ pairs(datadf5[,c(1:4,17)])
 
 
 ```{r}
-set.seed(1); csa(); a <- adapt.concept2.sFFLHD.R6$new(
+set.seed(1); csa(); rler5 <- adapt.concept2.sFFLHD.R6$new(
   D=4,L=4, design_seed=6562780, func=function(x)datafunction5(x,outputcolumn=17), func_fast = F,
   nugget = 1e-6,estimate.nugget = F,
   obj="desirability", des_func=des_func_grad_norm2_mean,
@@ -404,23 +401,23 @@ set.seed(1); csa(); a <- adapt.concept2.sFFLHD.R6$new(
   selection_method="max_des_red_all_best"
   # selection_method="ALC_all_best"
 )
-a$run(12, plotlastonly=T)
-cf_highdim(a$mod$predict, D=4, pts=a$X)
+rler5$run(12, plotlastonly=T)
+cf_highdim(rler5$mod$predict, D=4, pts=rler5$X)
 
 ```
 
 ```{r}
 c(
-  a$mod$mod.extra$GauPro$mod$nug,
-  a$mod$mod.extra$GauPro$mod$s2_hat,
-  a$mod$mod.extra$GauPro$mod$nug * 
-  a$mod$mod.extra$GauPro$mod$s2_hat
+  rler5$mod$mod.extra$GauPro$mod$nug,
+  rler5$mod$mod.extra$GauPro$mod$s2_hat,
+  rler5$mod$mod.extra$GauPro$mod$nug * 
+  rler5$mod$mod.extra$GauPro$mod$s2_hat
 )
 ```
 
 ### Average out others
 
-```{r}
+```{r, eval=FALSE, include=F}
 avg_grad_norm2_mean <- function(x, ds, reps=1e3) {
   x4 <- numeric(4)
   x4[ds] <- x
@@ -428,7 +425,7 @@ avg_grad_norm2_mean <- function(x, ds, reps=1e3) {
   mean(
     replicate(reps, {
       x4[notds] <- runif(2)
-      a$mod$mod.extra$GauPro$mod$grad_norm2_mean(matrix(x4, ncol=4))
+      rler5$mod$mod.extra$GauPro$mod$grad_norm2_mean(matrix(x4, ncol=4))
     })
   )
 }
@@ -441,17 +438,34 @@ avg_grad_norm2_mean_lhd <- function(x, ds, reps=1e3) {
   X4[, ds[1]] <- x[1]
   X4[, ds[2]] <- x[2]
   X4[, notds] <- XX
-  mean(a$mod$mod.extra$GauPro$mod$grad_norm2_mean(X4))
+  mean(rler5$mod$mod.extra$GauPro$mod$grad_norm2_mean(X4))
 }
 summary(replicate(10, avg_grad_norm2_mean_lhd(c(.4,.4), 1:2, reps=1e4)))
 ```
 
-```{r}
+```{r, eval=FALSE, include=F}
 cf(function(x) avg_grad_norm2_mean_lhd(x, 1:2, reps=1e4))
 cf(function(x) avg_grad_norm2_mean_lhd(x, 3:4, reps=1e2), n=8)
-cf_highdim(function(x)a$mod$mod.extra$GauPro$mod$grad_norm2_mean(matrix(x, ncol=4)), 4, average=T, average_reps = 1e2, average_matrix = T, n=8)
+cf_highdim(function(x)rler5$mod$mod.extra$GauPro$mod$grad_norm2_mean(matrix(x, ncol=4)), 4, average=T, average_reps = 1e2, n=8)
 ```
 
+#### Mean, averaged over other two dimensions
+
+```{r}
+cf_highdim(rler5$mod$predict, D=4, pts=rler5$X, average=TRUE)
+```
+
+#### gradnorm2mean, not average
+
+```{r}
+cf_highdim(rler5$mod$mod.extra$GauPro$mod$grad_norm2_mean, 4, average=F, average_reps = 1e2, n=8, batchmax=Inf, pts=rler5$X)
+```
+
+#### Average gradnorm2mean
+
+```{r}
+cf_highdim(rler5$mod$mod.extra$GauPro$mod$grad_norm2_mean, 4, average=T, average_reps = 1e2, n=8, batchmax=Inf, pts=rler5$X)
+```
 
 
 
