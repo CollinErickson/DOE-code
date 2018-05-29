@@ -1,0 +1,230 @@
+---
+title: "Stochastic Lanchester Tests 2"
+author: "Collin Erickson"
+date: "May 29, 2018"
+output: ioslides_presentation
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+<!-- <style type="text/css"> -->
+<!-- .main-container { -->
+<!--   max-width: 1800px; -->
+<!--   margin-left: auto; -->
+<!--   margin-right: auto; -->
+<!-- } -->
+<!-- </style> -->
+
+## Set up
+
+```{r, message=FALSE}
+# Need to be up folder to source file
+setwd(".//..//..")
+source('C://Users//cbe117//Documents//GitHub//DOE-code///adaptconcept2_sFFLHD_R6.R')
+```
+
+
+## Region 5
+
+
+```{r}
+datafilename5 <- ".//..//LanchesterDataFiles//output_200K_region5.csv"
+datadf5 <- read.csv(datafilename5)
+
+datafunction5 <- function(x, outputcolumn=11) {
+  # cat(x, "\n")
+  which.ind <- which(c(apply(datadf5, 1, function(rr) {(all(abs(x-rr[1:4])<1e-8))})))
+  if (length(which.ind) != 1) {
+    browser("Not exactly one indice that matches")
+  }
+  datadf5[which.ind, outputcolumn]
+}
+x1 <- as.numeric(datadf5[8,1:4])
+datafunction5(x1)
+```
+
+```{r}
+names(datadf5)
+```
+
+## Battle duration
+
+
+```{r}
+summary(datadf5[,13])
+```
+
+
+```{r}
+pairs(datadf5[,c(1:4,13)])
+```
+
+
+<!-- # ```{r 5_dur, cache=TRUE, out.width='.49\\linewidth', fig.width=4, fig.height=4,fig.show='hold',fig.align='center'} -->
+<!--```{r 5_dur, cache=TRUE, out.width="49%", fig.align='center', fig.show='hold', fig.width=6, fig.height=6}-->
+```{r}
+# ignore
+set.seed(1); csa(); a <- adapt.concept2.sFFLHD.R6$new(
+  D=4,L=4, design_seed=6562780, func=function(x)datafunction5(x,outputcolumn=13), func_fast = F,
+  nugget = 1e-3,estimate.nugget = F,
+  obj="desirability", des_func=des_func_grad_norm2_mean,
+  actual_des_func=NULL,#get_num_actual_des_func_grad_norm2_mean(),
+  stage1batches=2, alpha_des=1, weight_const=0,
+  package="laGP_GauPro_kernel", design='sFFLHD',
+  error_power=2,
+  selection_method="max_des_red_all_best"
+  # selection_method="ALC_all_best"
+)
+a$run(12, plotlastonly=T)
+```
+
+## Mean prediction at midpoint
+
+```{r}
+cf_highdim(a$mod$predict, D=4, pts=a$X, batchmax=Inf)
+```
+
+## Mean prediction averaged out
+
+```{r}
+cf_highdim(a$mod$predict, D=4, pts=a$X, batchmax=Inf, average=T)
+
+```
+
+## Weight prediction at midpoint
+
+```{r}
+cf_highdim(a$mod$mod.extra$GauPro$mod$grad_norm2_mean, 4, average=F, average_reps = 1e2, n=8, batchmax=Inf, pts=a$X)
+```
+
+## Weight prediction averaged out
+
+```{r}
+cf_highdim(a$mod$mod.extra$GauPro$mod$grad_norm2_mean, 4, average=T, average_reps = 1e2, n=8, batchmax=Inf, pts=a$X)
+# rm(a)
+```
+
+## ler Loss Exchange Ratio
+
+```{r}
+summary(datadf5[,15])
+```
+
+
+
+```{r}
+pairs(datadf5[,c(1:4,15)])
+```
+
+## ler
+
+```{r 5_ler}
+set.seed(1); csa(); a <- adapt.concept2.sFFLHD.R6$new(
+  D=4,L=4, design_seed=6562780, func=function(x)datafunction5(x,outputcolumn=15), func_fast = F,
+  nugget = 1e-3,estimate.nugget = F,
+  obj="desirability", des_func=des_func_grad_norm2_mean,
+  actual_des_func=NULL,#get_num_actual_des_func_grad_norm2_mean(),
+  stage1batches=2, alpha_des=1, weight_const=0,
+  package="laGP_GauPro_kernel", design='sFFLHD',
+  error_power=2,
+  selection_method="max_des_red_all_best"
+  # selection_method="ALC_all_best"
+)
+a$run(12, plotlastonly=T)
+# cf_highdim(a$mod$predict, D=4, pts=a$X)
+# rm(a)
+```
+
+
+
+## Mean prediction at midpoint
+
+```{r}
+cf_highdim(a$mod$predict, D=4, pts=a$X, batchmax=Inf)
+```
+
+## Mean prediction averaged out
+
+```{r}
+cf_highdim(a$mod$predict, D=4, pts=a$X, batchmax=Inf, average=T)
+```
+
+## Weight prediction at midpoint
+
+```{r}
+cf_highdim(a$mod$mod.extra$GauPro$mod$grad_norm2_mean, 4,average=F, average_reps = 1e2, n=8, batchmax=Inf, pts=a$X)
+```
+
+## Weight prediction averaged out
+
+```{r}
+cf_highdim(a$mod$mod.extra$GauPro$mod$grad_norm2_mean, 4, average=T, average_reps = 1e2, n=8, batchmax=Inf, pts=a$X)
+# rm(a)
+```
+
+
+
+## recip ler Reciprocal Loss Exchange Ratio
+
+```{r}
+pairs(datadf5[,c(1:4,17)])
+```
+
+## rler
+
+```{r 5_rler, cache=TRUE}
+set.seed(1); csa(); rler5 <- adapt.concept2.sFFLHD.R6$new(
+  D=4,L=4, design_seed=6562780, func=function(x)datafunction5(x,outputcolumn=17), func_fast = F,
+  nugget = 1e-6,estimate.nugget = F,
+  obj="desirability", des_func=des_func_grad_norm2_mean,
+  actual_des_func=NULL,#get_num_actual_des_func_grad_norm2_mean(),
+  stage1batches=2, alpha_des=1, weight_const=0,
+  package="laGP_GauPro_kernel", design='sFFLHD',
+  error_power=2,
+  selection_method="max_des_red_all_best"
+  # selection_method="ALC_all_best"
+)
+rler5$run(12, plotlastonly=T)
+# cf_highdim(rler5$mod$predict, D=4, pts=rler5$X, batchmax=Inf)
+
+```
+
+```{r}
+c(
+  rler5$mod$mod.extra$GauPro$mod$nug,
+  rler5$mod$mod.extra$GauPro$mod$s2_hat,
+  rler5$mod$mod.extra$GauPro$mod$nug * 
+  rler5$mod$mod.extra$GauPro$mod$s2_hat
+)
+```
+
+## Mean at midpoint
+
+```{r}
+cf_highdim(rler5$mod$predict, D=4, pts=rler5$X, batchmax=Inf)
+```
+
+
+## Mean, averaged over 2 dims
+
+```{r plotmeanaveraged}
+cf_highdim(rler5$mod$predict, D=4, pts=rler5$X, average=TRUE, batchmax=Inf, average_reps=1e2, n=10)
+```
+
+## Weight prediction at midpoint
+
+```{r plotweight}
+cf_highdim(rler5$mod$mod.extra$GauPro$mod$grad_norm2_mean, 4, average=F, average_reps = 1e2, n=8, batchmax=Inf, pts=rler5$X)
+```
+
+## Weight prediction averaged out
+
+```{r plotweightaveraged}
+cf_highdim(rler5$mod$mod.extra$GauPro$mod$grad_norm2_mean, 4, average=T, average_reps = 1e2, n=8, batchmax=Inf, pts=rler5$X)
+```
+
+
+

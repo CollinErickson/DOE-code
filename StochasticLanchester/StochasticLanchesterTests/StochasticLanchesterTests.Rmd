@@ -389,7 +389,7 @@ pairs(datadf5[,c(1:4,17)])
 ```
 
 
-```{r}
+```{r 5_rler}
 set.seed(1); csa(); rler5 <- adapt.concept2.sFFLHD.R6$new(
   D=4,L=4, design_seed=6562780, func=function(x)datafunction5(x,outputcolumn=17), func_fast = F,
   nugget = 1e-6,estimate.nugget = F,
@@ -402,7 +402,7 @@ set.seed(1); csa(); rler5 <- adapt.concept2.sFFLHD.R6$new(
   # selection_method="ALC_all_best"
 )
 rler5$run(12, plotlastonly=T)
-cf_highdim(rler5$mod$predict, D=4, pts=rler5$X)
+cf_highdim(rler5$mod$predict, D=4, pts=rler5$X, batchmax=Inf)
 
 ```
 
@@ -415,55 +415,23 @@ c(
 )
 ```
 
-### Average out others
-
-```{r, eval=FALSE, include=F}
-avg_grad_norm2_mean <- function(x, ds, reps=1e3) {
-  x4 <- numeric(4)
-  x4[ds] <- x
-  notds <- setdiff(1:4, ds)
-  mean(
-    replicate(reps, {
-      x4[notds] <- runif(2)
-      rler5$mod$mod.extra$GauPro$mod$grad_norm2_mean(matrix(x4, ncol=4))
-    })
-  )
-}
-avg_grad_norm2_mean_lhd <- function(x, ds, reps=1e3) {
-  x4 <- numeric(4)
-  x4[ds] <- x
-  notds <- setdiff(1:4, ds)
-  XX <- simple.LHS(reps, 2)
-  X4 <- matrix(nrow=reps, ncol=4)
-  X4[, ds[1]] <- x[1]
-  X4[, ds[2]] <- x[2]
-  X4[, notds] <- XX
-  mean(rler5$mod$mod.extra$GauPro$mod$grad_norm2_mean(X4))
-}
-summary(replicate(10, avg_grad_norm2_mean_lhd(c(.4,.4), 1:2, reps=1e4)))
-```
-
-```{r, eval=FALSE, include=F}
-cf(function(x) avg_grad_norm2_mean_lhd(x, 1:2, reps=1e4))
-cf(function(x) avg_grad_norm2_mean_lhd(x, 3:4, reps=1e2), n=8)
-cf_highdim(function(x)rler5$mod$mod.extra$GauPro$mod$grad_norm2_mean(matrix(x, ncol=4)), 4, average=T, average_reps = 1e2, n=8)
-```
-
 #### Mean, averaged over other two dimensions
 
-```{r}
-cf_highdim(rler5$mod$predict, D=4, pts=rler5$X, average=TRUE)
+```{r plotmeanaveraged}
+cf_highdim(rler5$mod$predict, D=4, pts=rler5$X, average=TRUE, batchmax=Inf,
+           average_reps=1e2, n=10)
 ```
 
 #### gradnorm2mean, not average
 
-```{r}
-cf_highdim(rler5$mod$mod.extra$GauPro$mod$grad_norm2_mean, 4, average=F, average_reps = 1e2, n=8, batchmax=Inf, pts=rler5$X)
+```{r plotweight}
+cf_highdim(rler5$mod$mod.extra$GauPro$mod$grad_norm2_mean, 4,
+           average=F, average_reps = 1e2, n=8, batchmax=Inf, pts=rler5$X)
 ```
 
 #### Average gradnorm2mean
 
-```{r}
+```{r plotweightaveraged}
 cf_highdim(rler5$mod$mod.extra$GauPro$mod$grad_norm2_mean, 4, average=T, average_reps = 1e2, n=8, batchmax=Inf, pts=rler5$X)
 ```
 
