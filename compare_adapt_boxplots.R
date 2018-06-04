@@ -18,7 +18,7 @@ plot_by_n_compare_intwvar <- function(object, gtitle=NULL, scientific=T,
     "obj=desirability,selection_method=max_des_red_all_best,design=sFFLHD_Lflex,des_func=des_func_mean_grad_norm2"="Plug-in",
     "obj=desirability,selection_method=max_des_red_all_best,design=sFFLHD_Lflex,des_func=des_func_grad_norm2_mean"="IMVSE",
     "obj=desirability,selection_method=SMED,design=sFFLHD_Lflex,des_func=des_func_grad_norm2_mean"="VMED",
-    "obj=desirability,selection_method=max_des_all_best,design=sFFLHD_Lflex,des_func=des_func_grad_norm2_mean"="MaxVse"
+    "obj=desirability,selection_method=max_des_all_best,design=sFFLHD_Lflex,des_func=des_func_grad_norm2_mean"="MaxVSE"
   )
   # browser()
   if (is.null(object$outdf$Group_short)) object$outdf$Group_short <- short_name_map[object$outdf$Group]
@@ -32,6 +32,8 @@ plot_by_n_compare_intwvar <- function(object, gtitle=NULL, scientific=T,
     theme(axis.text.x=element_text(angle=90)) +
     xlab("") + ylab(expression(Phi)) + ggtitle(gtitle)
 }
+
+
 
 if (F) {
   plotbran   <- plot_by_n_compare_intwvar(bran1, "Branin")
@@ -53,17 +55,57 @@ if (F) {
                                 plototl, plotpiston, plotbh,
                                 ncol=4),
          width=12, height=10, units='in')
-  plotbran   <- plot_by_n_compare_intwvar(bran1, "Branin", compare_Group_shorts=c("IMVSE", "MaxVse", "VMED", "Plug-in"))
-  plotfranke <- plot_by_n_compare_intwvar(franke1, "Franke", compare_Group_shorts=c("IMVSE", "MaxVse", "VMED", "Plug-in"))
-  plotlim    <- plot_by_n_compare_intwvar(lim1, "Lim", compare_Group_shorts=c("IMVSE", "MaxVse", "VMED", "Plug-in"))
-  plotbeam   <- plot_by_n_compare_intwvar(beam1, "Beam", compare_Group_shorts=c("IMVSE", "MaxVse", "VMED", "Plug-in"))
-  plototl    <- plot_by_n_compare_intwvar(otl1, "OTL", compare_Group_shorts=c("IMVSE", "MaxVse", "VMED", "Plug-in"))
-  plotpiston <- plot_by_n_compare_intwvar(piston1, "Piston", compare_Group_shorts=c("IMVSE", "MaxVse", "VMED", "Plug-in"))
-  plotbh     <- plot_by_n_compare_intwvar(bh1, "Borehole", compare_Group_shorts=c("IMVSE", "MaxVse", "VMED", "Plug-in"))
-  plotwing   <- plot_by_n_compare_intwvar(wing1, "Wing weight", compare_Group_shorts=c("IMVSE", "MaxVse", "VMED", "Plug-in"))
-  ggsave("C:\\Users\\cbe117\\School\\DOE\\GradAdaptPaper\\images\\IMVSEvs_nowing.png",
+  plotbran   <- plot_by_n_compare_intwvar(bran1, "Branin", compare_Group_shorts=c("IMVSE", "MaxVSE", "VMED", "Plug-in"))
+  plotfranke <- plot_by_n_compare_intwvar(franke1, "Franke", compare_Group_shorts=c("IMVSE", "MaxVSE", "VMED", "Plug-in"))
+  plotlim    <- plot_by_n_compare_intwvar(lim1, "Lim", compare_Group_shorts=c("IMVSE", "MaxVSE", "VMED", "Plug-in"))
+  plotbeam   <- plot_by_n_compare_intwvar(beam1, "Beam", compare_Group_shorts=c("IMVSE", "MaxVSE", "VMED", "Plug-in"))
+  plototl    <- plot_by_n_compare_intwvar(otl1, "OTL", compare_Group_shorts=c("IMVSE", "MaxVSE", "VMED", "Plug-in"))
+  plotpiston <- plot_by_n_compare_intwvar(piston1, "Piston", compare_Group_shorts=c("IMVSE", "MaxVSE", "VMED", "Plug-in"))
+  plotbh     <- plot_by_n_compare_intwvar(bh1, "Borehole", compare_Group_shorts=c("IMVSE", "MaxVSE", "VMED", "Plug-in"))
+  plotwing   <- plot_by_n_compare_intwvar(wing1, "Wing weight", compare_Group_shorts=c("IMVSE", "MaxVSE", "VMED", "Plug-in"))
+  ggsave("C:\\Users\\cbe117\\School\\DOE\\GradAdaptPaper\\images\\IMVSEvs_5102040.eps",
          gridExtra::arrangeGrob(plotbran, plotfranke, plotlim, plotbeam,
-                                plototl, plotpiston, plotbh,
+                                plototl, plotpiston, plotbh, plotwing,
                                 ncol=4),
          width=12, height=10, units='in')
+  
+  ggsave("C:\\Users\\cbe117\\School\\DOE\\GradAdaptPaper\\images\\IMSEvsIMVSE_102040.png",
+         gridExtra::arrangeGrob(plotbran, plotfranke, plotlim, plotbeam,
+                                plototl, plotpiston, plotbh, plotwing,
+                                ncol=4),
+         width=12, height=10, units='in')
+  ggsave("C:\\Users\\cbe117\\School\\DOE\\GradAdaptPaper\\images\\IMVSEvsMaxVSEvsVMED_102040.png",
+         gridExtra::arrangeGrob(plotbran, plotfranke, plotlim, plotbeam,
+                                plototl, plotpiston, plotbh, plotwing,
+                                ncol=4),
+         width=12, height=10, units='in')
+  
+  
+  
+}
+
+boxplots_grid <- function(nmult1=c(5,10,20,40),
+                          cgs=c("IMSE", "IMVSE", "MaxVSE", "VMED", "Plug-in"),
+                          cgsinds,
+                          ext="png"
+                          ) {
+  if (!missing(cgsinds)) {cgs <- cgs[cgsinds]}
+  plotbran   <- plot_by_n_compare_intwvar(bran1, "Branin", compare_Group_shorts=cgs, nmult=nmult1)
+  plotfranke <- plot_by_n_compare_intwvar(franke1, "Franke", compare_Group_shorts=cgs, nmult=nmult1)
+  plotlim    <- plot_by_n_compare_intwvar(lim1, "Lim", compare_Group_shorts=cgs, nmult=nmult1)
+  plotbeam   <- plot_by_n_compare_intwvar(beam1, "Beam", compare_Group_shorts=cgs, nmult=nmult1)
+  plototl    <- plot_by_n_compare_intwvar(otl1, "OTL", compare_Group_shorts=cgs, nmult=nmult1)
+  plotpiston <- plot_by_n_compare_intwvar(piston1, "Piston", compare_Group_shorts=cgs, nmult=nmult1)
+  plotbh     <- plot_by_n_compare_intwvar(bh1, "Borehole", compare_Group_shorts=cgs, nmult=nmult1)
+  plotwing   <- plot_by_n_compare_intwvar(wing1, "Wing weight", compare_Group_shorts=cgs, nmult=nmult1)
+  filename <- paste0(paste0(cgs, collapse="vs"), "_", paste0(nmult1, collapse=''), ".", ext)
+  # browser()
+  ggsave(paste0("C:\\Users\\cbe117\\School\\DOE\\GradAdaptPaper\\images\\", filename),
+         gridExtra::arrangeGrob(plotbran, plotfranke, plotlim, plotbeam,
+                                plototl, plotpiston, plotbh, plotwing,
+                                ncol=4),
+         width=12, height=10, units='in')
+}
+if (F) {
+  boxplots_grid(nmult1=c(10,40), cgsinds = c(1,3))
 }
