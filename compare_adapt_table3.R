@@ -5,14 +5,16 @@
 postprocess_outdf = function(self, batches) {#browser()
   if (missing(batches)) {
     batches <- self$batches
-  } else if (batches == '10D') {batches <- ceiling(10 * self$D / otl1$b)
+  } else if (batches == '10D') {batches <- ceiling(10 * self$D / self$b)
+  } else if (batches == '20D') {batches <- ceiling(20 * self$D / self$b)
+  } else if (batches == '40D') {batches <- ceiling(40 * self$D / self$b)
   } else {stop("bad batches")}
   self.outdf <- self$outrawdf
   self.outdf$rmse <- sqrt(ifelse(self.outdf$mse>=0, self.outdf$mse, 1e-16))
   self.outdf$prmse <- sqrt(ifelse(self.outdf$pvar>=0, self.outdf$pvar, 1e-16))
   # self.enddf <- self.outdf[self.outdf$batch == self$batches,]
   self.enddf <- self.outdf[self.outdf$batch == batches,]
-  if (nrow(self.enddf)==0) {stop('No rows?')}
+  if (nrow(self.enddf)==0) {browser(); stop('No rows?')}
   # Want to get mean of these columns across replicates
   meanColNames <- c("mse","pvar","pamv","rmse","prmse","pred_intwerror",
                     "actual_intwerror", "actual_intwvar")
@@ -77,19 +79,21 @@ get_table <- function(self, error_power=2, batches) {#browser()
     # tab[,3] <- paste(tab[,3], tab[,4], sep="+-")
     # tab[,4] <- NULL
   } else {stop("No error_power #9284454")}
-  cat("Dividing by sqrt(", self$reps, ")\n")
+  cat("% Dividing by sqrt(", self$reps, ")\n")
   tab$actual_intwvar_sd <- tab$actual_intwvar_sd / sqrt(self$reps)
   colnames(tab) <- c("Selection", "Candidates","$\\Psi mean$","$\\Psi sd$")
   # tab$Selection[tab$Selection == "desirability"] <- "Proposed"
-  tab$Selection[tab$Selection == "max_des_red_all_best"] <- "\\IMVSE{}"
+  # tab$Selection[tab$Selection == "max_des_red_all_best"] <- "\\IMVSE{}"
   tab$Selection[tab$Selection == "ALC_all_best"] <- 'IMSE'#"ALC"
   tab$Selection[tab$Selection == "max_des_all_best"] <- '\\VSE{}'#"ALC"
+  tab$Selection[tab$Selection == "SMED"] <- '\\VMED{}'
   # tab$Selection[tab$Selection == "nonadapt"] <- "In order"
-  tab$Selection[tab$Selection == "nonadapt" & tab$Candidates=="sFFLHD"] <- "sFFLHD"
+  tab$Selection[tab$Selection == "nonadapt" & tab$Candidates%in%c("sFFLHD", "sFFLHD_Lflex")] <- "sFFLHD"
   tab$Selection[tab$Selection == "nonadapt" & tab$Candidates=="sobol"] <- "Sobol"
   tab$Candidates[tab$Candidates == "sobol"] <- "Sobol"
   # browser()
-  tab$Selection[tab$Selection == "Proposed" & self$endmeandf$des_func=="des_func_mean_grad_norm2"] <- "Plug-in"
+  tab$Selection[tab$Selection == "max_des_red_all_best" & self$endmeandf$des_func=="des_func_mean_grad_norm2"] <- "Plug-in"
+  tab$Selection[tab$Selection == "max_des_red_all_best" & self$endmeandf$des_func=="des_func_grad_norm2_mean"] <- "\\IMVSE{}"
   colnames(tab) <- c("Method", "Candidates","$\\Psi mean$","$\\Psi sd$")
   tab
 }
