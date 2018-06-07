@@ -4,13 +4,15 @@ source('~/GitHub/DOE-code/adaptconcept2_sFFLHD_R6.R')
 #  Data created using sFFLHD design seed 6562780
 # datafilename <- "./outplus_region1levs_sFFLHD_D4_L4_maximinT_seed6562780_200batches.csv"
 # datafilename <- "./outregion2_10k.csv"
-datafilename <- "./outregion4_ratios_sFFLHD_D4_L4_maximinT_seed6562780_200batches.csv"
+# datafilename <- "./outregion4_ratios_sFFLHD_D4_L4_maximinT_seed6562780_200batches.csv"
+datafilename <- ".//StochasticLanchester//LanchesterDataFiles/output_200k_region5.csv"
 datadf <- read.csv(datafilename)
 # 14 duration
 # 16 ler
 # 18 recip ler
 # 22 recip fler
-datafunction <- function(x, outputcolumn=11) {
+# For region 5: 17 is rler
+datafunction <- function(x, outputcolumn=17) {
   cat(x, "\n")
   # which.ind <- which(c(apply(datadf, 1, function(rr) {(all(x==rr[1:4]))})))
   which.ind <- which(c(apply(datadf, 1, function(rr) {(all(abs(x-rr[1:4])<1e-8))})))
@@ -19,7 +21,7 @@ datafunction <- function(x, outputcolumn=11) {
   }
   datadf[which.ind, outputcolumn]
 }
-datafunction(x1) # 10.38352
+# datafunction(x1) # 10.38352
 
 # Run it
 set.seed(1); csa(); a <- adapt.concept2.sFFLHD.R6$new(
@@ -34,4 +36,21 @@ set.seed(1); csa(); a <- adapt.concept2.sFFLHD.R6$new(
   # selection_method="ALC_all_best"
 )
 a$run(12)
+# Make the plot use mean
 cf_highdim(a$mod$predict, D=4, pts=a$X)
+# Make plot with weighted var in background, average out other vars
+cf_highdim(a$mod$mod.extra$GauPro$mod$grad_norm2_mean, D=4, pts=a$X,
+           average=T, average_reps=1e3, batchmax = Inf)
+if (F) {
+  # setEPS()
+  postscript("~/..//School//DOE//GradAdaptPaper//images//StochLanReg5-WeightAveraged.eps",
+             horizontal = F, height=6, width=6)
+  cf_highdim(a$mod$mod.extra$GauPro$mod$grad_norm2_mean, D=4, pts=a$X,
+             average=T, average_reps=1e3, batchmax = Inf)
+  dev.off()
+  png("~/..//School//DOE//GradAdaptPaper//images//StochLanReg5-WeightAveraged.png",
+             width=600, height=600, units='px')
+  cf_highdim(a$mod$mod.extra$GauPro$mod$grad_norm2_mean, D=4, pts=a$X,
+             average=T, average_reps=1e3, batchmax = Inf)
+  dev.off()
+}
