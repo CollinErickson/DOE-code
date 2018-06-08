@@ -10,7 +10,8 @@ library(ggplot2)
 library(dplyr)
 plot_by_n_compare_intwvar <- function(object, gtitle=NULL, scientific=T,
                                       compare_Group_shorts=c("IMSE", "IMVSE"),
-                                      nmult=c(5,10,20,40)) {
+                                      nmult=c(5,10,20,40),
+                                      axis.text.size=NULL) {
   short_name_map <- c(
     "obj=nonadapt,selection_method=nonadapt,design=sFFLHD_Lflex,des_func=des_func_grad_norm2_mean"="sFFLHD",
     "obj=nonadapt,selection_method=nonadapt,design=sobol,des_func=des_func_grad_norm2_mean"="Sobol",
@@ -30,7 +31,8 @@ plot_by_n_compare_intwvar <- function(object, gtitle=NULL, scientific=T,
     scale_y_continuous(trans="log", breaks = base_breaks(), labels=function(x) format(x, scientific = scientific)) +
     facet_grid(~n) +
     theme(axis.text.x=element_text(angle=90)) +
-    xlab("") + ylab(expression(Phi)) + ggtitle(gtitle)
+    xlab("") + ylab(expression(Phi)) + ggtitle(gtitle) +
+    theme(axis.text=element_text(size=axis.text.size))
 }
 
 
@@ -87,25 +89,34 @@ if (F) {
 boxplots_grid <- function(nmult1=c(5,10,20,40),
                           cgs=c("IMSE", "IMVSE", "MaxVSE", "VMED", "Plug-in"),
                           cgsinds,
-                          ext="png"
+                          ext="png", save_plot=TRUE,
+                          ...
                           ) {
   if (!missing(cgsinds)) {cgs <- cgs[cgsinds]}
-  plotbran   <- plot_by_n_compare_intwvar(bran1, "Branin", compare_Group_shorts=cgs, nmult=nmult1)
-  plotfranke <- plot_by_n_compare_intwvar(franke1, "Franke", compare_Group_shorts=cgs, nmult=nmult1)
-  plotlim    <- plot_by_n_compare_intwvar(lim1, "Lim", compare_Group_shorts=cgs, nmult=nmult1)
-  plotbeam   <- plot_by_n_compare_intwvar(beam1, "Beam", compare_Group_shorts=cgs, nmult=nmult1)
-  plototl    <- plot_by_n_compare_intwvar(otl1, "OTL", compare_Group_shorts=cgs, nmult=nmult1)
-  plotpiston <- plot_by_n_compare_intwvar(piston1, "Piston", compare_Group_shorts=cgs, nmult=nmult1)
-  plotbh     <- plot_by_n_compare_intwvar(bh1, "Borehole", compare_Group_shorts=cgs, nmult=nmult1)
-  plotwing   <- plot_by_n_compare_intwvar(wing1, "Wing weight", compare_Group_shorts=cgs, nmult=nmult1)
+  plotbran   <- plot_by_n_compare_intwvar(bran1, "Branin", compare_Group_shorts=cgs, nmult=nmult1, ...)
+  plotfranke <- plot_by_n_compare_intwvar(franke1, "Franke", compare_Group_shorts=cgs, nmult=nmult1, ...)
+  plotlim    <- plot_by_n_compare_intwvar(lim1, "Lim", compare_Group_shorts=cgs, nmult=nmult1, ...)
+  plotbeam   <- plot_by_n_compare_intwvar(beam1, "Beam", compare_Group_shorts=cgs, nmult=nmult1, ...)
+  plototl    <- plot_by_n_compare_intwvar(otl1, "OTL", compare_Group_shorts=cgs, nmult=nmult1, ...)
+  plotpiston <- plot_by_n_compare_intwvar(piston1, "Piston", compare_Group_shorts=cgs, nmult=nmult1, ...)
+  plotbh     <- plot_by_n_compare_intwvar(bh1, "Borehole", compare_Group_shorts=cgs, nmult=nmult1, ...)
+  plotwing   <- plot_by_n_compare_intwvar(wing1, "Wing weight", compare_Group_shorts=cgs, nmult=nmult1, ...)
   filename <- paste0(paste0(cgs, collapse="vs"), "_", paste0(nmult1, collapse=''), ".", ext)
   # browser()
+  if (save_plot) {
   ggsave(paste0("C:\\Users\\cbe117\\School\\DOE\\GradAdaptPaper\\images\\", filename),
          gridExtra::arrangeGrob(plotbran, plotfranke, plotlim, plotbeam,
                                 plototl, plotpiston, plotbh, plotwing,
                                 ncol=4),
          width=12, height=10, units='in')
+  } else {
+    gridExtra::grid.arrange(plotbran, plotfranke, plotlim, plotbeam,
+                           plototl, plotpiston, plotbh, plotwing,
+                           ncol=4)
+  }
 }
 if (F) {
+  boxplots_grid(nmult1=c(10,40), cgsinds = c(1,2), ext="eps")
   boxplots_grid(nmult1=c(10,40), cgsinds = c(1,3))
+  boxplots_grid(nmult1=c(10,40), cgsinds = c(2,3,4), ext="eps", save_plot = F)
 }
