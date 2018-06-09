@@ -30,7 +30,7 @@ plot_by_n_compare_intwvar <- function(object, gtitle=NULL, scientific=T,
     geom_boxplot() +
     scale_y_continuous(trans="log", breaks = base_breaks(), labels=function(x) format(x, scientific = scientific)) +
     facet_grid(~n) +
-    theme(axis.text.x=element_text(angle=90)) +
+    theme(axis.text.x=element_text(angle=90, vjust=.5)) +
     xlab("") + ylab(expression(Phi)) + ggtitle(gtitle) +
     theme(axis.text=element_text(size=axis.text.size))
 }
@@ -117,6 +117,8 @@ boxplots_grid <- function(nmult1=c(5,10,20,40),
 }
 if (F) {
   boxplots_grid(nmult1=c(10,40), cgsinds = c(1,2), ext="eps")
+  boxplots_grid(nmult1=c(10,20,40), cgsinds = c(1,2), ext="eps", save_plot=T, axis.text.size=12)
   boxplots_grid(nmult1=c(10,40), cgsinds = c(1,3))
+  boxplots_grid(nmult1=c(10,40), cgsinds = c(2,3,4), ext="eps", save_plot = T, axis.text.size=12)
   boxplots_grid(nmult1=c(10,40), cgsinds = c(2,3,4), ext="eps", save_plot = F)
 }
