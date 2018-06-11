@@ -1,3 +1,7 @@
+# Use this file to run Stochastic Lanchester example for paper.
+# Need to have evaluated the points from sFFLHD and give in as datafilename
+# Images are made below also.
+
 source('~/GitHub/DOE-code/adaptconcept2_sFFLHD_R6.R')
 
 # Create function
