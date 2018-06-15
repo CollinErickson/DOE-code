@@ -2,7 +2,8 @@ source('~/GitHub/DOE-code/adaptconcept2_sFFLHD_R6.R')
 make1Dplots2 <- function(f, x=c(0,.5,1), x2=c(.25,.75),
                          theta, no_update=F,
                          colorplot=F,colorplot2=F,
-                         sameplot=TRUE, plotknown=F) {
+                         sameplot=TRUE, plotknown=F,
+                         Proposed="IMVSE") {
   if (sameplot) {
     par(mfrow=c(2,2))
   }
@@ -114,12 +115,12 @@ make1Dplots2 <- function(f, x=c(0,.5,1), x2=c(.25,.75),
     axis(side=2, labels=F) # This adds ticks back, maybe remove
     if (plotknown) {
       points(a, a_known_scaled, col=4, type='l', lwd=lwd2)
-      legend(x=.65, y=1.04, legend=c("IMSE", "Plug-in", "Proposed", "Known"), fill=c(1,2,3,4))
+      legend(x=.65, y=1.04, legend=c("IMSE", "Plug-in", Proposed, "Known"), fill=c(1,2,3,4))
     } else {
       if (colorplot2)
-        legend(x=.65, y=1.04, legend=c("IMSE", "Plug-in", "Proposed"), fill=c(1,2,3))
+        legend(x=.65, y=1.04, legend=c("IMSE", "Plug-in", Proposed), fill=c(1,2,3))
       else
-        legend(x=.65, y=1.04, legend=c("IMSE", "Plug-in", "Proposed"), lty=c(1,2,3), lwd=2)
+        legend(x=.65, y=1.04, legend=c("IMSE", "Plug-in", Proposed), lty=c(1,2,3), lwd=2)
     }
   }
   # Reset plot
@@ -142,5 +143,8 @@ matt <- function(x) {(-exp(x)*sin(4.8*x^4)^3)} # curve(matt)
 # make1Dplots2(matt, x=c(0,.7,.89,1), theta=20, sameplot = T)
 # Used for WSC paper
 make1Dplots2(matt, x=c(0,.7,1), sameplot = T, x2=c(.2,.4,.83,.6))
+# To save images: set size of device to about 650x500, then run next line
+#   then save each as .eps image
+# make1Dplots2(matt, x=c(0,.7,1), sameplot = F, x2=c(.2,.4,.83,.6))
 
 # make1Dplots(function(x) {sin(4*pi*x)*x^2}, x=c(0,.6,.7,.89,1), theta=20, sameplot = T)
