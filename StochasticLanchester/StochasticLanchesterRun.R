@@ -41,7 +41,7 @@ set.seed(1); csa(); a <- adapt.concept2.sFFLHD.R6$new(
 )
 a$run(12)
 # Make the plot use mean
-cf_highdim(a$mod$predict, D=4, pts=a$X)
+cf_highdim(a$mod$predict, D=4, pts=a$X, batchmax = Inf)
 # Make plot with weighted var in background, average out other vars
 cf_highdim(a$mod$mod.extra$GauPro$mod$grad_norm2_mean, D=4, pts=a$X,
            average=T, average_reps=1e3, batchmax = Inf)
@@ -57,4 +57,38 @@ if (F) {
   cf_highdim(a$mod$mod.extra$GauPro$mod$grad_norm2_mean, D=4, pts=a$X,
              average=T, average_reps=1e3, batchmax = Inf)
   dev.off()
+}
+
+if (F) {
+  # Check predictions on all points
+  head(datadf)
+  datadfnoX <- datadf
+  preds <- a$mod$predict(as.matrix(datadf[,1:4]))
+  actual <- datadf[,17]
+  plot(preds, actual); abline(a=0,b=1, col=2)
+  cor(preds, actual)
+  1 - sum((preds-actual)^2) / sum((actual-mean(actual))^2)
+  
+  d2 <- datadf[datadf[,3]<.5,]
+  preds2 <- a$mod$predict(as.matrix(d2[,1:4]))
+  actual2 <- d2[,17]
+  plot(preds2, actual2); abline(a=0,b=1, col=2)
+  cor(preds2, actual2)
+  1 - sum((preds2-actual2)^2) / sum((actual2-mean(actual2))^2)
+  
+  d3 <- datadf[datadf[,3]>.5,]
+  preds3 <- a$mod$predict(as.matrix(d3[,1:4]))
+  actual3 <- d2[,17]
+  plot(preds3, actual3); abline(a=0,b=1, col=2)
+  cor(preds3, actual3)
+  1 - sum((preds3-actual3)^2) / sum((actual3-mean(actual3))^2)
+  
+}
+
+if (F) {
+  # Run comparison samples
+  runone <- function() {
+    rowsinds <- sample(1:nrow(datadf), 48, replace = F)
+    X <- 
+  }
 }
