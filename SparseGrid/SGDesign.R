@@ -1,3 +1,5 @@
+# Sparse grid design.
+# Testing to see if I can get it to work.
 SGD <- R6::R6Class(
   classname = "SparseGridDesign",
   public = list(
