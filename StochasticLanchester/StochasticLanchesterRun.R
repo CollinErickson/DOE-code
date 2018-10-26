@@ -11,21 +11,24 @@ source('~/GitHub/DOE-code/adaptconcept2_sFFLHD_R6.R')
 # datafilename <- "./outregion4_ratios_sFFLHD_D4_L4_maximinT_seed6562780_200batches.csv"
 datafilename <- ".//StochasticLanchester//LanchesterDataFiles/output_200k_region5.csv"
 datadf <- read.csv(datafilename)
-testfilename <- ".//StochasticLanchester//LanchesterDataFiles/test_1000_LH_20k.csv"
+sFFLHD_all_df <- rbind(datadf,
+                       read.csv(".//StochasticLanchester//LanchesterDataFiles//output_sFFLHD_220pts_100_200k.csv"))
+testfilename <- ".//StochasticLanchester//LanchesterDataFiles/test_1000_LH_200k.csv"
 testdf <- read.csv(testfilename)
-# #14 duration
-# #16 ler
-# #18 recip ler
-# #22 recip fler
-# For region 5: 17 is rler
-datafunction <- function(x, outputcolumn=17) {
+# For old data 14 duration, 16 ler, 18 recip ler, 22 recip fler
+# For region 5: 17 is recip ler avg
+#               23 is recip fler avg
+outcolnum <- 17
+datafunction <- function(x, outputcolumn=outcolnum) {
   cat(x, "\n")
   # which.ind <- which(c(apply(datadf, 1, function(rr) {(all(x==rr[1:4]))})))
-  which.ind <- which(c(apply(datadf, 1, function(rr) {(all(abs(x-rr[1:4])<1e-8))})))
-  if (length(which.ind) != 1) {
-    browser("Not exactly one indice that matches")
-  }
-  datadf[which.ind, outputcolumn]
+  which.ind <- which(c(apply(sFFLHD_all_df #datadf
+                             , 1, function(rr) {(all(abs(x-rr[1:4])<1e-8))})))
+  # if (length(which.ind) != 1) {
+  #   browser("Not exactly one indice that matches")
+  # }
+  # sFFLHD_all_df[which.ind, outputcolumn]
+  sFFLHD_all_df[which.ind[1], outputcolumn]
 }
 # datafunction(x1) # 10.38352
 
@@ -46,7 +49,7 @@ a$run(12)
 cf_highdim(a$mod$predict, D=4, pts=a$X, batchmax = Inf)
 # Make plot with weighted var in background, average out other vars
 cf_highdim(a$mod$mod.extra$GauPro$mod$grad_norm2_mean, D=4, pts=a$X,
-           average=T, average_reps=1e3, batchmax = Inf)
+           average=T, average_reps=1e2, batchmax = Inf)
 if (F) {
   # setEPS()
   postscript("~/..//School//DOE//GradAdaptPaper//images//StochLanReg5-WeightAveraged.eps",
@@ -67,7 +70,7 @@ if (F) {
   head(datadf)
   datadfnoX <- datadf
   preds <- a$mod$predict(as.matrix(testdf[,1:4]))
-  actual <- testdf[,17]
+  actual <- testdf[,outcolnum]
   plot(preds, actual); abline(a=0,b=1, col=2)
   cor(preds, actual)
   R2_1 <- 1 - sum((preds-actual)^2) / sum((actual-mean(actual))^2)
@@ -75,7 +78,7 @@ if (F) {
   
   d2 <- testdf[testdf[,3]<.5,]
   preds2 <- a$mod$predict(as.matrix(d2[,1:4]))
-  actual2 <- d2[,17]
+  actual2 <- d2[,outcolnum]
   plot(preds2, actual2); abline(a=0,b=1, col=2)
   cor(preds2, actual2)
   R2_2 <- 1 - sum((preds2-actual2)^2) / sum((actual2-mean(actual2))^2)
@@ -83,7 +86,7 @@ if (F) {
   
   d3 <- testdf[testdf[,3]>.5,]
   preds3 <- a$mod$predict(as.matrix(d3[,1:4]))
-  actual3 <- d3[,17]
+  actual3 <- d3[,outcolnum]
   plot(preds3, actual3); abline(a=0,b=1, col=2)
   cor(preds3, actual3)
   R2_3 <- 1 - sum((preds3-actual3)^2) / sum((actual3-mean(actual3))^2)
@@ -95,11 +98,11 @@ if (F) {
   runone <- function() {#browser()
     rowsinds <- sample(1:nrow(datadf), 48, replace = F)
     datadfi <- datadf[rowsinds, ]
-    mod <- IGP::IGP(X=as.matrix(datadfi[,1:4]), Z=datadfi[,17], package='laGP_GauPro_kernel',
+    mod <- IGP::IGP(X=as.matrix(datadfi[,1:4]), Z=datadfi[,outcolnum], package='laGP_GauPro_kernel',
                     nugget=1e-3, estimate.nugget=F)
     #browser()
     preds <- mod$predict(as.matrix(testdf[,1:4]))
-    actual <- testdf[,17]
+    actual <- testdf[,outcolnum]
     #plot(preds, actual); abline(a=0,b=1, col=2)
     cor(preds, actual)
     R2 <- 1 - sum((preds-actual)^2) / sum((actual-mean(actual))^2)
