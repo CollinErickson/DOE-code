@@ -1141,10 +1141,11 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
         } else if (self$error_power == 2) {
           int_werrors_red_func <- function(add_points_indices) {
             # New faster, same results, version
-            add_points <- self$Xopts[add_points_indices, ]
+            add_points <- self$Xopts[add_points_indices, , drop=FALSE]
             # mean((self$weight_const+self$alpha_des*int_points_numdes)*
             #  gpc$mod$pred_var_reductions(add_points=add_points, 
             #                          pred_points=int_points))
+            
             colMeans(sweep(gpc$mod$pred_var_reductions(
               add_points=add_points, pred_points=int_points), 1, 
               (self$weight_const+self$alpha_des*int_points_numdes), `*`))
