@@ -10,7 +10,7 @@ matt <- function(x) {(-exp(x)*sin(4.8*x^4)^3)} # curve(matt)
 # 
 # X0 <- 1
 
-run1Dmatt <- function(f=matt, n=5, savename, selection_method) {  
+run1Dmatt <- function(f=matt, n=5, savename, selection_method, saveaseps=TRUE) {  
   # Run it
   set.seed(1); csa(); a <- adapt.concept2.sFFLHD.R6$new(
     D=1,L=2,  func=matt, func_fast = F,
@@ -46,8 +46,12 @@ run1Dmatt <- function(f=matt, n=5, savename, selection_method) {
     a_ylower <- a_gp$fit - 2 * a_gp$se
     
     if (!missing(savename)) {
-      setEPS()
-      postscript(paste0(savename,i,".eps"))
+      if (saveaseps) {
+        setEPS()
+        postscript(paste0(savename,i,".eps"))
+      } else {
+        png(paste0(savename,i,".png"), width=1000, height=600)
+      }
     }
     plot(xx, a_ypred, col=1, lty=2, type='l', xlab='Input (x)', ylab='Output (y)', ylim=c(min1, max1), lwd=lwd1,
          panel.first = {rect(xx,a_ylower,xx,a_yupper, col = "gray", density = 2)})
@@ -58,8 +62,14 @@ run1Dmatt <- function(f=matt, n=5, savename, selection_method) {
   }
   
   if (!missing(savename)) {
-    setEPS()
-    postscript(paste0(savename,i+1,".eps"))
+    # setEPS()
+    # postscript(paste0(savename,i+1,".eps"))
+    if (saveaseps) {
+      setEPS()
+      postscript(paste0(savename,i+1,".eps"))
+    } else {
+      png(paste0(savename,i+1,".png"), width=1000, height=600)
+    }
   }
   plot(xx, a_ypred, col=1, lty=2, type='l', xlab='Input (x)', ylab='Output (y)', ylim=c(min1, max1), lwd=lwd1,
        panel.first = {rect(xx,a_ylower,xx,a_yupper, col = "gray", density = 2)})
@@ -73,8 +83,8 @@ run1Dmatt <- function(f=matt, n=5, savename, selection_method) {
 
 if (F) {
   # IMSE
-  run1Dmatt(selection_method="ALC_all_best", n=10)#, savename = "Informs1DMattIMSE_")
+  run1Dmatt(selection_method="ALC_all_best", n=10, saveaseps=FALSE, savename = "Informs1DMattIMSE_")
   # IMVSE
-  run1Dmatt(selection_method="max_des_red_all_best", n=10, savename = "Informs1DMattIMVSE_")
+  run1Dmatt(selection_method="max_des_red_all_best", n=10, savename = "Informs1DMattIMVSE_", saveaseps=FALSE)
 
 }
