@@ -1,4 +1,9 @@
+# Technometrics requires a reproducible example from the paper.
+# This makes the plots for the 2D limnonpoly comparison between our method and standard IMSE
+# I pulled all of my functions out of their packages into here.
+# Only DoE.base is not included, it needs to be loaded with `library`.
 
+# install.packages("DoE.base")
 library(DoE.base)
 
 # Test desirability functions
@@ -2827,10 +2832,22 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
 
 
 
+# Plots should be in color but also work if printed in black in white
+# Set color.palette = heat.colors is okay, but a lot of bright yellow/red
+# Can remove some of dark red with color.palette=function(x) {heat.colors((x+6))[-(1:6)]},
+#  vary 6 to change range.
+# Use rev() to reverse high/low
+# Could use color.palette=function(x) {gray((1:x+10)/(x+10))} to do all in gray
+
+color.palette=function(x) {(heat.colors((x+6))[-(1:6)])}
+
+# Save images with width 620 and height 600.
+
+
 # Using our adaptive method
 
 # limnonpoly, grad_norm2_mean, laGP_GauPro_kernel
-set.seed(1); csa(); a <- adapt.concept2.sFFLHD.R6$new(
+set.seed(1); csa(); a_IMVSE <- adapt.concept2.sFFLHD.R6$new(
   D=2,L=3,func=limnonpoly, nugget = 1e-7,estimate.nugget = T,
   obj="desirability", des_func=des_func_grad_norm2_mean,
   actual_des_func=NULL,#get_num_actual_des_func_grad_norm2_mean(),
@@ -2839,7 +2856,7 @@ set.seed(1); csa(); a <- adapt.concept2.sFFLHD.R6$new(
   error_power=2,
   selection_method="max_des_red_all_best"
   # selection_method="ALC_all_best"
-); a$run(15, noplot = T)
+); a_IMVSE$run(15, noplot = T)
 # Show predicted mean and batch when pts selected
 # cf(a$mod$predict, batchmax=Inf,
 #    afterplotfunc=function() {
@@ -2847,15 +2864,16 @@ set.seed(1); csa(); a <- adapt.concept2.sFFLHD.R6$new(
 #    xlim=c(-.02,1.02), ylim=c(-.02,1.02), bar=T)
 # Show true function and batch when pts selected
 cf(limnonpoly, batchmax=Inf,
+   color.palette=color.palette,
    afterplotfunc=function() {
-     text(a$X[,1], a$X[,2], a$X_tracker$iteration_added)},
+     text(a_IMVSE$X[,1], a_IMVSE$X[,2], a_IMVSE$X_tracker$iteration_added)},
    xlim=c(-.02,1.02), ylim=c(-.02,1.02), bar=F, mainminmax=F)
 
 
 # Using the standard IMSE method
 
-# limnonpoly, grad_norm2_mean, laGP_GauPro_kernel
-set.seed(5); csa(); a <- adapt.concept2.sFFLHD.R6$new(
+# limnonpoly, IMSE
+set.seed(10); csa(); a_IMSE <- adapt.concept2.sFFLHD.R6$new(
   D=2,L=3,func=limnonpoly, nugget = 1e-7,estimate.nugget = T,
   obj="desirability", des_func=des_func_grad_norm2_mean,
   actual_des_func=NULL,#get_num_actual_des_func_grad_norm2_mean(),
@@ -2864,7 +2882,7 @@ set.seed(5); csa(); a <- adapt.concept2.sFFLHD.R6$new(
   error_power=2,
   # selection_method="max_des_red_all_best"
   selection_method="ALC_all_best"
-); a$run(15, noplot = T)
+); a_IMSE$run(15, noplot = T)
 # Show predicted mean and batch when pts selected
 # cf(a$mod$predict, batchmax=Inf,
 #    afterplotfunc=function() {
@@ -2872,6 +2890,7 @@ set.seed(5); csa(); a <- adapt.concept2.sFFLHD.R6$new(
 #    xlim=c(-.02,1.02), ylim=c(-.02,1.02), bar=T)
 # Show true function and batch when pts selected
 cf(limnonpoly, batchmax=Inf,
+   color.palette=color.palette,
    afterplotfunc=function() {
-     text(a$X[,1], a$X[,2], a$X_tracker$iteration_added)},
+     text(a_IMSE$X[,1], a_IMSE$X[,2], a_IMSE$X_tracker$iteration_added)},
    xlim=c(-.02,1.02), ylim=c(-.02,1.02), bar=F, mainminmax=F)
