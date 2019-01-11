@@ -1,3 +1,6 @@
+# See Example1D_v2.R
+# This makes the images that show in 1 dimension what the selection process looks like on the matt function.
+
 source('~/GitHub/DOE-code/adaptconcept2_sFFLHD_R6.R')
 make1Dplots2 <- function(f, xlist, ylim,#x=c(0,.5,1), x2=c(.25,.75),
                          theta, no_update=F,

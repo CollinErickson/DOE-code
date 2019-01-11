@@ -1,3 +1,5 @@
+# This makes the images that show in 1 dimension what the selection process looks like on the matt function.
+
 source('~/GitHub/DOE-code/adaptconcept2_sFFLHD_R6.R')
 
 matt <- function(x) {(-exp(x)*sin(4.8*x^4)^3)} # curve(matt)
