@@ -1,3 +1,6 @@
+# Make 1D plots demonstrating selection criteria.
+# Also see Example1D_v1.R and v2
+
 source('~/GitHub/DOE-code/adaptconcept2_sFFLHD_R6.R')
 make1Dplots2 <- function(f, x=c(0,.5,1), x2=c(.25,.75),
                          theta, no_update=F,
