@@ -58,6 +58,16 @@ cf_highdim(a$mod$mod.extra$GauPro$mod$grad_norm2_mean, D=4, pts=a$X,
                          bquote(B[0]/R[0]), bquote(lambda[B]/lambda[R]))
            , edge_width=.08
 )
+
+# Change color scheme so it works in grayscale
+# Adding variable names, need wider edges for it
+cf_highdim(a$mod$mod.extra$GauPro$mod$grad_norm2_mean, D=4, pts=a$X,
+           average=T, average_reps=1e3, batchmax = Inf
+           , var_names=c(expression(),bquote(R[0]), bquote(lambda[R]), 
+                         bquote(B[0]/R[0]), bquote(lambda[B]/lambda[R]))
+           , edge_width=.08, color.palette=function(x) {rev((heat.colors((x+6))[-(1:6)]))}
+)
+
 if (F) {
   # setEPS()
   postscript("~/..//School//DOE//GradAdaptPaper//images//StochLanReg5-WeightAveraged.eps",
