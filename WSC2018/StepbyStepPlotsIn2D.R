@@ -1,3 +1,8 @@
+# This is used to show step by step what happens in our algorithm.
+# It shows the model with points, which points are selected, 
+#   then what the model looks like after updating with new data.
+# This was used for WSC 2018 presentation.
+
 source('~/GitHub/DOE-code/adaptconcept2_sFFLHD_R6.R')
 
 cfa <- function(a, nocandidates=FALSE) {
