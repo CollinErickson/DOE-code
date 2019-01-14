@@ -1,3 +1,8 @@
+# This shows the concept of how we pick a batch of points out of all candidates
+#  using our heuristic.
+# The dots are shown in 1D, it is not the input space.
+# This was used to make my WSC18 presentation.
+
 N <- 10
 n <- 3
 plot(1:N, rep(0,N), axes=F)
