@@ -1,6 +1,17 @@
+# This was used in version submitted (rejected) to Technometrics
+
 # Comparisons for adapt paper
 # source('C:/Users/cbe117/Documents/GitHub/DOE-code/compare_adaptconceptR6.R')
 source('.//compare_adaptconceptR6.R')
+
+# In order, these are
+# 1. sFFLHD (nonadapt)
+# 2. Sobol (nonadapt)
+# 3. ALC (no weighting)
+# 4. grad mean
+# 5. IMVSE
+# 6. VSMED
+# 7. max VSE at point, not over surface
 
 # obj=c("nonadapt","desirability","desirability", "desirability"), 
 # selection_method=c("nonadapt", 'SMED', 'ALC_all_best', 'max_des_red_all_best'),

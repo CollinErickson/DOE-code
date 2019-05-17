@@ -291,6 +291,10 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
       # If parallel, need to source file
       if (is_parallel) {
         source("adaptconcept2_sFFLHD_R6.R")
+        
+        # Save a start file
+        cat(timestamp(), "\n",
+            file=paste0(self$folder_path,"/STARTED_", irow, ".csv"))
       }
       
       input_list <- c(lapply(self$rungridlist, function(x)x[[irow]]), self$pass_list)
@@ -379,6 +383,12 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
                          colMeans(tdf[,meanColNames])
                        }
                      )
+      # Get warning if any NA in self$outdf[,meanColNames]
+      # Give message so it's clear where it comes from
+      if (any(apply(self$outdf[,meanColNames], 2, is.nan))) {
+        message(paste0("Some values in $outdf are NaN,",
+                       " warning comes from making meanlogdf #92538"))
+      }
       self$meanlogdf <- plyr::ddply(
                       self$outdf, 
                       splitColNames, 

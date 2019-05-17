@@ -535,7 +535,8 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       self$stats$pamv <- c(self$stats$pamv, self$mod$prop.at.max.var())
       # self$stats$actual_intwerror <- c(self$stats$actual_intwerror,
       #                                  self$actual_intwerror_func())
-      aiwef <- self$actual_intwerror_func(error_power=c(1,2))
+      aiwef <- self$actual_intwerror_func(error_power=c(1,2),
+                                          nquantilegroups=5)
       self$stats$actual_intwerror <- c(self$stats$actual_intwerror, aiwef[[1]])
       self$stats$actual_intwvar <- c(self$stats$actual_intwvar, aiwef[[2]])
       if (!is.null(self$des_func)) {
@@ -543,7 +544,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
         iwf <- self$intwerror_func(error_power=c(1,2))
         self$stats$intwerror <- c(self$stats$intwerror, iwf[[1]])
         self$stats$intwvar <- c(self$stats$intwvar, iwf[[2]])
-        self$stats$intwerror01 <- c(self$stats$intwerror01, NaN) 
+        self$stats$intwerror01 <- c(self$stats$intwerror01, NaN)
         # Not using now, should be sped up anyways 
         #  by doing at the same time as intwerror, 
         #  bad to do it this way 
@@ -1491,7 +1492,9 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
     delta_pvar_func(reds)
   },
   actual_intwerror_func = function(..., N=2e3, mod=self$mod, f=self$func,
-                                   error_power=self$error_power) {
+                                   error_power=self$error_power,
+                                   nquantilegroups) {
+    # This calculates the actual integrated weighted error/variance.
     if (is.null(self$actual_des_func)) {
       # Return NaN if user doesn't give actual_des_func
       return(rep(NaN, length(error_power)))
@@ -1503,14 +1506,30 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
     # TODO LATER Have actual_des_func return ZZ to save time
     weight <- self$weight_const +
                 self$alpha_des * self$actual_des_func(XX=XX, mod=mod)
+    # Calculate weighted error/var
     if (length(error_power) == 1 && error_power == 1) {
-      mean(weight * abserr)
+      t1 <- mean(weight * abserr)
     } else if (length(error_power) == 1 && error_power == 2) {
-      mean(weight * abserr^2)
-    } else if (length(error_power) == 2 && error_power == c(1,2)) {
-      list(mean(weight * abserr),
+      t1 <- mean(weight * abserr^2)
+    } else if (length(error_power) == 2 && all(error_power == c(1,2))) {
+      t1 <- list(mean(weight * abserr),
            mean(weight * abserr^2))
     } else {stop("error_power not recognized in actual_intwerror_func #20497")}
+    
+    # Calculate for groups if nquantile groups is given
+    if (!missing(nquantilegroups)) { browser("Make sure this works")
+      groups <- dplyr::ntile(order(order(weight)), 5)
+      werrgroups <- lapply(1:nquantilegroups,
+                           function(igroup) {
+                             data.frame(
+                               weight[groups==igroup] *
+                                 abserr[groups==igroup],
+                               weight[groups==igroup] *
+                                 abserr[groups==igroup]^2)
+                           })
+      return(c(t1, list(do.call(rbind, werrgroups))))
+    }
+    return(t1)
   },
   print_results = function() {
     best_index <- which.max(self$Z)
