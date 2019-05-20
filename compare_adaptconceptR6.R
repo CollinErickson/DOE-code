@@ -71,7 +71,8 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
                           pass_list=list() # List of things to pass to adapt concept for each
                           , folder_name,
                           parallel=FALSE, parallel_cores="detect"
-                          ) {#browser()
+                          ) {
+      print('creating compad')
       self$func <- func
       self$D <- D
       self$L <- L
@@ -115,7 +116,6 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
           self$parallel_cores <- parallel_cores
         }
       }
-      #browser()
       if (is.null(func_string)) {
         if (is.character(func)) {func_string <- func}
         else if (length(func) == 1){func_string <- paste0(deparse(substitute(func)), collapse='')}
@@ -128,7 +128,6 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
       if (any(is.function(func))) {
         
       }
-      # browser()
       self$rungrid <- reshape::expand.grid.df(
                    data.frame(
                      func=func_string, func_string=func_string,
@@ -159,7 +158,6 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
       #self$rungrid$Group <- ""
       group_names <- c()
       
-      #browser()
       # These are columns to use to split into groups
       for (i_input in c('func_string', 'D', 'L', 'b', 'reps', 'batches', 'obj',
                         'force_old', 'force_pvar', 'n0','package',
@@ -186,7 +184,7 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
       self$completed_runs <- rep(FALSE, self$number_runs)
       #self$outrawdf <- data.frame()
     },
-    set_folder_name = function(folder_name, add_timestamp=FALSE) {#browser()
+    set_folder_name = function(folder_name, add_timestamp=FALSE) {
       if (missing(folder_name)) {
         folderTime0 <- gsub(" ","_", Sys.time())
         folderTime <- gsub(":","-", folderTime0)
@@ -263,7 +261,7 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
       self$postprocess_outdf()
       invisible(self)
     },
-    run_one = function(irow=NULL, save_output=self$save_output, noplot=FALSE, is_parallel=FALSE) {#browser()
+    run_one = function(irow=NULL, save_output=self$save_output, noplot=FALSE, is_parallel=FALSE) {
       if (is.null(irow)) { # If irow not given, set to next not run
         if (any(self$completed_runs == FALSE)) {
           irow <- which(self$completed_runs == 0)[1]
@@ -276,17 +274,14 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
       } else if (self$completed_runs[irow] == TRUE) {
         warning("irow already run, will run again anyways")
       }
-      #browser()
       cat("Running ", irow, ", completed ", sum(self$completed_runs),"/",
           length(self$completed_runs), " ",
           format(Sys.time(), "%a %b %d %X %Y"), "\n", sep="")
       row_grid <- self$rungrid[irow, ] #rungrid row for current run
       if (!is.na(row_grid$seed)) {set.seed(row_grid$seed)}
-      #browser()
       #if (is.function(row_grid$func)) {}#funci <- self$func}
       #else if (row_grid$func == "RFF") {row_grid$func <- RFF_get(D=self$D)}
       #else {stop("No function given")}
-      # browser()
       
       # If parallel, need to source file
       if (is_parallel) {
@@ -299,19 +294,20 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
       
       input_list <- c(lapply(self$rungridlist, function(x)x[[irow]]), self$pass_list)
       u <- do.call(adapt.concept2.sFFLHD.R6$new, input_list)
-      # browser()
       
       # Run and time it
       start_time <- Sys.time()
       systime <- system.time(u$run(row_grid$batches,noplot=noplot))
       end_time <- Sys.time()
       
-      # browser()
       newdf0 <- data.frame(batch=u$stats$iteration, mse=u$stats$mse, 
                            pvar=u$stats$pvar, pamv=u$stats$pamv,
                            pred_intwerror=u$stats$intwerror,
                            actual_intwerror=u$stats$actual_intwerror,
                            actual_intwvar=u$stats$actual_intwvar,
+                           do.call(rbind, lapply(u$stats$actual_intwquants, function(df) {data.frame(actual_intabserquants       =t((df$abserrquant)))})),
+                           do.call(rbind, lapply(u$stats$actual_intwquants, function(df) {data.frame(actual_intsqerrquants       =t((df$sqerrquant)))})),
+                           do.call(rbind, lapply(u$stats$actual_intwquants, function(df) {data.frame(actual_preddesabserrquants  =t((df$preddesabserrquant)))})),
                            n=u$stats$n,
                            #obj=row_grid$obj, 
                            num=paste0(row_grid$obj,row_grid$repl),
@@ -360,7 +356,7 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
       }
       self$completed_runs[irow] <- TRUE
     },
-    postprocess_outdf = function(save_output=self$save_output) {#browser()
+    postprocess_outdf = function(save_output=self$save_output) {
       self$outdf <- self$outrawdf
       self$outdf$rmse <- sqrt(ifelse(self$outdf$mse>=0, self$outdf$mse, 1e-16))
       self$outdf$prmse <- sqrt(ifelse(self$outdf$pvar>=0, self$outdf$pvar, 1e-16))
@@ -481,7 +477,7 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
       if (save_output) {dev.off()}
       invisible(self)
     },
-    plot_MSE_PVar = function(save_output = self$save_output) {#browser()
+    plot_MSE_PVar = function(save_output = self$save_output) {
       if (save_output) {
         png(filename = paste0(self$folder_path,"/plotMSEPVar.png"),
             width = 480, height = 480)

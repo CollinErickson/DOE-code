@@ -492,7 +492,6 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       if (is.null(self$mod$X)) {return(rep(NA, nrow(Xnew)))}
       if (is.nan(self$obj_nu)) return()
       if (is.nan(self$obj_nu)) { # Initialize it intelligently
-        browser()
         self$obj_nu <- .5
       }
       Zlist <- self$mod$predict(Xnew, se.fit=T)
@@ -539,6 +538,9 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
                                           nquantilegroups=5)
       self$stats$actual_intwerror <- c(self$stats$actual_intwerror, aiwef[[1]])
       self$stats$actual_intwvar <- c(self$stats$actual_intwvar, aiwef[[2]])
+      if (length(aiwef)>=3) {
+        self$stats$actual_intwquants <- c(self$stats$actual_intwquants, list(aiwef[[3]]))
+      }
       if (!is.null(self$des_func)) {
         # self$stats$intwerror <- c(self$stats$intwerror, self$intwerror_func())
         iwf <- self$intwerror_func(error_power=c(1,2))
@@ -929,7 +931,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
         stop("no SMED #35230")
       }
       if (inherits(Yall.try, "try-error")) {
-        browser()
+        stop("Try-error #209129")
         Yall <- self$obj_func(rbind(self$X, self$Xopts))
       }
       Y0 <- Yall[1:nrow(self$X)]
@@ -1069,7 +1071,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       bestL <- order(Xotc_werrors, decreasing = TRUE)[self$b:1] 
       # Make the biggest last so it is least likely to be replaced
     } else {
-      browser("Selection method doesn't match up #92352583")
+      warning("Selection method doesn't match up #92352583")
     }
     
     uses_ALM <- self$selection_method %in% c("ALM", "ALM_all", "ALM_all_best",
@@ -1077,11 +1079,11 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
                                              "max_des_all_best")
     # TODO put line above earlier, and make sure selection method is valid
     if (uses_ALM) { # max_des or ALM
-      browser()
+      warning("uses_ALM, why was this a browser spot?")
       add_points_weights <- self$weight_func(XX=self$Xopts)
       # TODO rename int_werrors_red_func to obj_to_max
       int_werrors_red_func <- function(add_points_indices) {
-        browser()
+        warning("This was a browser spot too #92348")
         add_points <- self$Xopts[add_points_indices, ]
         if (self$error_power==2) {
           pp <- gpc$predict.var(XX=add_points)
@@ -1224,7 +1226,6 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
         # Consider all except bestL, add back in one that might be replaced
         Xopts_inds_to_consider <- setdiff(Xopts_to_consider, bestL[-ell])
       }
-      # browser()
       # Xopts_inds_to_consider <- setdiff(Xopts_to_consider, bestL)
       int_werror_red_vals <- int_werrors_red_func(
         add_points_indices = Xopts_inds_to_consider)
@@ -1357,7 +1358,6 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
     } else { # Else newL must be given
       if (length(newL) != self$b) { 
         if (length(newL) != self$n0  || nrow(self$X)!=0) {
-          browser()
           stop("Selected newL not of length L #84274")
         }
       }
@@ -1367,7 +1367,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       self$batch.tracker <- self$batch.tracker[-newL]
     }
     Znew <- self$calculate_Z(Xnew)
-    if (any(duplicated(rbind(self$X,Xnew)))) {browser()}
+    if (any(duplicated(rbind(self$X,Xnew)))) {stop("Duplicated X")}
     self$X <- rbind(self$X,Xnew)
     self$Z <- c(self$Z,Znew)
     # Track points added
@@ -1483,7 +1483,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       Kxz <- K_X_XX[, i]
       Kvz <- corr_func(vmatrix, zmatrix)
       t1 <- s2_over_bottom * (sum(Kxz * Kxinv_Kxv) - Kvz)^2
-      if (is.na(t1)) {browser()}
+      if (is.na(t1)) {stop("t1 is na")}
       t1
     })
     # Before was just taking mean
@@ -1504,8 +1504,9 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
     ZZ.actual <- apply(XX, 1, f)
     abserr <- abs(ZZ - ZZ.actual)
     # TODO LATER Have actual_des_func return ZZ to save time
+    actual_des <- self$actual_des_func(XX=XX, mod=mod)
     weight <- self$weight_const +
-                self$alpha_des * self$actual_des_func(XX=XX, mod=mod)
+                self$alpha_des * actual_des #self$actual_des_func(XX=XX, mod=mod)
     # Calculate weighted error/var
     if (length(error_power) == 1 && error_power == 1) {
       t1 <- mean(weight * abserr)
@@ -1517,17 +1518,20 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
     } else {stop("error_power not recognized in actual_intwerror_func #20497")}
     
     # Calculate for groups if nquantile groups is given
-    if (!missing(nquantilegroups)) { browser("Make sure this works")
+    if (!missing(nquantilegroups)) { #browser("Make sure this works")
       groups <- dplyr::ntile(order(order(weight)), 5)
-      werrgroups <- lapply(1:nquantilegroups,
+      if (!is.null(self$des_func)) {pred_des <- self$des_func(XX=XX,mod=mod)}
+      else {pred_des <- NA * actual_des}
+      errgroups <- lapply(1:nquantilegroups,
                            function(igroup) {
                              data.frame(
-                               weight[groups==igroup] *
-                                 abserr[groups==igroup],
-                               weight[groups==igroup] *
-                                 abserr[groups==igroup]^2)
+                               abserrquant=mean(#weight[groups==igroup] *
+                                 abserr[groups==igroup]),
+                               sqerrquant=mean(#weight[groups==igroup] *
+                                 abserr[groups==igroup]^2),
+                               preddesabserrquant=mean(abs(actual_des[groups==igroup] - pred_des[groups==igroup])))
                            })
-      return(c(t1, list(do.call(rbind, werrgroups))))
+      return(c(t1, list(do.call(rbind, errgroups))))
     }
     return(t1)
   },
