@@ -511,7 +511,34 @@ actual_des_func_grad_norm2_mean_limnonpoly <- function(XX, mod) {
               "gradient") * scalediff) ^ 2)
   })
 }
-
+actual_des_func_grad_norm2_mean_waterfall <- function(XX, mod) { # AKA sinumoid
+  wfd <- deriv(~ (sin(2*pi*aa*3) + sin(2*pi*bb*3)) + 20/(1+exp(-80*(aa-.5)))
+                , namevec=c("aa", "bb"))
+  nameslist <- list("aa", "bb")
+  scale_low <- c(0,0)
+  scale_high <- c(1,1)
+  scalediff <- scale_high - scale_low
+  apply(XX, 1, function(x) {
+    sum((attr(eval(expr = wfd,
+                   envir = setNames(as.list(x * (scalediff) + scale_low),
+                                    nameslist)),
+              "gradient") * scalediff) ^ 2)
+  })
+}
+actual_des_func_grad_norm2_mean_gramacy2Dexp <- function(XX, mod) {
+  gramexp <- deriv(~ aa * exp(-aa^2 - exp(bb^2))
+               , namevec=c("aa", "bb"))
+  nameslist <- list("aa", "bb")
+  scale_low <- c(-2,-2)
+  scale_high <- c(6,6)
+  scalediff <- scale_high - scale_low
+  apply(XX, 1, function(x) {
+    sum((attr(eval(expr = gramexp,
+                   envir = setNames(as.list(x * (scalediff) + scale_low),
+                                    nameslist)),
+              "gradient") * scalediff) ^ 2)
+  })
+}
 actual_des_func_grad_norm2_mean_beambending <- function(XX, mod) {
   beamd <- deriv(~ 4e-9 * aa^3 / (bb * cc^3)
                 , namevec=c("aa", "bb", "cc"))
@@ -537,6 +564,20 @@ actual_des_func_grad_norm2_mean_OTL_Circuit <- function(XX, mod) {
   scalediff <- scale_high - scale_low
   apply(XX, 1, function(x) {
     sum((attr(eval(expr = otld,
+                   envir = setNames(as.list(x * (scalediff) + scale_low),
+                                    nameslist)),
+              "gradient") * scalediff) ^ 2)
+  })
+}
+actual_des_func_grad_norm2_mean_gramacy6D <- function(XX, mod) {
+  gramexp <- deriv(~ exp(sin((.9*(aa+.48))^10)) + bb*cc + dd
+                   , namevec=c("aa", "bb", "cc", "dd", "ee", "ff"))
+  nameslist <- list("aa", "bb", "cc", "dd", "ee", "ff")
+  scale_low <- c(0,0,0,0,0,0)
+  scale_high <- c(1,1,1,1,1,1)
+  scalediff <- scale_high - scale_low
+  apply(XX, 1, function(x) {
+    sum((attr(eval(expr = gramexp,
                    envir = setNames(as.list(x * (scalediff) + scale_low),
                                     nameslist)),
               "gradient") * scalediff) ^ 2)

@@ -31,7 +31,7 @@ run_test <- function(funcstring, reps, batches, D, L, stage1batches,
                      seed_start, design_seed_start, startover=FALSE) {
   # print("c1 doesn't exist, creating new")
   if (Sys.info()['sysname'] == "Windows") {
-    parallel_cores <- 'detect-2'
+    parallel_cores <- 'detect-1'
   } else {
     which_matches <- which(substr(commandArgs(),1,18) == "number_of_threads=")
     if (length(which_matches) == 1) {
@@ -72,7 +72,7 @@ run_test <- function(funcstring, reps, batches, D, L, stage1batches,
   print("Running all c1")
   already_run <- sum(c1$completed_runs)
   if (use_parallel) {
-    c1$run_one(parallel_temp_save=TRUE, noplot=TRUE, run_order="reverse")
+    c1$run_all(parallel_temp_save=TRUE, noplot=TRUE, run_order="reverse")
   } else {
     # For not parallel
     while (TRUE) {
@@ -142,10 +142,54 @@ if (F) {
   ggplot(data=beam1$outrawdf %>% filter(n %in% c(30,60)), mapping=aes(des_func, actual_intwerror, color=des_func)) + geom_point() + scale_y_log10() + facet_wrap(. ~ n)
   ggplot(data=beam1$outrawdf %>% filter(n %in% c(30,60)), mapping=aes(Method, actual_intwerror, color=des_func)) + geom_point(size=5) + scale_y_log10() + facet_wrap(. ~ n)
   
+  # otl1 <- readRDS("./compare_adaptconcept_output/wingweight_D=10_L=5_b=5_B=40_R=10_n0=0_s1b=6_S=1008000/object.rds")
+  otl1$outrawdf$Method <- Group.names.clean[otl1$outrawdf$Group]
+  ggplot(data=otl1$outrawdf, mapping=aes(n, actual_intwerror, color=des_func)) + geom_point() + scale_y_log10()
+  ggplot(data=otl1$outrawdf %>% filter(n %in% c(60,120)), mapping=aes(des_func, actual_intwerror, color=des_func)) + geom_point() + scale_y_log10() + facet_wrap(. ~ n)
+  ggplot(data=otl1$outrawdf %>% filter(n %in% c(60,120)), mapping=aes(Method, actual_intwerror, color=des_func)) + geom_point(size=5) + scale_y_log10() + facet_wrap(. ~ n)
+  
+  # piston1 <- readRDS("./compare_adaptconcept_output/wingweight_D=10_L=5_b=5_B=40_R=10_n0=0_s1b=6_S=1008000/object.rds")
+  piston1$outrawdf$Method <- Group.names.clean[piston1$outrawdf$Group]
+  ggplot(data=piston1$outrawdf, mapping=aes(n, actual_intwerror, color=des_func)) + geom_point() + scale_y_log10()
+  ggplot(data=piston1$outrawdf %>% filter(n %in% c(70,140)), mapping=aes(des_func, actual_intwerror, color=des_func)) + geom_point() + scale_y_log10() + facet_wrap(. ~ n)
+  ggplot(data=piston1$outrawdf %>% filter(n %in% c(70,140)), mapping=aes(Method, actual_intwerror, color=des_func)) + geom_point(size=5) + scale_y_log10() + facet_wrap(. ~ n)
+  
+  # bh1 <- readRDS("./compare_adaptconcept_output/wingweight_D=10_L=5_b=5_B=40_R=10_n0=0_s1b=6_S=1008000/object.rds")
+  bh1$outrawdf$Method <- Group.names.clean[bh1$outrawdf$Group]
+  ggplot(data=bh1$outrawdf, mapping=aes(n, actual_intwerror, color=des_func)) + geom_point() + scale_y_log10()
+  ggplot(data=bh1$outrawdf %>% filter(n %in% c(80,160)), mapping=aes(des_func, actual_intwerror, color=des_func)) + geom_point() + scale_y_log10() + facet_wrap(. ~ n)
+  ggplot(data=bh1$outrawdf %>% filter(n %in% c(80,160)), mapping=aes(Method, actual_intwerror, color=des_func)) + geom_point(size=5) + scale_y_log10() + facet_wrap(. ~ n)
+  
   wing1 <- readRDS("./compare_adaptconcept_output/wingweight_D=10_L=5_b=5_B=40_R=10_n0=0_s1b=6_S=1008000/object.rds")
   wing1$outrawdf$Method <- Group.names.clean[wing1$outrawdf$Group]
   ggplot(data=wing1$outrawdf, mapping=aes(n, actual_intwerror, color=des_func)) + geom_point() + scale_y_log10()
   ggplot(data=wing1$outrawdf %>% filter(n %in% c(100,200)), mapping=aes(des_func, actual_intwerror, color=des_func)) + geom_point() + scale_y_log10() + facet_wrap(. ~ n)
   ggplot(data=wing1$outrawdf %>% filter(n %in% c(100,200)), mapping=aes(Method, actual_intwerror, color=des_func)) + geom_point(size=5) + scale_y_log10() + facet_wrap(. ~ n)
   
+}
+
+if (F) {
+  # Waterfall
+  waterfall1   <- try(run_test(funcstring='waterfall',  D=2, L=2, batches=4*10, reps=reps,
+                          stage1batches=3, seed_start=1009000, design_seed_start=1019000))
+  waterfall1$outrawdf$Method <- Group.names.clean[waterfall1$outrawdf$Group]
+  ggplot(data=waterfall1$outrawdf, mapping=aes(n, actual_intwerror, color=des_func)) + geom_point() + scale_y_log10()
+  ggplot(data=waterfall1$outrawdf %>% filter(n %in% c(20,40,80)), mapping=aes(des_func, actual_intwerror, color=des_func)) + geom_point() + scale_y_log10() + facet_wrap(. ~ n)
+  ggplot(data=waterfall1$outrawdf %>% filter(n %in% c(20,40,80)), mapping=aes(Method, actual_intwerror, color=des_func)) + geom_point(size=5) + scale_y_log10() + facet_wrap(. ~ n)
+
+  # gramacy2Dexp
+  gramacy2Dexp   <- try(run_test(funcstring='gramacy2Dexp',  D=2, L=2, batches=4*10, reps=reps,
+                               stage1batches=3, seed_start=1009000, design_seed_start=1019000))
+  gramacy2Dexp$outrawdf$Method <- Group.names.clean[gramacy2Dexp$outrawdf$Group]
+  ggplot(data=gramacy2Dexp$outrawdf, mapping=aes(n, actual_intwerror, color=des_func)) + geom_point() + scale_y_log10()
+  ggplot(data=gramacy2Dexp$outrawdf %>% filter(n %in% c(20,40,80)), mapping=aes(des_func, actual_intwerror, color=des_func)) + geom_point() + scale_y_log10() + facet_wrap(. ~ n)
+  ggplot(data=gramacy2Dexp$outrawdf %>% filter(n %in% c(20,40,80)), mapping=aes(Method, actual_intwerror, color=des_func)) + geom_point(size=5) + scale_y_log10() + facet_wrap(. ~ n)
+  
+  # gramacy6D
+  gramacy6D   <- try(run_test(funcstring='gramacy6D',  D=6, L=4, batches=4*15, reps=reps,
+                               stage1batches=3, seed_start=1009000, design_seed_start=1019000))
+  gramacy6D$outrawdf$Method <- Group.names.clean[gramacy6D$outrawdf$Group]
+  ggplot(data=gramacy6D$outrawdf, mapping=aes(n, actual_intwerror, color=des_func)) + geom_point() + scale_y_log10()
+  ggplot(data=gramacy6D$outrawdf %>% filter(n %in% (c(20,40,80)*3)), mapping=aes(des_func, actual_intwerror, color=des_func)) + geom_point() + scale_y_log10() + facet_wrap(. ~ n)
+  ggplot(data=gramacy6D$outrawdf %>% filter(n %in% (c(20,40,80)*3)), mapping=aes(Method, actual_intwerror, color=des_func)) + geom_point(size=5) + scale_y_log10() + facet_wrap(. ~ n)
 }
