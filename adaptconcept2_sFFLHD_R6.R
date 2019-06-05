@@ -216,6 +216,8 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       } else if (self$design == "given") { # This means Xopts is given in and
                                       # no new points will be added to design
         self$s <- NULL
+      } else if (self$design == "FreshLHS") { # New LHS each iteration
+        self$s <- "FreshLHS"
       } else {
         stop(paste("Design <", self$design,"> isn't recognized #3285729"))
       }
@@ -859,10 +861,19 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
         par(mfrow=oparmfrow)
       }
     },
-    add_new_batches_to_Xopts = function(
-      num_batches_to_take=self$new_batches_per_batch) {
+    add_new_batches_to_Xopts = function(num_batches_to_take=self$new_batches_per_batch) {
       if (is.null(self$s)) { # If all options are given by user,
                              #  don't add new points
+        return()
+      }
+      if (self$design == "FreshLHS") {
+        # cat("Using fresh LHS\n")
+        if (self$iteration > self$stage1batches) {n <- 100 * self$D} else {n <- self$b}
+        self$Xopts <- lhs::maximinLHS(n=n, k=self$D)
+        self$batch.tracker <- rep(self$iteration, n)
+        self$Xopts_tracker <- data.frame(iteration_added=rep(self$iteration, n),
+                                         time_added = rep(Sys.time(), n))
+        # cat("Got fresh LHS")
         return()
       }
       for (iii in 1:num_batches_to_take) {
@@ -1627,4 +1638,18 @@ if (F) {
      afterplotfunc=function() {
        text(a$X[,1], a$X[,2], a$X_tracker$iteration_added)},
      xlim=c(-.02,1.02), ylim=c(-.02,1.02), bar=F, mainminmax=F)
+  
+  
+  # limnonpoly, grad_norm2_mean, laGP_GauPro_kernel
+  set.seed(1); csa(); a <- adapt.concept2.sFFLHD.R6$new(
+    D=2,L=3,func=limnonpoly, nugget = 1e-7,estimate.nugget = T,
+    obj="desirability", des_func=des_func_grad_norm2_mean,
+    actual_des_func=NULL,#get_num_actual_des_func_grad_norm2_mean(),
+    stage1batches=2, alpha_des=1, weight_const=0,
+    package="laGP_GauPro_kernel", design='sFFLHD',
+    error_power=2,
+    selection_method="max_des_red_all_best"
+    # selection_method="ALC_all_best"
+  ); a$run(1)
+  a$run(14)
 }
