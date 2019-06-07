@@ -25,6 +25,7 @@ des_funcs <- c('des_func_grad_norm2_mean','des_func_grad_norm2_mean',
 
 
 source('.//compare_adaptconceptR6.R')
+require('ggplot2'); require('dplyr'); require('magrittr')
 
 run_test <- function(funcstring, reps, batches, D, L, stage1batches,
                      use_parallel=TRUE,
@@ -87,19 +88,20 @@ run_test <- function(funcstring, reps, batches, D, L, stage1batches,
   return(c1)
 }
 
+Group.names <- c("obj=nonadapt,selection_method=nonadapt,design=sFFLHD_Lflex,des_func=des_func_grad_norm2_mean", 
+                 "obj=nonadapt,selection_method=nonadapt,design=sobol,des_func=des_func_grad_norm2_mean", 
+                 "obj=desirability,selection_method=ALC_all_best,design=sFFLHD_Lflex,des_func=des_func_grad_norm2_mean", 
+                 "obj=desirability,selection_method=max_des_red_all_best,design=sFFLHD_Lflex,des_func=des_func_mean_grad_norm2", 
+                 "obj=desirability,selection_method=max_des_red_all_best,design=sFFLHD_Lflex,des_func=des_func_grad_norm2_mean", 
+                 "obj=desirability,selection_method=SMED,design=sFFLHD_Lflex,des_func=des_func_grad_norm2_mean", 
+                 "obj=desirability,selection_method=max_des_all_best,design=sFFLHD_Lflex,des_func=des_func_grad_norm2_mean", 
+                 "obj=desirability,selection_method=max_des_red_all_best,design=sFFLHD_Lflex,des_func=actual_des_func_grad_norm2_mean_branin"
+)
+Group.names.clean <- c("sFFLHD", "Sobol", "ALC", "GradMean", "IMVSE", "VSMED", "MaxVal", "TrueGrad")
+names(Group.names.clean) <- Group.names
+reps <- 10
+
 if (F) {
-  Group.names <- c("obj=nonadapt,selection_method=nonadapt,design=sFFLHD_Lflex,des_func=des_func_grad_norm2_mean", 
-                   "obj=nonadapt,selection_method=nonadapt,design=sobol,des_func=des_func_grad_norm2_mean", 
-                   "obj=desirability,selection_method=ALC_all_best,design=sFFLHD_Lflex,des_func=des_func_grad_norm2_mean", 
-                   "obj=desirability,selection_method=max_des_red_all_best,design=sFFLHD_Lflex,des_func=des_func_mean_grad_norm2", 
-                   "obj=desirability,selection_method=max_des_red_all_best,design=sFFLHD_Lflex,des_func=des_func_grad_norm2_mean", 
-                   "obj=desirability,selection_method=SMED,design=sFFLHD_Lflex,des_func=des_func_grad_norm2_mean", 
-                   "obj=desirability,selection_method=max_des_all_best,design=sFFLHD_Lflex,des_func=des_func_grad_norm2_mean", 
-                   "obj=desirability,selection_method=max_des_red_all_best,design=sFFLHD_Lflex,des_func=actual_des_func_grad_norm2_mean_branin"
-  )
-  Group.names.clean <- c("sFFLHD", "Sobol", "ALC", "GradMean", "IMVSE", "VSMED", "MaxVal", "TrueGrad")
-  names(Group.names.clean) <- Group.names
-  reps <- 10
   bran1   <- try(run_test(funcstring='branin',      D=2,  L=2, batches=4*10, reps=reps,
                           stage1batches=3, seed_start=1001000, design_seed_start=1011000))
   franke1 <- try(run_test(funcstring='franke',      D=2,  L=2, batches=4*10, reps=reps,
@@ -171,25 +173,44 @@ if (F) {
 if (F) {
   # Waterfall
   waterfall1   <- try(run_test(funcstring='waterfall',  D=2, L=2, batches=4*10, reps=reps,
-                          stage1batches=3, seed_start=1009000, design_seed_start=1019000))
+                               stage1batches=3, seed_start=1009000, design_seed_start=1019000))
   waterfall1$outrawdf$Method <- Group.names.clean[waterfall1$outrawdf$Group]
   ggplot(data=waterfall1$outrawdf, mapping=aes(n, actual_intwerror, color=des_func)) + geom_point() + scale_y_log10()
   ggplot(data=waterfall1$outrawdf %>% filter(n %in% c(20,40,80)), mapping=aes(des_func, actual_intwerror, color=des_func)) + geom_point() + scale_y_log10() + facet_wrap(. ~ n)
   ggplot(data=waterfall1$outrawdf %>% filter(n %in% c(20,40,80)), mapping=aes(Method, actual_intwerror, color=des_func)) + geom_point(size=5) + scale_y_log10() + facet_wrap(. ~ n)
-
+  
   # gramacy2Dexp
-  gramacy2Dexp   <- try(run_test(funcstring='gramacy2Dexp',  D=2, L=2, batches=4*10, reps=reps,
-                               stage1batches=3, seed_start=1009000, design_seed_start=1019000))
-  gramacy2Dexp$outrawdf$Method <- Group.names.clean[gramacy2Dexp$outrawdf$Group]
-  ggplot(data=gramacy2Dexp$outrawdf, mapping=aes(n, actual_intwerror, color=des_func)) + geom_point() + scale_y_log10()
-  ggplot(data=gramacy2Dexp$outrawdf %>% filter(n %in% c(20,40,80)), mapping=aes(des_func, actual_intwerror, color=des_func)) + geom_point() + scale_y_log10() + facet_wrap(. ~ n)
-  ggplot(data=gramacy2Dexp$outrawdf %>% filter(n %in% c(20,40,80)), mapping=aes(Method, actual_intwerror, color=des_func)) + geom_point(size=5) + scale_y_log10() + facet_wrap(. ~ n)
+  gramacy2Dexp1   <- try(run_test(funcstring='gramacy2Dexp',  D=2, L=2, batches=4*10, reps=reps,
+                                  stage1batches=3, seed_start=1009000, design_seed_start=1019000))
+  gramacy2Dexp1$outrawdf$Method <- Group.names.clean[gramacy2Dexp1$outrawdf$Group]
+  ggplot(data=gramacy2Dexp1$outrawdf, mapping=aes(n, actual_intwerror, color=des_func)) + geom_point() + scale_y_log10()
+  ggplot(data=gramacy2Dexp1$outrawdf %>% filter(n %in% c(20,40,80)), mapping=aes(des_func, actual_intwerror, color=des_func)) + geom_point() + scale_y_log10() + facet_wrap(. ~ n)
+  ggplot(data=gramacy2Dexp1$outrawdf %>% filter(n %in% c(20,40,80)), mapping=aes(Method, actual_intwerror, color=des_func)) + geom_point(size=5) + scale_y_log10() + facet_wrap(. ~ n)
   
   # gramacy6D
-  gramacy6D   <- try(run_test(funcstring='gramacy6D',  D=6, L=4, batches=4*15, reps=reps,
+  gramacy6D1   <- try(run_test(funcstring='gramacy6D',  D=6, L=4, batches=4*15, reps=reps,
                                stage1batches=3, seed_start=1009000, design_seed_start=1019000))
-  gramacy6D$outrawdf$Method <- Group.names.clean[gramacy6D$outrawdf$Group]
-  ggplot(data=gramacy6D$outrawdf, mapping=aes(n, actual_intwerror, color=des_func)) + geom_point() + scale_y_log10()
-  ggplot(data=gramacy6D$outrawdf %>% filter(n %in% (c(20,40,80)*3)), mapping=aes(des_func, actual_intwerror, color=des_func)) + geom_point() + scale_y_log10() + facet_wrap(. ~ n)
-  ggplot(data=gramacy6D$outrawdf %>% filter(n %in% (c(20,40,80)*3)), mapping=aes(Method, actual_intwerror, color=des_func)) + geom_point(size=5) + scale_y_log10() + facet_wrap(. ~ n)
+  gramacy6D1$outrawdf$Method <- Group.names.clean[gramacy6D1$outrawdf$Group]
+  ggplot(data=gramacy6D1$outrawdf, mapping=aes(n, actual_intwerror, color=des_func)) + geom_point() + scale_y_log10()
+  ggplot(data=gramacy6D1$outrawdf %>% filter(n %in% (c(20,40,80)*3)), mapping=aes(des_func, actual_intwerror, color=des_func)) + geom_point() + scale_y_log10() + facet_wrap(. ~ n)
+  ggplot(data=gramacy6D1$outrawdf %>% filter(n %in% (c(20,40,80)*3)), mapping=aes(Method, actual_intwerror, color=des_func)) + geom_point(size=5) + scale_y_log10() + facet_wrap(. ~ n)
+}
+
+if (T) {
+  # banana
+  banana1   <- try(run_test(funcstring='banana',  D=2, L=2, batches=4*10, reps=reps,
+                            stage1batches=3, seed_start=1009000, design_seed_start=1019000))
+  banana1$outrawdf$Method <- Group.names.clean[banana1$outrawdf$Group]
+  ggplot(data=banana1$outrawdf, mapping=aes(n, actual_intwerror, color=des_func)) + geom_point() + scale_y_log10()
+  ggplot(data=banana1$outrawdf %>% filter(n %in% (c(10,20,40))), mapping=aes(des_func, actual_intwerror, color=des_func)) + geom_point() + scale_y_log10() + facet_wrap(. ~ n)
+  ggplot(data=banana1$outrawdf %>% filter(n %in% (c(10,20,40))), mapping=aes(Method, actual_intwerror, color=des_func)) + geom_point(size=5) + scale_y_log10() + facet_wrap(. ~ n)
+  
+}
+
+
+if (F) {
+  cf(function(xx) {TestFunctions::levy(c(.5*(xx[1]+.8+.3*xx[2]-.3), xx[2]))})
+  cf(levy)
+  cf(banana)
+  gcf(function(xx) {gramacy2Dexp(2*xx) + gramacy2Dexp(2*c(xx[1]-.7,xx[2]-.1)) - gramacy2Dexp(2*c(xx[1]-.5,xx[2]-.7))})
 }
