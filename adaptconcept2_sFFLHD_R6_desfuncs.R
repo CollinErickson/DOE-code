@@ -154,10 +154,10 @@ des_func_quantile <- function(mod, XX, threshold=0, power=1, return_se=F, N_add=
   } else {
     pow_thresh_quants <- thresh_quants^power
   }
-
+  
   # Use threshold_jump
   pow_thresh_quants <- threshold_jump + (1-threshold_jump) * pow_thresh_quants
-    
+  
   if (return_se) {
     return(data.frame(des=des, se=se_toreturn))
   }
@@ -499,7 +499,7 @@ actual_des_func_grad_norm2_mean_franke <- function(XX, mod) {
 }
 actual_des_func_grad_norm2_mean_limnonpoly <- function(XX, mod) {
   limd <- deriv(~ ((30+5*aa*sin(5*aa))*(4+exp(-5*bb)) - 100) / 6
-                 , namevec=c("aa", "bb"))
+                , namevec=c("aa", "bb"))
   nameslist <- list("aa", "bb")
   scale_low <- c(0,0)
   scale_high <- c(1,1)
@@ -513,7 +513,7 @@ actual_des_func_grad_norm2_mean_limnonpoly <- function(XX, mod) {
 }
 actual_des_func_grad_norm2_mean_waterfall <- function(XX, mod) { # AKA sinumoid
   wfd <- deriv(~ (sin(2*pi*aa*3) + sin(2*pi*bb*3)) + 20/(1+exp(-80*(aa-.5)))
-                , namevec=c("aa", "bb"))
+               , namevec=c("aa", "bb"))
   nameslist <- list("aa", "bb")
   scale_low <- c(0,0)
   scale_high <- c(1,1)
@@ -527,7 +527,7 @@ actual_des_func_grad_norm2_mean_waterfall <- function(XX, mod) { # AKA sinumoid
 }
 actual_des_func_grad_norm2_mean_gramacy2Dexp <- function(XX, mod) {
   gramexp <- deriv(~ aa * exp(-aa^2 - exp(bb^2))
-               , namevec=c("aa", "bb"))
+                   , namevec=c("aa", "bb"))
   nameslist <- list("aa", "bb")
   scale_low <- c(-2,-2)
   scale_high <- c(6,6)
@@ -539,9 +539,64 @@ actual_des_func_grad_norm2_mean_gramacy2Dexp <- function(XX, mod) {
               "gradient") * scalediff) ^ 2)
   })
 }
+actual_des_func_grad_norm2_mean_levy <- function(XX, mod) {
+  levy <- deriv(~ sin(pi*(1 + (aa-1) / 4))^2 +
+                  (((1 + (aa-1) / 4) - 1)^2 * (1 + 10*sin(pi*(1 + (aa-1) / 4)+1)^2)) +
+                  ((1 + (bb-1) / 4)-1)^2 * (1 + sin(2*pi*(1 + (bb-1) / 4))^2)
+                , namevec=c("aa", "bb"))
+  nameslist <- list("aa", "bb")
+  scale_low <- c(-10,-10)
+  scale_high <- c(10,10)
+  scalediff <- scale_high - scale_low
+  apply(XX, 1, function(x) {
+    sum((attr(eval(expr = levy,
+                   envir = setNames(as.list(x * (scalediff) + scale_low),
+                                    nameslist)),
+              "gradient") * scalediff) ^ 2)
+  })
+}
+actual_des_func_grad_norm2_mean_levytilt <- function(XX, mod) {#browser()
+  levy <- Deriv::Deriv(~ 
+                         {
+                           aa1 <- .5*(aa0 + .3*bb0 + .5)
+                       aa2 <- aa1*20 - 10
+                       bb2 <- bb0*20 - 10
+                       aa <- 1 + (aa2-1) / 4
+                       bb <- 1 + (bb2-1) / 4
+                       sin(pi*aa)^2 +
+                         sum((aa - 1)^2 * (1 + 10*sin(pi*aa+1)^2)) +
+                         (bb-1)^2 * (1 + sin(2*pi*bb)^2)
+                         }
+                         # { # Use Deriv to use chained expressions
+                         #   aain <- (aain0+10)/20
+                         #   bbin <- (bbin0+10)/20
+                         #   aa <- (.5*(aain+.3*bbin+.5))*20-10
+                         #   bb <- bbbin*20-10
+                         #   sin(pi*(1 + (aa-1) / 4))^2 +
+                         #     (((1 + (aa-1) / 4) - 1)^2 * (1 + 10*sin(pi*(1 + (aa-1) / 4)+1)^2)) +
+                         #     ((1 + (bb-1) / 4)-1)^2 * (1 + sin(2*pi*(1 + (bb-1) / 4))^2)}
+                       # # Single expression
+                       # sin(pi*(1 + ((.5*(aaa+.3*bb+.5))-1) / 4))^2 +
+                       #   (((1 + ((.5*(aaa+.3*bb+.5))-1) / 4) - 1)^2 * (1 + 10*sin(pi*(1 + ((.5*(aaa+.3*bb+.5))-1) / 4)+1)^2)) +
+                       #   ((1 + (bb-1) / 4)-1)^2 * (1 + sin(2*pi*(1 + (bb-1) / 4))^2)
+                       , #namevec=
+                       c("aa0", "bb0"))
+  nameslist <- list("aa0", "bb0")
+  scale_low <- c(0,0) #c(-6.25,-10)
+  scale_high <- c(1,1) #c(6.75,10)
+  scalediff <- scale_high - scale_low
+  apply(XX, 1, function(x) {
+    sum((#attr(
+      eval(expr = levy,
+           envir = setNames(as.list(x * (scalediff) + scale_low),
+                            nameslist))#,
+      #    "gradient")
+      * scalediff) ^ 2)
+  })
+}
 actual_des_func_grad_norm2_mean_beambending <- function(XX, mod) {
   beamd <- deriv(~ 4e-9 * aa^3 / (bb * cc^3)
-                , namevec=c("aa", "bb", "cc"))
+                 , namevec=c("aa", "bb", "cc"))
   nameslist <- list("aa", "bb", "cc")
   scale_low <- c(10,1,0.1)
   scale_high <- c(20,2,0.2)
@@ -585,8 +640,8 @@ actual_des_func_grad_norm2_mean_gramacy6D <- function(XX, mod) {
 }
 actual_des_func_grad_norm2_mean_piston <- function(XX, mod) {
   pisd <- deriv(~ 2*pi * sqrt(M / (k + S^2*P0*V0/T0*Ta/(S/(2*k) * 
-                  (sqrt((P0*S + 19.62*M -k*V0/S)^2+4*k*P0*V0/T0*Ta) -
-                     (P0*S + 19.62*M -k*V0/S)))^2))
+                                                          (sqrt((P0*S + 19.62*M -k*V0/S)^2+4*k*P0*V0/T0*Ta) -
+                                                             (P0*S + 19.62*M -k*V0/S)))^2))
                 , namevec=c("M", "S", "V0", "k", "P0", "Ta", "T0"))
   nameslist <- list("M", "S", "V0", "k", "P0", "Ta", "T0")
   scale_low <- c(30,.005,.002,1e3,9e4,290,340)
@@ -633,16 +688,24 @@ test_des_func_grad_norm2_mean <- function(func, actual, d, n=1e3) {
   actualtime <- system.time(actualvals <- actual(xx))[3]
   gettime <- system.time(getvals <- getfunc(xx))[3]
   plot(actualvals, getvals, main="Should be on diag line, else error")
+  abline(a=0,b=1,col=2)
   cat(paste0("RMSE is ",signif(sqrt(mean((actualvals-getvals)^2)),3),"\n"))
   cat(paste0("Relative RMSE is ",signif(sqrt(mean((actualvals-getvals)^2)) / diff(range(actualvals)),3),"\n"))
   cat(paste0("Correlation between values is ",cor(actualvals, getvals),"\n"))
   cat(paste0("Your function runs in ",actualtime, ", numeric result runs in ",gettime,"\n"))
+  if (cor(actualvals, getvals) < .99) {
+    cat("Bad results, plotting pairs")
+    pairs(cbind(xx, resids=actualvals-getvals))
+  }
 }
 if (F) {
   test_des_func_grad_norm2_mean(banana, actual_des_func_grad_norm2_mean_banana, d=2)
   test_des_func_grad_norm2_mean(branin, actual_des_func_grad_norm2_mean_branin, d=2)
   test_des_func_grad_norm2_mean(franke, actual_des_func_grad_norm2_mean_franke, d=2)
   test_des_func_grad_norm2_mean(limnonpoly, actual_des_func_grad_norm2_mean_limnonpoly, d=2)
+  test_des_func_grad_norm2_mean(levy, actual_des_func_grad_norm2_mean_levy, d=2)
+  # test_des_func_grad_norm2_mean(function(xx) {TestFunctions::levy(c(.5*(xx[1]+.8+.3*xx[2]-.3), xx[2]))}, actual_des_func_grad_norm2_mean_levytilt, d=2)
+  test_des_func_grad_norm2_mean(levytilt, actual_des_func_grad_norm2_mean_levytilt, d=2)
   test_des_func_grad_norm2_mean(beambending, actual_des_func_grad_norm2_mean_beambending, d=3)
   test_des_func_grad_norm2_mean(OTL_Circuit, actual_des_func_grad_norm2_mean_OTL_Circuit, d=6)
   test_des_func_grad_norm2_mean(piston, actual_des_func_grad_norm2_mean_piston, d=7)
