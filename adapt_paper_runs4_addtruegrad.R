@@ -43,6 +43,12 @@ run_test <- function(funcstring, reps, batches, D, L, stage1batches,
       cat("Didn't find number of cores to use, setting to 1\n")
     }
   }
+  # Test that func and des func match
+  if (test_des_func_grad_norm2_mean(get(funcstring),
+                                    get(paste0('actual_des_func_grad_norm2_mean_', funcstring)),
+                                    D) < .99) {
+    stop(paste("actual_des_func_grad_norm2_mean doesn't match for ", funcstring))
+  }
   c1 <- compare.adaptR6$new(func=funcstring, reps=reps, batches=batches, D=D, L=L,
                             n0=0, stage1batches=stage1batches, 
                             obj=c(objs, "desirability"), 
@@ -207,6 +213,16 @@ if (F) {
   ggplot(data=banana1$outrawdf %>% filter(n %in% (2*c(10,20,40))), mapping=aes(Method, actual_intwerror, color=des_func)) + geom_point(size=5) + scale_y_log10() + facet_wrap(. ~ n)
   
 }
+if (F) {
+  # gramacy2Dexp3hole
+  gramacy2Dexp3hole1   <- try(run_test(funcstring='gramacy2Dexp3hole',  D=2, L=2, batches=4*10, reps=reps,
+                            stage1batches=3, seed_start=1009000, design_seed_start=1019000))
+  gramacy2Dexp3hole1$outrawdf$Method <- Group.names.clean[gramacy2Dexp3hole1$outrawdf$Group]
+  ggplot(data=gramacy2Dexp3hole1$outrawdf, mapping=aes(n, actual_intwerror, color=des_func)) + geom_point() + scale_y_log10()
+  ggplot(data=gramacy2Dexp3hole1$outrawdf %>% filter(n %in% (2*c(10,20,40))), mapping=aes(des_func, actual_intwerror, color=des_func)) + geom_point() + scale_y_log10() + facet_wrap(. ~ n)
+  ggplot(data=gramacy2Dexp3hole1$outrawdf %>% filter(n %in% (2*c(10,20,40))), mapping=aes(Method, actual_intwerror, color=des_func)) + geom_point(size=5) + scale_y_log10() + facet_wrap(. ~ n)
+  
+}
 
 
 if (F) {
@@ -225,6 +241,8 @@ if (T) {
                                   stage1batches=3, seed_start=2001000, design_seed_start=2011000))
   gramacy2Dexp1   <- try(run_test(funcstring='gramacy2Dexp',  D=2, L=2, batches=4*10, reps=reps2,
                                   stage1batches=3, seed_start=2002000, design_seed_start=2012000))
+  gramacy2Dexp3hole1   <- try(run_test(funcstring='gramacy2Dexp3hole',  D=2, L=2, batches=4*10, reps=reps2,
+                                  stage1batches=3, seed_start=2004000, design_seed_start=2014000))
   gramacy6D1   <- try(run_test(funcstring='gramacy6D',  D=6, L=4, batches=4*15, reps=reps2,
                                stage1batches=3, seed_start=2003000, design_seed_start=2013000))
 }

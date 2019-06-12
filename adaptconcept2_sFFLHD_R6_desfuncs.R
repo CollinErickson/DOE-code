@@ -526,7 +526,7 @@ actual_des_func_grad_norm2_mean_waterfall <- function(XX, mod) { # AKA sinumoid
   })
 }
 actual_des_func_grad_norm2_mean_gramacy2Dexp <- function(XX, mod) {
-  gramexp <- deriv(~ aa * exp(-aa^2 - exp(bb^2))
+  gramexp <- deriv(~ aa * exp(-aa^2 - bb^2)
                    , namevec=c("aa", "bb"))
   nameslist <- list("aa", "bb")
   scale_low <- c(-2,-2)
@@ -537,6 +537,35 @@ actual_des_func_grad_norm2_mean_gramacy2Dexp <- function(XX, mod) {
                    envir = setNames(as.list(x * (scalediff) + scale_low),
                                     nameslist)),
               "gradient") * scalediff) ^ 2)
+  })
+}
+actual_des_func_grad_norm2_mean_gramacy2Dexp3hole <- function(XX, mod) {#browser()
+  g2D3hole <- Deriv::Deriv(~ 
+                             {
+                               aax1 <- (2*aa0) * 8 - 2
+                               bbx1 <- (2*bb0) * 8 - 2
+                               aax2 <- (2*(aa0-.7)) * 8 - 2
+                               bbx2 <- (2*(bb0-.1)) * 8 - 2
+                               aax3 <- (2*(aa0-.5)) * 8 - 2
+                               bbx3 <- (2*(bb0-.7)) * 8 - 2
+                               h1 <- aax1 * exp(-(aax1^2 + bbx1^2))
+                               h2 <- aax2 * exp(-(aax2^2 + bbx2^2))
+                               h3 <- aax3 * exp(-(aax3^2 + bbx3^2))
+                               h1 - .8 * h2 + 1.2 * h3
+                             }
+                           , #namevec=
+                           c("aa0", "bb0"))
+  nameslist <- list("aa0", "bb0")
+  scale_low <- c(0,0) #c(-6.25,-10)
+  scale_high <- c(1,1) #c(6.75,10)
+  scalediff <- scale_high - scale_low
+  apply(XX, 1, function(x) {
+    sum((#attr(
+      eval(expr = g2D3hole,
+           envir = setNames(as.list(x * (scalediff) + scale_low),
+                            nameslist))#,
+      #    "gradient")
+      * scalediff) ^ 2)
   })
 }
 actual_des_func_grad_norm2_mean_levy <- function(XX, mod) {
@@ -559,26 +588,14 @@ actual_des_func_grad_norm2_mean_levytilt <- function(XX, mod) {#browser()
   levy <- Deriv::Deriv(~ 
                          {
                            aa1 <- .5*(aa0 + .3*bb0 + .5)
-                       aa2 <- aa1*20 - 10
-                       bb2 <- bb0*20 - 10
-                       aa <- 1 + (aa2-1) / 4
-                       bb <- 1 + (bb2-1) / 4
-                       sin(pi*aa)^2 +
-                         sum((aa - 1)^2 * (1 + 10*sin(pi*aa+1)^2)) +
-                         (bb-1)^2 * (1 + sin(2*pi*bb)^2)
+                           aa2 <- aa1*20 - 10
+                           bb2 <- bb0*20 - 10
+                           aa <- 1 + (aa2-1) / 4
+                           bb <- 1 + (bb2-1) / 4
+                           sin(pi*aa)^2 +
+                             sum((aa - 1)^2 * (1 + 10*sin(pi*aa+1)^2)) +
+                             (bb-1)^2 * (1 + sin(2*pi*bb)^2)
                          }
-                         # { # Use Deriv to use chained expressions
-                         #   aain <- (aain0+10)/20
-                         #   bbin <- (bbin0+10)/20
-                         #   aa <- (.5*(aain+.3*bbin+.5))*20-10
-                         #   bb <- bbbin*20-10
-                         #   sin(pi*(1 + (aa-1) / 4))^2 +
-                         #     (((1 + (aa-1) / 4) - 1)^2 * (1 + 10*sin(pi*(1 + (aa-1) / 4)+1)^2)) +
-                         #     ((1 + (bb-1) / 4)-1)^2 * (1 + sin(2*pi*(1 + (bb-1) / 4))^2)}
-                       # # Single expression
-                       # sin(pi*(1 + ((.5*(aaa+.3*bb+.5))-1) / 4))^2 +
-                       #   (((1 + ((.5*(aaa+.3*bb+.5))-1) / 4) - 1)^2 * (1 + 10*sin(pi*(1 + ((.5*(aaa+.3*bb+.5))-1) / 4)+1)^2)) +
-                       #   ((1 + (bb-1) / 4)-1)^2 * (1 + sin(2*pi*(1 + (bb-1) / 4))^2)
                        , #namevec=
                        c("aa0", "bb0"))
   nameslist <- list("aa0", "bb0")
@@ -689,25 +706,31 @@ test_des_func_grad_norm2_mean <- function(func, actual, d, n=1e3) {
   gettime <- system.time(getvals <- getfunc(xx))[3]
   plot(actualvals, getvals, main="Should be on diag line, else error")
   abline(a=0,b=1,col=2)
+  test_cor <- cor(actualvals, getvals)
+  test_R2 <- 1 - sum((actualvals-getvals)^2) / sum((mean(getvals) - getvals)^2)
   cat(paste0("RMSE is ",signif(sqrt(mean((actualvals-getvals)^2)),3),"\n"))
   cat(paste0("Relative RMSE is ",signif(sqrt(mean((actualvals-getvals)^2)) / diff(range(actualvals)),3),"\n"))
-  cat(paste0("Correlation between values is ",cor(actualvals, getvals),"\n"))
+  cat("R-squared is", test_R2, "\n")
+  cat(paste0("Correlation between values is ", test_cor,"\n"))
   cat(paste0("Your function runs in ",actualtime, ", numeric result runs in ",gettime,"\n"))
   if (cor(actualvals, getvals) < .99) {
     cat("Bad results, plotting pairs")
     pairs(cbind(xx, resids=actualvals-getvals))
   }
+  test_R2
 }
 if (F) {
   test_des_func_grad_norm2_mean(banana, actual_des_func_grad_norm2_mean_banana, d=2)
   test_des_func_grad_norm2_mean(branin, actual_des_func_grad_norm2_mean_branin, d=2)
   test_des_func_grad_norm2_mean(franke, actual_des_func_grad_norm2_mean_franke, d=2)
   test_des_func_grad_norm2_mean(limnonpoly, actual_des_func_grad_norm2_mean_limnonpoly, d=2)
+  test_des_func_grad_norm2_mean(gramacy2Dexp, actual_des_func_grad_norm2_mean_gramacy2Dexp, d=2)
+  test_des_func_grad_norm2_mean(gramacy2Dexp3hole, actual_des_func_grad_norm2_mean_gramacy2Dexp3hole, d=2)
   test_des_func_grad_norm2_mean(levy, actual_des_func_grad_norm2_mean_levy, d=2)
-  # test_des_func_grad_norm2_mean(function(xx) {TestFunctions::levy(c(.5*(xx[1]+.8+.3*xx[2]-.3), xx[2]))}, actual_des_func_grad_norm2_mean_levytilt, d=2)
   test_des_func_grad_norm2_mean(levytilt, actual_des_func_grad_norm2_mean_levytilt, d=2)
   test_des_func_grad_norm2_mean(beambending, actual_des_func_grad_norm2_mean_beambending, d=3)
   test_des_func_grad_norm2_mean(OTL_Circuit, actual_des_func_grad_norm2_mean_OTL_Circuit, d=6)
+  test_des_func_grad_norm2_mean(gramacy6D, actual_des_func_grad_norm2_mean_gramacy6D, d=6)
   test_des_func_grad_norm2_mean(piston, actual_des_func_grad_norm2_mean_piston, d=7)
   test_des_func_grad_norm2_mean(borehole, actual_des_func_grad_norm2_mean_borehole, d=8)
   test_des_func_grad_norm2_mean(wingweight, actual_des_func_grad_norm2_mean_wingweight, d=10)

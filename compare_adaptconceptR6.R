@@ -288,8 +288,9 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
         source("adaptconcept2_sFFLHD_R6.R")
         
         # Save a start file
+        STARTED_filepath <- paste0(self$folder_path,"/STARTED_", irow, ".csv")
         cat(timestamp(), "\n",
-            file=paste0(self$folder_path,"/STARTED_", irow, ".csv"))
+            file=STARTED_filepath)
       }
       
       input_list <- c(lapply(self$rungridlist, function(x)x[[irow]]), self$pass_list)
@@ -323,6 +324,11 @@ compare.adaptR6 <- R6::R6Class("compare.adaptR6",
       newdf1 <- cbind(row_grid, newdf0, row.names=NULL)
       u$delete()
       if (is_parallel) {
+        # Delete STARTED file
+        if (file.exists(STARTED_filepath)) {
+          unlink(STARTED_filepath)
+        }
+        # Return result
         return(list(irow=irow, newdf1=newdf1))
       }
       self$add_result_of_one(irow=irow, newdf1=newdf1)
