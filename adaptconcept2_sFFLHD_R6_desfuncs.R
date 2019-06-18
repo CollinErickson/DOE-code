@@ -640,6 +640,21 @@ actual_des_func_grad_norm2_mean_bananagramacy2Dexp <- function(XX, mod) {
               "gradient") * scalediff) ^ 2)
   })
 }
+actual_des_func_grad_norm2_mean_bananatimesgramacy2Dexp <- function(XX, mod) {
+  bananagram <- deriv(~ (exp(-.005*(uu*40-20)^2-.5*((vv*15-10)+.03*(uu*40-20)^2-3)^2)) * 
+                        ((aa*8-2) * exp(-(aa*8-2)^2 - (bb*8-2)^2))
+                      , namevec=c('uu', 'vv', "aa", "bb", 'cc', 'dd'))
+  nameslist <- list('uu', 'vv', "aa", "bb", 'cc', 'dd')
+  scale_low <- rep(0,6)
+  scale_high <- rep(1,6)
+  scalediff <- scale_high - scale_low
+  apply(XX, 1, function(x) {
+    sum((attr(eval(expr = bananagram,
+                   envir = setNames(as.list(x * (scalediff) + scale_low),
+                                    nameslist)),
+              "gradient") * scalediff) ^ 2)
+  })
+}
 actual_des_func_grad_norm2_mean_OTL_Circuit <- function(XX, mod) {
   otld <- deriv(~ (((12*bb / (aa + bb)) + 0.74) * (ff * (ee + 9)) / ((ff * (ee + 9)) + cc)) +
                   (11.35 * cc / ((ff * (ee + 9)) + cc)) +
@@ -745,6 +760,7 @@ if (F) {
   test_des_func_grad_norm2_mean(levytilt, actual_des_func_grad_norm2_mean_levytilt, d=2)
   test_des_func_grad_norm2_mean(beambending, actual_des_func_grad_norm2_mean_beambending, d=3)
   test_des_func_grad_norm2_mean(bananagramacy2Dexp, actual_des_func_grad_norm2_mean_bananagramacy2Dexp, d=6)
+  test_des_func_grad_norm2_mean(bananatimesgramacy2Dexp, actual_des_func_grad_norm2_mean_bananatimesgramacy2Dexp, d=6)
   test_des_func_grad_norm2_mean(OTL_Circuit, actual_des_func_grad_norm2_mean_OTL_Circuit, d=6)
   test_des_func_grad_norm2_mean(gramacy6D, actual_des_func_grad_norm2_mean_gramacy6D, d=6)
   test_des_func_grad_norm2_mean(piston, actual_des_func_grad_norm2_mean_piston, d=7)
