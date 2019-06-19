@@ -24,7 +24,7 @@
 #  If you have a multi-threaded application, you need to specify here how many
 #  cores your process uses.
 #  Note: You explicitly have to tell you program how many threads to use
-#$ -pe smp 20
+#$ -pe smp 40
 
 #### Run time limit
 #  Specify maximum CPU time after which job is to be killed (format HH:MM:SS).
@@ -53,6 +53,6 @@
 
 date
 
-Rscript /home/collin/scratch/DOE-code/adapt_paper_runs4_addtruegrad.R number_of_threads=20
+Rscript /home/collin/scratch/DOE-code/adapt_paper_runs4_addtruegrad.R number_of_threads=40
 
 date
