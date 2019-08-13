@@ -201,6 +201,7 @@ if (F) {
   ggplot(data=gramacy6D1$outrawdf, mapping=aes(n, actual_intwerror, color=des_func)) + geom_point() + scale_y_log10()
   ggplot(data=gramacy6D1$outrawdf %>% filter(n %in% (c(20,40,80)*3)), mapping=aes(des_func, actual_intwerror, color=des_func)) + geom_point() + scale_y_log10() + facet_wrap(. ~ n)
   ggplot(data=gramacy6D1$outrawdf %>% filter(n %in% (c(20,40,80)*3)), mapping=aes(Method, actual_intwerror, color=des_func)) + geom_point(size=5) + scale_y_log10() + facet_wrap(. ~ n)
+  gramacy6D1$outrawdf %>% filter(n==240) %>% group_by(Method) %>% summarize(n=n(), meanIWE=mean(actual_intwerror), sdIW=sd(actual_intwerror)/20)
 }
 
 if (F) {
@@ -211,6 +212,7 @@ if (F) {
   ggplot(data=banana1$outrawdf, mapping=aes(n, actual_intwerror, color=des_func)) + geom_point() + scale_y_log10()
   ggplot(data=banana1$outrawdf %>% filter(n %in% (2*c(10,20,40))), mapping=aes(des_func, actual_intwerror, color=des_func)) + geom_point() + scale_y_log10() + facet_wrap(. ~ n)
   ggplot(data=banana1$outrawdf %>% filter(n %in% (2*c(10,20,40))), mapping=aes(Method, actual_intwerror, color=des_func)) + geom_point(size=5) + scale_y_log10() + facet_wrap(. ~ n)
+  banana1$outrawdf %>% filter(n==80) %>% group_by(Method) %>% summarize(n=n(), meanIWE=mean(actual_intwerror), sdIW=sd(actual_intwerror)/20)
   
 }
 if (F) {
@@ -251,6 +253,9 @@ if (F) {
   gcf(function(xx) {gramacy2Dexp(2*xx) + gramacy2Dexp(2*c(xx[1]-.7,xx[2]-.1)) - gramacy2Dexp(2*c(xx[1]-.5,xx[2]-.7))})
 }
 
+# ==================================================.
+# ============== Doing 400 reps ---------------------------
+#=======================================================.
 reps2 <- 400
 if (F) {
   reps2 <- 400
@@ -261,13 +266,15 @@ if (F) {
   ggplot(data=banana1$outrawdf, mapping=aes(n, actual_intwerror, color=des_func)) + geom_point() + scale_y_log10()
   ggplot(data=banana1$outrawdf %>% filter(n %in% (2*c(10,20,40))), mapping=aes(des_func, actual_intwerror, color=des_func)) + geom_point() + scale_y_log10() + facet_wrap(. ~ n)
   ggplot(data=banana1$outrawdf %>% filter(n %in% (2*c(10,20,40))), mapping=aes(Method, actual_intwerror, color=des_func)) + geom_boxplot(size=2) + scale_y_log10() + facet_wrap(. ~ n)
-
+  banana1$outrawdf %>% filter(n==80) %>% group_by(Method) %>% summarize(n=n(), meanIWE=mean(actual_intwerror), sdIW=sd(actual_intwerror)/20)
+  
   levytilt1   <- try(run_test(funcstring='levytilt',  D=2, L=2, batches=4*10, reps=reps2,
                                   stage1batches=3, seed_start=2001000, design_seed_start=2011000))
   levytilt1$outrawdf$Method <- Group.names.clean[levytilt1$outrawdf$Group]
   ggplot(data=levytilt1$outrawdf, mapping=aes(n, actual_intwerror, color=des_func)) + geom_point() + scale_y_log10()
   ggplot(data=levytilt1$outrawdf %>% filter(n %in% (2*c(10,20,40))), mapping=aes(des_func, actual_intwerror, color=des_func)) + geom_point() + scale_y_log10() + facet_wrap(. ~ n)
   ggplot(data=levytilt1$outrawdf %>% filter(n %in% (2*c(10,20,40))), mapping=aes(Method, actual_intwerror, color=des_func)) + geom_boxplot(size=2) + scale_y_log10() + facet_wrap(. ~ n)
+  levytilt1$outrawdf %>% filter(n==80) %>% group_by(Method) %>% summarize(n=n(), meanIWE=mean(actual_intwerror), sdIW=sd(actual_intwerror)/20)
   
   gramacy2Dexp1   <- try(run_test(funcstring='gramacy2Dexp',  D=2, L=2, batches=4*10, reps=reps2,
                                   stage1batches=3, seed_start=2002000, design_seed_start=2012000))
@@ -275,6 +282,7 @@ if (F) {
   ggplot(data=gramacy2Dexp1$outrawdf, mapping=aes(n, actual_intwerror, color=des_func)) + geom_point() + scale_y_log10()
   ggplot(data=gramacy2Dexp1$outrawdf %>% filter(n %in% (2*c(10,20,40))), mapping=aes(des_func, actual_intwerror, color=des_func)) + geom_point() + scale_y_log10() + facet_wrap(. ~ n)
   ggplot(data=gramacy2Dexp1$outrawdf %>% filter(n %in% (2*c(10,20,40))), mapping=aes(Method, actual_intwerror, color=des_func)) + geom_boxplot(size=2) + scale_y_log10() + facet_wrap(. ~ n)
+  gramacy2Dexp1$outrawdf %>% filter(n==80) %>% group_by(Method) %>% summarize(n=n(), meanIWE=mean(actual_intwerror), sdIW=sd(actual_intwerror)/20)
   
   gramacy2Dexp3hole1   <- try(run_test(funcstring='gramacy2Dexp3hole',  D=2, L=2, batches=4*10, reps=reps2,
                                   stage1batches=3, seed_start=2004000, design_seed_start=2014000))
@@ -289,6 +297,7 @@ if (F) {
   ggplot(data=gramacy6D1$outrawdf, mapping=aes(n, actual_intwerror, color=des_func)) + geom_point() + scale_y_log10()
   ggplot(data=gramacy6D1$outrawdf %>% filter(n %in% (6*c(10,20,40))), mapping=aes(des_func, actual_intwerror, color=des_func)) + geom_point() + scale_y_log10() + facet_wrap(. ~ n)
   ggplot(data=gramacy6D1$outrawdf %>% filter(n %in% (6*c(10,20,40))), mapping=aes(Method, actual_intwerror, color=des_func)) + geom_boxplot(size=2) + scale_y_log10() + facet_wrap(. ~ n)
+  gramacy6D1$outrawdf %>% filter(n==80) %>% group_by(Method) %>% summarize(n=n(), meanIWE=mean(actual_intwerror), sdIW=sd(actual_intwerror)/20)
 }
 
 if (F) {
@@ -301,7 +310,7 @@ if (F) {
   ggplot(data=bangram$outrawdf %>% filter(n %in% (6*c(10,20,40))), mapping=aes(Method, actual_intwerror, color=des_func)) + geom_point(size=5) + scale_y_log10() + facet_wrap(. ~ n)
 }
 
-if (T) {
+if (F) {
   # bananatimesgramacy2Dexp, 6 input dims
   bangram2   <- try(run_test(funcstring='bananatimesgramacy2Dexp',  D=6, L=4, batches=4*15, reps=reps2,
                              stage1batches=3, seed_start=2006000, design_seed_start=2016000))
