@@ -7,11 +7,12 @@
 source('~/GitHub/DOE-code/compare_adapt_table3.R')
 
 # Need to load the objects listed below from adapt_paper_runs4_addtruegrad.R
+#  and adapt_paper_runs3
 
 selfs1 <- list(bran1, banana1, lim1, gramacy2Dexp1)
 nams1 <- c("Branin", "Roshan", "Lim", "Gramacy (2D)")
 selfs2 <- list(otl1, gramacy6D1, bh1, wing1)
-nams1 <- c("OTL", "Gramacy (6D)", "Borehole", "Wing weight")
+nams2 <- c("OTL", "Gramacy (6D)", "Borehole", "Wing weight")
 
 # 10D
 get_xtable2(selfs=selfs1, 
