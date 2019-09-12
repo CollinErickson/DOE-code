@@ -122,3 +122,47 @@ if (F) {
   boxplots_grid(nmult1=c(10,40), cgsinds = c(2,3,4), ext="eps", save_plot = T, axis.text.size=12)
   boxplots_grid(nmult1=c(10,40), cgsinds = c(2,3,4), ext="eps", save_plot = F)
 }
+
+
+# For NRL submission, now use some functions that should help us.
+boxplots_grid2 <- function(nmult1=c(5,10,20,40),
+                          cgs=c("IMSE", "IMVSE", "MaxVSE", "VMED", "Plug-in"),
+                          cgsinds,
+                          ext="png", save_plot=TRUE,
+                          ...
+) {
+  if (!missing(cgsinds)) {cgs <- cgs[cgsinds]}
+  plotbran   <- plot_by_n_compare_intwvar(bran1, "Branin", compare_Group_shorts=cgs, nmult=nmult1, ...)
+  plotbanana <- plot_by_n_compare_intwvar(banana1, "Joseph", compare_Group_shorts=cgs, nmult=nmult1, ...)
+  plotlim    <- plot_by_n_compare_intwvar(lim1, "Lim", compare_Group_shorts=cgs, nmult=nmult1, ...)
+  plotgramacy2D   <- plot_by_n_compare_intwvar(gramacy2Dexp1, "Gramacy (2D)", compare_Group_shorts=cgs, nmult=nmult1, ...)
+  plototl    <- plot_by_n_compare_intwvar(otl1, "OTL", compare_Group_shorts=cgs, nmult=nmult1, ...)
+  plotgramacy6D <- plot_by_n_compare_intwvar(gramacy6D1, "Gramacy (6D)", compare_Group_shorts=cgs, nmult=nmult1, ...)
+  plotbh     <- plot_by_n_compare_intwvar(bh1, "Borehole", compare_Group_shorts=cgs, nmult=nmult1, ...)
+  plotwing   <- plot_by_n_compare_intwvar(wing1, "Wing weight", compare_Group_shorts=cgs, nmult=nmult1, ...)
+  filename <- paste0(paste0(cgs, collapse="vs"), "_", paste0(nmult1, collapse=''), ".", ext)
+  # browser()
+  if (save_plot) {
+    ggsave(paste0("C:\\Users\\cbe117\\School\\DOE\\GradAdaptPaper\\images\\", filename),
+           gridExtra::arrangeGrob(plotbran, plotbanana, plotlim, plotgramacy2D,
+                                  plototl, plotgramacy6D, plotbh, plotwing,
+                                  ncol=4),
+           width=12, height=10, units='in')
+  } else {
+    gridExtra::grid.arrange(plotbran, plotbanana, plotlim, plotgramacy2D,
+                            plototl, plotgramacy6D, plotbh, plotwing,
+                            ncol=4)
+  }
+}
+
+if (F) {
+  # Making the updated plots for NRL submission
+  # Now includes Gramacy 2D and 6D and banana functions
+  boxplots_grid2(nmult1=c(10,40), cgsinds = c(1,2), ext="eps")
+  # First plot: 10,20,40 w/ IMSE and IMVSE
+  boxplots_grid2(nmult1=c(10,20,40), cgsinds = c(1,2), ext="eps", save_plot=T, axis.text.size=12)
+  boxplots_grid2(nmult1=c(10,40), cgsinds = c(1,3))
+  # 2nd plot: 10,40 w/ IMVSE, MaxVSE, VMED
+  boxplots_grid2(nmult1=c(10,40), cgsinds = c(2,3,4), ext="eps", save_plot = T, axis.text.size=12)
+  boxplots_grid2(nmult1=c(10,40), cgsinds = c(2,3,4), ext="eps", save_plot = F)
+}
