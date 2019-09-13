@@ -3,6 +3,8 @@
 # Postprocess compare_adapt
 # Use to changed batches to not full number
 postprocess_outdf = function(self, batches) {#browser()
+  print("in ppdf");
+  cat('in ppdf cat', '\n')
   if (missing(batches)) {
     batches <- self$batches
   } else if (batches == '10D') {batches <- ceiling(10 * self$D / self$b)
@@ -10,6 +12,15 @@ postprocess_outdf = function(self, batches) {#browser()
   } else if (batches == '40D') {batches <- ceiling(40 * self$D / self$b)
   } else {stop("bad batches")}
   self.outdf <- self$outrawdf
+  print(dim(self.outdf))
+  print(colnames(self.outdf))
+  self.outdf <- dplyr::filter(
+    self.outdf, 
+    !grepl(
+      "obj=desirability,selection_method=max_des_red_all_best,design=sFFLHD_Lflex,des_func=actual_des_func_grad_norm2_mean_",
+      Group
+    ))
+  print(dim(self.outdf))
   self.outdf$rmse <- sqrt(ifelse(self.outdf$mse>=0, self.outdf$mse, 1e-16))
   self.outdf$prmse <- sqrt(ifelse(self.outdf$pvar>=0, self.outdf$pvar, 1e-16))
   # self.enddf <- self.outdf[self.outdf$batch == self$batches,]
@@ -84,6 +95,7 @@ get_table <- function(self, error_power=2, batches) {#browser()
   colnames(tab) <- c("Selection", "Candidates","$\\Psi mean$","$\\Psi sd$")
   # tab$Selection[tab$Selection == "desirability"] <- "Proposed"
   # tab$Selection[tab$Selection == "max_des_red_all_best"] <- "\\IMVSE{}"
+  # browser()
   tab$Selection[tab$Selection == "ALC_all_best"] <- 'IMSE'#"ALC"
   tab$Selection[tab$Selection == "max_des_all_best"] <- '\\VSE{}'#"ALC"
   tab$Selection[tab$Selection == "SMED"] <- '\\VMED{}'
@@ -92,8 +104,8 @@ get_table <- function(self, error_power=2, batches) {#browser()
   tab$Selection[tab$Selection == "nonadapt" & tab$Candidates=="sobol"] <- "Sobol"
   tab$Candidates[tab$Candidates == "sobol"] <- "Sobol"
   # browser()
-  tab$Selection[tab$Selection == "max_des_red_all_best" & self$endmeandf$des_func=="des_func_mean_grad_norm2"] <- "Plug-in"
-  tab$Selection[tab$Selection == "max_des_red_all_best" & self$endmeandf$des_func=="des_func_grad_norm2_mean"] <- "\\IMVSE{}"
+  tab$Selection[tab$Selection == "max_des_red_all_best" & self.endmeandf$des_func=="des_func_mean_grad_norm2"] <- "Plug-in"
+  tab$Selection[tab$Selection == "max_des_red_all_best" & self.endmeandf$des_func=="des_func_grad_norm2_mean"] <- "\\IMVSE{}"
   colnames(tab) <- c("Method", "Candidates","$\\Psi mean$","$\\Psi sd$")
   tab
 }
