@@ -1,6 +1,8 @@
 # Created 5/13/19.
 # After rejected by Technometrics.
-# Want to see what results would be when using true gradient
+# Want to see what results would be when using true gradient.
+# This has new functions where ours should be better.
+# Still need to load objects from adapt_paper_runs3.R for making plots.
 
 # In order, these are
 # 1. sFFLHD (nonadapt)
