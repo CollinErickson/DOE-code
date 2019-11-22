@@ -8,3 +8,9 @@ tdf <- gramacy6D1$outdf %>% select(n, Group,
                                    actual_intsqerrquants.5)
 tdf2 <- tdf %>% reshape2::melt(id.vars=c('n', 'Group', 'obj', 'selection_method', 'design', 'des_func'))
 tdf2 %>% filter(n==120) %>% ggplot(aes(value)) + facet_grid(Group ~ variable) + geom_histogram()
+tdf2 %>% filter(n==120) %>% ggplot(aes(value)) + 
+  facet_grid(obj + selection_method + design + des_func ~ variable) + 
+  geom_histogram()
+tdf2 %>% filter(n==240) %>% ggplot(aes(value)) + 
+  facet_grid(obj + selection_method + design + des_func ~ variable) + 
+  geom_histogram()
