@@ -24,7 +24,8 @@ tdf2$Group2 <- c("obj=nonadapt,selection_method=nonadapt,design=sFFLHD_Lflex,des
   "obj=desirability,selection_method=max_des_all_best,design=sFFLHD_Lflex,des_func=des_func_grad_norm2_mean"='MaxVSE', 
   "obj=desirability,selection_method=max_des_red_all_best,design=sFFLHD_Lflex,des_func=actual_des_func_grad_norm2_mean_gramacy6D"='TrueGrad'
 )[tdf2$Group]
-tdf2 %>% filter(n==120) %>% ggplot(aes(value)) + facet_grid(Group2 ~ variable) + geom_histogram()
+tdf2 %>% filter(n==120) %>% ggplot(aes(value)) + facet_grid(Group2 ~ variable) + geom_histogram() + ggtitle("n=120, d=6, Gramacy (6D)")
+tdf2 %>% filter(n==120, Group2 %in% c("IMSE", "IMVSE")) %>% ggplot(aes(value)) + facet_grid(Group2 ~ variable) + geom_histogram() + ggtitle("n=120, d=6, Gramacy (6D)")
 write.csv(x = tdf2, file = "gramacy6D1_datawithquantiles.csv")
 
 
