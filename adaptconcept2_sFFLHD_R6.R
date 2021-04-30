@@ -1095,7 +1095,9 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       # TODO rename int_werrors_red_func to obj_to_max
       int_werrors_red_func <- function(add_points_indices) {
         warning("This was a browser spot too #92348")
-        add_points <- self$Xopts[add_points_indices, ]
+        # add_points <- self$Xopts[add_points_indices, ]
+        # Fixes 1D error, April 2021 CBE
+        add_points <- self$Xopts[add_points_indices, , drop=FALSE]
         if (self$error_power==2) {
           pp <- gpc$predict.var(XX=add_points)
         } else {
@@ -1244,7 +1246,7 @@ adapt.concept2.sFFLHD.R6 <- R6::R6Class(classname = "adapt.concept2.sFFLHD.seq",
       r_star <- Xopts_inds_to_consider[which.max(int_werror_red_vals)]
       
       # print("Here are int_werror_vals")
-      if (self$verbose >= 2) {
+      if (self$verbose >= 3) {
         # print(cbind(1:length(int_werror_red_vals), int_werror_red_vals))
         print(cbind(Xopts_inds_to_consider, int_werror_red_vals))
       }
