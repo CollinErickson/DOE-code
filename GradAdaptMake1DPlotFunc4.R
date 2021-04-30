@@ -1,11 +1,15 @@
 # Make 1D plots demonstrating selection criteria.
 # Also see Example1D_v1.R and v2
 
+# CBE created this on 4/11/21 for QREI submission.
+# Coped GradAdaptMake1DPlotFunc2.R. Trying to add MaxVSE and VMED.
+
 source('./adaptconcept2_sFFLHD_R6.R')
 make1Dplots2 <- function(f, x=c(0,.5,1), x2=c(.25,.75),
                          theta, no_update=F,
                          colorplot=F,colorplot2=F,
                          sameplot=TRUE, plotknown=F,
+                         savecsv=FALSE,
                          Proposed="IMVSE") {
   if (sameplot) {
     par(mfrow=c(2,2))
@@ -45,7 +49,30 @@ make1Dplots2 <- function(f, x=c(0,.5,1), x2=c(.25,.75),
     if (length(xx)>1) {return(sapply(xx, crit_known, values=values))}
     mean(values * gp2$pred_var_after_adding_points(add_points = xx, pred_points = xm))
   }
-
+  
+  # CBE adding on 4/11/21
+  # browser()
+  crit_MaxVSE <- function(xx, values) {#browser()
+    if (missing(values)) {values <- numDeriv::grad(func = f, x = xm)^2}
+    if (length(xx)>1) {return(sapply(xx, crit_MaxVSE, values=values))}
+    # mean(values * gp2$pred_var_after_adding_points(add_points = xx, pred_points = xm))
+    # if (nrow(gp2$X) > 3) browser()
+    -gp2$grad_norm2_mean(matrix(xx)) * gp2$pred(matrix(xx), se.fit = T)$s2
+  }
+  
+  
+  energyfunc <- function(x, q, x1, q1) {
+    1/q1 * sum(1/(q * (x1 - x)^4))
+  }
+  # browser()
+  crit_VMED <- function(xx, values) {#browser()
+    if (missing(values)) {values <- gp2$grad_norm2_mean(XX = gp2$X)}
+    if (length(xx)>1) {return(sapply(xx, crit_VMED, values=values))}
+    # browser()
+    energyfunc(x=gp2$X, q=values, x1=xx, q1=gp2$grad_norm2_mean(XX = matrix(xx)))
+  }
+  
+  
   
   for (i in 1:2) {
     if (i == 2) {
@@ -66,13 +93,33 @@ make1Dplots2 <- function(f, x=c(0,.5,1), x2=c(.25,.75),
     a_plugin <- crit_plugin(xx=a)
     a_prop <- crit_prop(xx=a)
     a_known <- crit_known(xx=a)
+    a_MaxVSE <- crit_MaxVSE(xx=a)
+    a_VMED <- crit_VMED(xx=a)
+    a_VMED <- ifelse(log(a_VMED) < 40, log(a_VMED), NA)
     a_imse_scaled <- (a_imse - min(a_imse)) / (max(a_imse) - min(a_imse))
     a_plugin_scaled <- (a_plugin - min(a_plugin)) / (max(a_plugin) - min(a_plugin))
     a_prop_scaled <- (a_prop - min(a_prop)) / (max(a_prop) - min(a_prop))
     a_known_scaled <- (a_known - min(a_known)) / (max(a_known) - min(a_known))
-    adf <- data.frame(a, a_ytrue, a_ypred, a_yupper, a_ylower, a_imse, a_plugin, a_prop, a_imse_scaled, a_plugin_scaled, a_prop_scaled)
+    a_MaxVSE_scaled <- (a_MaxVSE - min(a_MaxVSE)) / (max(a_MaxVSE) - min(a_MaxVSE))
+    a_VMED_scaled <- (a_VMED - min(a_VMED, na.rm=T)) / (max(a_VMED, na.rm=T) - min(a_VMED, na.rm=T))
+    # browser()
+    adf <- data.frame(a, a_ytrue, a_ypred, a_yupper, a_ylower,
+                      a_imse, a_plugin, a_prop, a_known, a_MaxVSE, a_VMED,
+                      a_imse_scaled, a_plugin_scaled, a_prop_scaled,
+                      a_known_scaled, a_MaxVSE_scaled, a_VMED_scaled
+    )
     summary(adf)
-
+    if (savecsv) {
+      print("Writing out csv file")
+      adf2 <- data.frame(x=a, y_actual=a_ytrue, y_predicted=a_ypred, y_pred_lower=a_yupper, y_pred_upper=a_ylower,
+                        IMSE=a_imse, Plugin=a_plugin, IMVSE=a_prop, IMVSE_knowngrad=a_known, MaxVSE=a_MaxVSE, VMED=a_VMED,
+                        IMSE_scaled=a_imse_scaled, Plugin_scaled=a_plugin_scaled, IMVSE_scaled=a_prop_scaled,
+                        IMVSE_knowngrad_scaled=a_known_scaled, MaxVSE_scaled=a_MaxVSE_scaled, VMED_scaled=a_VMED_scaled
+      )
+      readr::write_csv(x=adf2,
+                       file=paste0("./GradAdaptMake1DPlotFunc4_",i,".csv"))
+    }
+    
     
     # First plot
     # Use same max and min for both plots
@@ -108,22 +155,28 @@ make1Dplots2 <- function(f, x=c(0,.5,1), x2=c(.25,.75),
            yaxt='n')
       points(a, a_plugin_scaled, col=2, type='l', lwd=lwd2)
       points(a, a_prop_scaled, col=3, type='l', lwd=lwd2)
+      points(a, a_MaxVSE_scaled, col=4, type='l', lwd=lwd2)
+      points(a, a_VMED_scaled, col=5, type='l', lwd=lwd2)
     } else { # Use dashes, black and white
       plot(a, a_imse_scaled, col=1, type='l', lwd=lwd2, xlab='x', ylab="",
            # main='Comparison of criteria',
            yaxt='n', lty=1)
       points(a, a_plugin_scaled, col=1, type='l', lwd=lwd2, lty=2)
       points(a, a_prop_scaled, col=1, type='l', lwd=lwd2, lty=3)
+      points(a, a_MaxVSE_scaled, col=1, type='l', lwd=lwd2, lty=4)
+      points(a, a_VMED_scaled, col=1, type='l', lwd=lwd2, lty=5)
     }
     axis(side=2, labels=F) # This adds ticks back, maybe remove
     if (plotknown) {
       points(a, a_known_scaled, col=4, type='l', lwd=lwd2)
       legend(x=.65, y=1.04, legend=c("IMSE", "Plug-in", Proposed, "Known"), fill=c(1,2,3,4))
     } else {
-      if (colorplot2)
-        legend(x=.65, y=1.04, legend=c("IMSE", "Plug-in", Proposed), fill=c(1,2,3))
-      else
-        legend(x=.65, y=1.04, legend=c("IMSE", "Plug-in", Proposed), lty=c(1,2,3), lwd=2)
+      if (colorplot2) {
+        # legend(x=.65, y=1.04, legend=c("IMSE", "Plug-in", Proposed), fill=c(1,2,3))
+        legend(x=.65, y=1.04, legend=c("IMSE", "Plug-in", Proposed, "MaxVSE", "VMED"), fill=c(1,2,3,4,5))
+      } else {
+        legend(x=.65, y=1.04, legend=c("IMSE", "Plug-in", Proposed, "MaxVSE", "VMED"), lty=c(1,2,3,4,55), lwd=2)
+      }
     }
   }
   # Reset plot
