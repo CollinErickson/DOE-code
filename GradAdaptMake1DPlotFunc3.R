@@ -169,4 +169,7 @@ make1Dplots2(matt, x=c(0,.7,1), sameplot = T, x2=c(.2,.4,.83,.6))
 #   then save each as .eps image
 # make1Dplots2(matt, x=c(0,.7,1), sameplot = F, x2=c(.2,.4,.83,.6))
 
+
+make1Dplots2(matt, x=c(0,.7,1), sameplot = T, x2=c(.2,.4,.83,.6), colorplot = T, colorplot2 = T)
+
 # make1Dplots(function(x) {sin(4*pi*x)*x^2}, x=c(0,.6,.7,.89,1), theta=20, sameplot = T)
